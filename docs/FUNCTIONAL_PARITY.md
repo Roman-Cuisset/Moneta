@@ -2,7 +2,7 @@
 
 ## Portée et légende
 
-État au 28 octobre 2026 : **aucune fonction Moneta n'est développée**. Cette matrice définit la cible, pas des capacités disponibles.
+État mission 2 au 28 octobre 2026 : **aucune fonction Moneta n'est développée**. Cette matrice définit la cible, pas des capacités disponibles. L'ouverture native `.bp` est désormais un **objectif prioritaire décidé**, mais sa faisabilité complète n'est pas démontrée.
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
@@ -13,13 +13,17 @@ Les noms de menus sont normalisés avec accents dans ce document. Les clés INI 
 
 L'inventaire exhaustif des fichiers et familles d'extensions figure dans [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md). Les références M01–M18 ci-dessous désignent les pages officielles consultées, recensées en fin de document.
 
+**Décisions utilisateur acquises :** format natif `.moneta` sur SQLite, code indépendant, C#/.NET 10 LTS/WPF/MVVM léger et ressources graphiques **toutes créées spécialement pour Moneta**. La compatibilité concerne les fonctions et les repères, pas la réutilisation de logos/icônes. Aucun logo définitif n'est créé ici.
+
+La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, contexte clavier, priorité et état documentaire ; l'[inventaire des écrans](UI_SCREEN_INVENTORY.md) définit les preuves visuelles encore nécessaires. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) confronte les données à reprendre aux domaines de cette matrice ; [FILE_FORMATS.md](FILE_FORMATS.md) définit le cycle de vie `.moneta` et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) les interdictions graphiques.
+
 ## Correspondance fonctionnelle
 
 | Fonction BankPerfect | Emplacement connu / preuve | État de la preuve | Cible Moneta | Réalisation |
 |---|---|---|---|---|
-| Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | À développer |
+| Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | À développer |
 | Nouveau fichier, solde initial | M02 : Comptes > Créer un nouveau fichier de comptes | Vérifié — manuel ; emplacement local à confirmer | Même commande et parcours | À développer |
-| Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; sauvegarde durable explicite | À développer |
+| Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; **Fichier > Ouvrir** ouvre `.moneta` ou propose la conversion d'un `.bp` ; aucun enregistrement vers `.bp` | À développer |
 | Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | À développer |
 | Informations bancaires, monnaie du compte, RIB | M02 ; `Scripts/Rib/rib.ini:2-6` : Fichier | Vérifié — manuel et local | Métadonnées facultatives, contrôle RIB et impression | À développer |
 | Mot de passe d'un fichier | M02 : Comptes > Mot de passe | Vérifié — manuel ; protection cryptographique inconnue | Protection à concevoir, pas de simple imitation d'un verrou non étudié | À développer |
@@ -80,7 +84,7 @@ L'inventaire exhaustif des fichiers et familles d'extensions figure dans [BANKPE
 | Options générales, sauvegarde, affichage, couleurs/police | M17 : Outils > Options ; `globalcolors.ini` | Vérifié — manuel et présence locale | Même regroupement des réglages ; lisibilité moderne | À développer |
 | Installation/gestion d'extensions | `Scripts/ManagePlugins/manage_plugins.ini:2-7` : Plugins | Vérifié — local | Inventorier les usages réels ; aucune exécution des anciens scripts ni installation distante implicite | À développer |
 | Aide, manuel, mise à jour | M14, M18 ; `Scripts/Manuel/manuel.ini:2-8` : ? ; Internet pour la mise à jour | Vérifié — manuel et local partiellement | Aide locale utilisable sans Internet ; politique de mise à jour consentie à concevoir | À développer |
-| Import natif BankPerfect complet | Aucun spécimen de fichier de comptes examiné ; format interne non établi | **À confirmer** | Migration contrôlée ; ne pas promettre un lecteur `.bp` avant preuve | À développer |
+| Ouverture et conversion natives BankPerfect | Aucun spécimen de fichier de comptes examiné ; format interne non établi | **À confirmer — faisabilité technique et versions couvertes** | **Priorité P0** : Fichier > Ouvrir `.bp` → proposition de conversion → analyse en lecture seule → rapport de couverture/rapprochement → nouveau `.moneta` ; original inchangé et conservé | À développer |
 
 **Contraintes de migration découvertes dans les scripts :** XML n'exporte ni UID, ni liens de virements, ni date de pointage, ni champs supplémentaires, ni données d'échéancier/budget. Des notes et profils résident dans des fichiers auxiliaires. Les liens des virements directs diffèrent des branches d'échéancier examinées. Aucune désérialisation `pickle`, évaluation de règle ou exécution d'ancien plugin ne sera admise comme simple lecture d'un fichier importé. Voir les preuves et périmètres précis dans l'audit.
 
@@ -91,11 +95,13 @@ Ces capacités ne sont **pas attribuées à BankPerfect** sans preuve.
 | Besoin | État BankPerfect | Cible Moneta | Statut |
 |---|---|---|---|
 | EUR, BYN, RUB et autres codes monétaires | Le convertisseur et les monnaies de comptes sont vérifiés ; support BYN/RUB complet non établi | Registre extensible, précision par monnaie et dates de validité | À développer |
-| Cours officiels NBRB, unités et dates d'effet | Non établi | Fournisseur officiel, normalisation par échelle, provenance et erreurs visibles | À développer |
-| Historique des cours et cache hors ligne | Non établi pour les exigences demandées | Historique conservé, consultation et valorisation hors ligne | À développer |
+| Cours officiels NBRB et étude CBR, unités et dates d'effet | Non établi dans BankPerfect ; contrats tiers étudiés dans ARCHITECTURE | NBRB prioritaire ; CBR alternative explicite, échelles variables, aucune substitution ou combinaison de sources cachée | À développer |
+| Historique, cache hors ligne et taux manuel | Non établi pour les exigences demandées | Cours datés/sourcés, date demandée distincte de la date réelle ; dernier disponible antérieur explicitement indiqué ; manuel étiqueté utilisateur | À développer |
 | Soldes convertis en euros | Totalisation et deux monnaies documentées ; équivalence au besoin non prouvée | Total EUR avec date/source du cours et absence de cours explicite | À développer |
 | Transferts entre monnaies différentes | Transferts vérifiés ; garanties multidevises non établies | Deux montants natifs figés, taux effectif, frais et transaction atomique | À développer |
 | Restauration et migration financièrement vérifiées | Restauration documentée ; contrôles internes inconnus | Vérifier intégrité, comptes, soldes, pointages, liens et anomalies | À développer |
+| Format indépendant `.moneta` et association Windows | Sans équivalent BankPerfect revendiqué | SQLite versionné ; identité vérifiée au-delà de l'extension ; association `.moneta` consentie, jamais prise de contrôle de `.bp` | À développer |
+| Identité visuelle originale | Les ressources BankPerfect restent en référence uniquement | Aucune réutilisation de logo, icône, image, illustration ou ressource extraite ; navigation fidèle mais graphisme original à valider séparément | À développer |
 
 ## Raccourcis à préserver
 
