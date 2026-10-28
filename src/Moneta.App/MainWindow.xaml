@@ -1,261 +1,302 @@
 <Window x:Class="Moneta.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Moneta — prototype de développement"
-        Width="1100" Height="730" MinWidth="760" MinHeight="520"
-        WindowStartupLocation="CenterScreen"
-        FontFamily="Segoe UI" FontSize="13"
-        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+        xmlns:local="clr-namespace:Moneta.App"
+        Title="Moneta — démonstration" Width="1280" Height="800" MinWidth="900" MinHeight="500"
+        WindowStartupLocation="CenterScreen" FontFamily="{DynamicResource AppFont}" FontSize="13"
+        Background="{DynamicResource CanvasBrush}" Foreground="{DynamicResource TextBrush}"
         UseLayoutRounding="True" SnapsToDevicePixels="True"
         FocusManager.FocusedElement="{Binding ElementName=AccountsSelector}">
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Close" Executed="Close_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.About}" Executed="About_Executed" />
+    </Window.CommandBindings>
     <Window.Resources>
-        <Style TargetType="MenuItem">
-            <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+        <!-- Géométries originales Moneta : aucune ressource ni forme extraite de BankPerfect. -->
+        <Geometry x:Key="AccountsIcon">M3,4 H21 V20 H3 Z M8,4 V20 M3,10 H21 M12,8 H17 M12,14 H17</Geometry>
+        <Geometry x:Key="OpenIcon">M2,19 V6 H9 L12,9 H21 L18,19 Z M2,11 H19</Geometry>
+        <Geometry x:Key="SaveIcon">M4,3 H17 L21,7 V21 H4 Z M8,3 V10 H16 V3 M8,21 V14 H17 V21</Geometry>
+        <Geometry x:Key="UndoIcon">M8,5 L3,10 L8,15 M3,10 H14 C22,10 22,20 14,20</Geometry>
+        <Geometry x:Key="RedoIcon">M16,5 L21,10 L16,15 M21,10 H10 C2,10 2,20 10,20</Geometry>
+        <Geometry x:Key="LockIcon">M5,10 H19 V21 H5 Z M8,10 V7 C8,1 16,1 16,7 V10 M12,14 V17</Geometry>
+        <Geometry x:Key="BudgetIcon">M4,3 H20 V21 H4 Z M8,7 H16 M8,12 H11 M14,12 H16 M8,17 H11 M14,17 H16</Geometry>
+        <Geometry x:Key="TotalsIcon">M18,4 H6 L12,12 L6,20 H18</Geometry>
+        <Geometry x:Key="ChartIcon">M3,3 V21 H22 M7,17 V11 H10 V17 M14,17 V6 H17 V17</Geometry>
+        <Geometry x:Key="FilterIcon">M3,4 H21 L14,12 V19 L10,21 V12 Z</Geometry>
+        <Geometry x:Key="ScheduleIcon">M4,5 H20 V21 H4 Z M4,10 H20 M8,2 V8 M16,2 V8 M8,14 H10 M14,14 H16 M8,18 H10</Geometry>
+        <Geometry x:Key="TransferIcon">M3,7 H20 M16,3 L20,7 L16,11 M21,17 H4 M8,13 L4,17 L8,21</Geometry>
+        <Style x:Key="ToolIcon" TargetType="Path">
+            <Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" />
+            <Setter Property="Stretch" Value="Uniform" /><Setter Property="StrokeThickness" Value="1.6" />
+            <Setter Property="Stroke" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            <Setter Property="StrokeStartLineCap" Value="Round" /><Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" /><Setter Property="Margin" Value="0,0,0,5" />
         </Style>
-        <Style x:Key="UnavailableMenuItem" TargetType="MenuItem"
-               BasedOn="{StaticResource {x:Type MenuItem}}">
-            <Setter Property="IsEnabled" Value="False" />
-            <Setter Property="ToolTip" Value="Indisponible dans ce prototype : fonction non implémentée. Le raccourci indiqué n'est pas actif." />
+        <Style x:Key="ToolLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" /><Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
-        <Style x:Key="AmountText" TargetType="TextBlock">
-            <Setter Property="TextAlignment" Value="Right" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="4,2" />
+        <Style x:Key="MutedText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+            <Setter Property="FontSize" Value="11.5" /><Setter Property="TextWrapping" Value="Wrap" />
         </Style>
-        <Style x:Key="CellText" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="4,2" />
+        <Style x:Key="SecondaryCellText" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
-        <Style TargetType="DataGridColumnHeader">
-            <Setter Property="ToolTip" Value="Tri désactivé : l'ordre chronologique est conservé pour lire les soldes progressifs. La largeur des colonnes reste réglable." />
+        <Style x:Key="EntryField" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="IsReadOnly" Value="True" /><Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="7,5" /><Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
         </Style>
-    </Window.Resources>
-
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" MinHeight="90" />
-            <RowDefinition Height="5" />
-            <RowDefinition Height="185" MinHeight="100" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <Menu Grid.Row="0" KeyboardNavigation.TabNavigation="Once"
-              ToolTip="Ordre, séparateurs et accès Alt provisoires propres à Moneta ; ils ne constituent pas un relevé de BankPerfect.">
-            <MenuItem Header="_Fichier">
-                <MenuItem Header="_Ouvrir…" InputGestureText="Ctrl+O" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Enregistrer" InputGestureText="Ctrl+S" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="_Importer">
-                    <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
-                    <MenuItem Header="QIF…" InputGestureText="Ctrl+Alt+Q" Style="{StaticResource UnavailableMenuItem}" />
-                </MenuItem>
-                <MenuItem Header="E_xporter">
-                    <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
-                    <MenuItem Header="QIF…" Style="{StaticResource UnavailableMenuItem}" />
-                    <MenuItem Header="HTML…" Style="{StaticResource UnavailableMenuItem}" />
-                    <MenuItem Header="XML…" Style="{StaticResource UnavailableMenuItem}" />
-                    <MenuItem Header="Tableur…" Style="{StaticResource UnavailableMenuItem}" />
-                </MenuItem>
-                <MenuItem Header="Imprimer un RIB…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Enregistrer sur disque externe…" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="_Quitter" Click="Quit_Click"
-                          ToolTip="Ferme Moneta. Position provisoire propre à ce prototype, non confirmée dans la documentation de référence." />
-            </MenuItem>
-            <MenuItem Header="_Édition">
-                <MenuItem Header="_Copier" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="C_oller" Style="{StaticResource UnavailableMenuItem}" />
-            </MenuItem>
-            <MenuItem Header="_Comptes">
-                <MenuItem Header="_Nouveau fichier de comptes…" InputGestureText="Ctrl+N" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Gestion des comptes…" InputGestureText="Ctrl+G" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Mot de passe…" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Tiers…" InputGestureText="F5" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Modes de paiement…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Échéancier…" InputGestureText="Ctrl+E" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="Total des comptes…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Relevé multi-comptes…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Sauvegardes…" Style="{StaticResource UnavailableMenuItem}" />
-            </MenuItem>
-            <MenuItem Header="_Opérations">
-                <MenuItem Header="_Supprimer" InputGestureText="Ctrl+Suppr" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Charger un tiers…" InputGestureText="F10" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Date de pointage…" InputGestureText="Ctrl+Maj+P" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="Saisie multiple…" InputGestureText="F2" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Modifier un groupe…" InputGestureText="Ctrl+M" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Transfert de compte à compte…" InputGestureText="Ctrl+Maj+T" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Convertir une ligne en transfert…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Ventiler l'opération…" InputGestureText="F6" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Champs supplémentaires…" InputGestureText="F3" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Ajouter à l'échéancier…" Style="{StaticResource UnavailableMenuItem}" />
-            </MenuItem>
-            <MenuItem Header="_Affichage">
-                <MenuItem Header="Affichage sur _2 lignes" InputGestureText="F4" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Dates de pointage" InputGestureText="F11" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Filtres enregistrés…" InputGestureText="F7" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Cacher les lignes inutiles" InputGestureText="Ctrl+H" Style="{StaticResource UnavailableMenuItem}" />
-            </MenuItem>
-            <MenuItem Header="O_utils">
-                <MenuItem Header="_Options…" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="Budget mensuel…" InputGestureText="Ctrl+B" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Budget annuel…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Graphiques…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Totaux par catégories…" InputGestureText="Ctrl+T" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Totaux par tiers…" InputGestureText="Ctrl+Alt+T" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="Calcul automatique des champs…" InputGestureText="Ctrl+F" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Notes…" InputGestureText="Ctrl+Maj+N" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="_Conversions de devises…" InputGestureText="Ctrl+D" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Inverser les monnaies…" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="Simulateur de crédit…" InputGestureText="Ctrl+L" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Calculatrice…" InputGestureText="Ctrl+Maj+C" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Conversions numériques…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Vérifier une carte bancaire…" Style="{StaticResource UnavailableMenuItem}" />
-            </MenuItem>
-            <MenuItem Header="_Internet">
-                <MenuItem Header="Sauvegarder par courriel…" InputGestureText="F9" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Sauvegarder en ligne…" InputGestureText="Maj+F9" Style="{StaticResource UnavailableMenuItem}"
-                          ToolTip="Non implémenté. Libellé et raccourci de cette commande présentent aussi une contradiction documentaire non résolue." />
-                <MenuItem Header="Télécharger les cours des titres…" Style="{StaticResource UnavailableMenuItem}" />
-                <MenuItem Header="Mise à jour…" Style="{StaticResource UnavailableMenuItem}"
-                          ToolTip="Non implémenté. Arborescence détaillée de cette commande non confirmée." />
-            </MenuItem>
-            <MenuItem Header="_Plugins">
-                <MenuItem Header="Gérer les extensions…" Style="{StaticResource UnavailableMenuItem}" />
-            </MenuItem>
-            <MenuItem Header="_?">
-                <MenuItem Header="Télécharger le manuel…" InputGestureText="Ctrl+F1" Style="{StaticResource UnavailableMenuItem}" />
-                <Separator />
-                <MenuItem Header="À _propos de Moneta…" Click="About_Click"
-                          ToolTip="Présentation locale du prototype Moneta ; commande et position provisoires propres à Moneta." />
-            </MenuItem>
-        </Menu>
-
-        <Grid Grid.Row="1" Margin="10,8,10,4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Label Content="_Compte :" Target="{Binding ElementName=AccountsSelector}"
-                   VerticalAlignment="Center" Padding="0,0,8,0" />
-            <ComboBox x:Name="AccountsSelector" Grid.Column="1" MaxWidth="700"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      ItemsSource="{Binding Accounts}"
-                      SelectedItem="{Binding SelectedAccount, Mode=TwoWay}"
-                      IsSynchronizedWithCurrentItem="False" MinHeight="30"
-                      AutomationProperties.AutomationId="AccountsSelector"
-                      AutomationProperties.Name="Compte affiché">
-                <ComboBox.ItemContainerStyle>
-                    <Style TargetType="ComboBoxItem">
-                        <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
-                    </Style>
-                </ComboBox.ItemContainerStyle>
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="2,1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="55" />
-                                <ColumnDefinition Width="160" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding CurrencyCode}" Margin="8,0"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="2" Text="{Binding BalanceText}" TextAlignment="Right"
-                                       VerticalAlignment="Center" />
-                        </Grid>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <StackPanel Grid.Column="2" Margin="16,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="Solde du compte" FontSize="11" />
-                <TextBlock Text="{Binding SelectedAccountBalanceText}" FontWeight="SemiBold"
-                           AutomationProperties.Name="Solde du compte sélectionné" />
+        <DataTemplate x:Key="RegisterHeader">
+            <StackPanel Margin="0,3">
+                <TextBlock Text="{Binding}" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <TextBox Text="Indisponible" IsEnabled="False" FontSize="10" Padding="4,2" MinHeight="22" Height="22"
+                         ToolTip="Filtre de colonne non implémenté. Aucune ligne n'est masquée."
+                         ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Filtre de colonne indisponible" />
             </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+    <Grid Background="{DynamicResource CanvasBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            <RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="8,3">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Menu KeyboardNavigation.TabNavigation="Once" VerticalAlignment="Center" AutomationProperties.AutomationId="MainMenu">
+                    <MenuItem Header="_Fichier">
+                        <MenuItem Header="_Ouvrir…" InputGestureText="Ctrl+O" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Enregistrer" InputGestureText="Ctrl+S" Style="{StaticResource UnavailableMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="_Importer">
+                            <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
+                            <MenuItem Header="QIF…" InputGestureText="Ctrl+Alt+Q" Style="{StaticResource UnavailableMenuItem}" />
+                        </MenuItem>
+                        <MenuItem Header="E_xporter">
+                            <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
+                            <MenuItem Header="QIF…" Style="{StaticResource UnavailableMenuItem}" />
+                            <MenuItem Header="HTML…" Style="{StaticResource UnavailableMenuItem}" />
+                            <MenuItem Header="XML…" Style="{StaticResource UnavailableMenuItem}" />
+                            <MenuItem Header="Tableur…" Style="{StaticResource UnavailableMenuItem}" />
+                        </MenuItem>
+                        <MenuItem Header="Imprimer un RIB…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Enregistrer sur disque externe…" Style="{StaticResource UnavailableMenuItem}" />
+                        <Separator /><MenuItem Header="_Quitter" Command="ApplicationCommands.Close" />
+                    </MenuItem>
+                    <MenuItem Header="_Édition">
+                        <MenuItem Header="_Copier" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="C_oller" Style="{StaticResource UnavailableMenuItem}" />
+                    </MenuItem>
+                    <MenuItem Header="_Affichage">
+                        <MenuItem Header="Affichage sur _2 lignes" InputGestureText="F4" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Dates de pointage" InputGestureText="F11" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Filtres enregistrés…" InputGestureText="F7" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Cacher les lignes inutiles" InputGestureText="Ctrl+H" Style="{StaticResource UnavailableMenuItem}" />
+                    </MenuItem>
+                    <MenuItem Header="_Comptes">
+                        <MenuItem Header="_Nouveau fichier de comptes…" InputGestureText="Ctrl+N" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Gestion des comptes…" InputGestureText="Ctrl+G" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Mot de passe…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Tiers…" InputGestureText="F5" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Modes de paiement…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Échéancier…" InputGestureText="Ctrl+E" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="Total des comptes…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Relevé multi-comptes…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Sauvegardes…" Style="{StaticResource UnavailableMenuItem}" />
+                    </MenuItem>
+                    <MenuItem Header="_Opérations">
+                        <MenuItem Header="_Supprimer" InputGestureText="Ctrl+Suppr" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Charger un tiers…" InputGestureText="F10" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Date de pointage…" InputGestureText="Ctrl+Maj+P" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="Saisie multiple…" InputGestureText="F2" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Modifier un groupe…" InputGestureText="Ctrl+M" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Transfert de compte à compte…" InputGestureText="Ctrl+Maj+T" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Convertir une ligne en transfert…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Ventiler l'opération…" InputGestureText="F6" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Champs supplémentaires…" InputGestureText="F3" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Ajouter à l'échéancier…" Style="{StaticResource UnavailableMenuItem}" />
+                    </MenuItem>
+                    <MenuItem Header="O_utils">
+                        <MenuItem Header="_Options…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="Budget mensuel…" InputGestureText="Ctrl+B" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Budget annuel…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Graphiques…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Totaux par catégories…" InputGestureText="Ctrl+T" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Totaux par tiers…" InputGestureText="Ctrl+Alt+T" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="Calcul automatique des champs…" InputGestureText="Ctrl+F" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Notes…" InputGestureText="Ctrl+Maj+N" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Conversions de devises…" InputGestureText="Ctrl+D" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Inverser les monnaies…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="Simulateur de crédit…" InputGestureText="Ctrl+L" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Calculatrice…" InputGestureText="Ctrl+Maj+C" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Conversions numériques…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Vérifier une carte bancaire…" Style="{StaticResource UnavailableMenuItem}" />
+                    </MenuItem>
+                    <MenuItem Header="_Plugins"><MenuItem Header="Gérer les extensions…" Style="{StaticResource UnavailableMenuItem}" /></MenuItem>
+                    <MenuItem Header="_Internet">
+                        <MenuItem Header="Sauvegarder par courriel…" InputGestureText="F9" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Sauvegarder en ligne…" InputGestureText="Maj+F9" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Télécharger les cours des titres…" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Mise à jour…" Style="{StaticResource UnavailableMenuItem}" />
+                    </MenuItem>
+                    <MenuItem Header="_?">
+                        <MenuItem Header="Télécharger le manuel…" InputGestureText="Ctrl+F1" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="À _propos de Moneta…" Command="{x:Static local:WindowCommands.About}" />
+                    </MenuItem>
+                </Menu>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,4,0">
+                    <Label Content="Thè_me" Target="{Binding ElementName=ThemeSelector}" VerticalAlignment="Center" FontSize="11.5" />
+                    <ComboBox x:Name="ThemeSelector" Width="90" SelectedIndex="0" SelectionChanged="Theme_SelectionChanged"
+                              AutomationProperties.AutomationId="ThemeSelector" AutomationProperties.Name="Thème"
+                              ToolTip="Thème de présentation. Le contraste élevé Windows reste prioritaire. La préférence n'est pas enregistrée.">
+                        <ComboBoxItem Content="Light" /><ComboBoxItem Content="Dark" />
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
+            <ToolBarTray IsLocked="True" Background="{DynamicResource SurfaceBrush}" Margin="8,1">
+                <ToolBar Background="{DynamicResource SurfaceBrush}" BorderThickness="0" Padding="0" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ToolBarTray}}" AutomationProperties.Name="Accès rapides">
+                    <StackPanel Margin="4,2,12,4" ToolBar.OverflowMode="Never">
+                        <TextBlock Text="Dossier de démonstration · en mémoire" Style="{StaticResource MutedText}" Margin="2,0,0,4" />
+                        <ComboBox x:Name="AccountsSelector" Width="218" ItemsSource="{Binding Accounts}" DisplayMemberPath="Name"
+                                  SelectedItem="{Binding SelectedAccount, Mode=TwoWay}" IsSynchronizedWithCurrentItem="False"
+                                  AutomationProperties.AutomationId="AccountsSelector" AutomationProperties.Name="Compte affiché"
+                                  ToolTip="Choisir le compte du dossier fictif. Aucun dossier sur disque n'est ouvert.">
+                            <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                            </Style></ComboBox.ItemContainerStyle>
+                        </ComboBox>
+                    </StackPanel>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Comptes"><StackPanel><Path Data="{StaticResource AccountsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Comptes" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Ouvrir"><StackPanel><Path Data="{StaticResource OpenIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Ouvrir" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Enregistrer"><StackPanel><Path Data="{StaticResource SaveIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Enregistrer" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Separator />
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Annuler"><StackPanel><Path Data="{StaticResource UndoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Annuler" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Refaire"><StackPanel><Path Data="{StaticResource RedoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Refaire" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Verrouillage"><StackPanel><Path Data="{StaticResource LockIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Verrouiller" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Separator />
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Budget"><StackPanel><Path Data="{StaticResource BudgetIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Budget" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Totaux"><StackPanel><Path Data="{StaticResource TotalsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Totaux" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Graphiques"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Graphiques" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Échéancier"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Échéancier" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Transfert"><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Transfert" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                </ToolBar>
+            </ToolBarTray>
+        </Border>
+        <Grid Grid.Row="2" Margin="12,12,12,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="AccountPanelColumn" Width="240" MinWidth="200" MaxWidth="340" />
+                <ColumnDefinition Width="9" /><ColumnDefinition Width="*" MinWidth="500" />
+            </Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" Focusable="True" FocusVisualStyle="{StaticResource KeyboardFocus}" AutomationProperties.Name="Résumé du compte défilant">
+                <Grid MinHeight="500" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" MinHeight="60" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="COMPTE SÉLECTIONNÉ" Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,0,0,10" />
+                        <TextBlock Text="{Binding SelectedAccount.Name}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding SelectedAccount.CurrencyCode}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,5,0,18" />
+                        <DockPanel Margin="0,0,0,9"><TextBlock Text="Solde pointé" /><TextBlock Text="Non calculé" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Le calcul du solde pointé n'est pas implémenté." /></DockPanel>
+                        <DockPanel Margin="0,0,0,14"><TextBlock Text="À venir" /><TextBlock Text="Indisponible" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Échéancier non implémenté." /></DockPanel>
+                        <TextBlock Text="Solde actuel" Style="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding SelectedAccountBalanceText}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,16" AutomationProperties.AutomationId="AccountBalance" />
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,0,0,14" />
+                        <TextBlock Text="OPÉRATION SÉLECTIONNÉE" Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,0,0,8" />
+                    </StackPanel>
+                    <Grid Grid.Row="1">
+                        <TextBox x:Name="DetailsText" Text="{Binding SelectedRowDetails, Mode=OneWay}" IsReadOnly="True"
+                                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                 Background="{DynamicResource SurfaceBrush}" BorderThickness="0" Padding="0" FontSize="11.5"
+                                 AutomationProperties.AutomationId="DetailsText" AutomationProperties.Name="Détail de l'opération sélectionnée" />
+                        <TextBlock Text="Sélectionnez une ligne du registre pour consulter ses détails." IsHitTestVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}">
+                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding SelectedRow}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                    <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                        <TextBlock Text="Solde après l'opération" Style="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding SelectedRow.BalanceText, TargetNullValue='—'}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,3,0,12" />
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,0,0,12" />
+                        <TextBlock Text="Solde prévisionnel" FontWeight="SemiBold" /><TextBlock Text="Indisponible · échéancier non implémenté" Style="{StaticResource MutedText}" Margin="0,4,0,8" />
+                        <TextBlock Text="Date de prévision" Style="{StaticResource MutedText}" />
+                        <TextBox Text="Non définie" IsEnabled="False" Margin="0,4,0,0" AutomationProperties.Name="Date de prévision indisponible" />
+                    </StackPanel>
+                </Grid>
+                </ScrollViewer>
+            </Border>
+            <GridSplitter Grid.Column="1" Width="9" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" KeyboardIncrement="10" DragIncrement="1"
+                          Background="{DynamicResource CanvasBrush}" Focusable="True" ShowsPreview="True"
+                          AutomationProperties.AutomationId="AccountPanelSplitter" AutomationProperties.Name="Largeur du panneau de compte"
+                          ToolTip="Ajuster la largeur du panneau de compte ; flèches gauche/droite au clavier.">
+                <GridSplitter.Template><ControlTemplate TargetType="GridSplitter"><Border x:Name="Grip" Background="{TemplateBinding Background}"><Border Width="1" Height="40" Background="{DynamicResource BorderBrush}" /></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Grip" Property="Background" Value="{DynamicResource AccentSoftBrush}" /></Trigger></ControlTemplate.Triggers></ControlTemplate></GridSplitter.Template>
+            </GridSplitter>
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <DockPanel Margin="3,0,3,10">
+                    <TextBlock Text="Registre des opérations" FontSize="17" FontWeight="SemiBold" />
+                    <TextBlock Text="Lecture seule · filtres indisponibles" Style="{StaticResource MutedText}" TextAlignment="Right" VerticalAlignment="Center" />
+                </DockPanel>
+                <DataGrid x:Name="TransactionsGrid" Grid.Row="1" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                          SelectionChanged="TransactionSelectionChanged" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False" CanUserResizeColumns="True" CanUserReorderColumns="False"
+                          SelectionMode="Single" SelectionUnit="FullRow" IsSynchronizedWithCurrentItem="False" ClipboardCopyMode="None"
+                          EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          HeadersVisibility="Column" RowHeight="42" ColumnHeaderHeight="64" GridLinesVisibility="Horizontal"
+                          AutomationProperties.AutomationId="TransactionsGrid" AutomationProperties.Name="Opérations fictives du compte sélectionné"
+                          AutomationProperties.HelpText="Lecture seule. Flèches et pages pour naviguer. Ordre chronologique conservé. Filtres non implémentés.">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Date" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Mode" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTemplateColumn Header="Tiers / libellé" HeaderTemplate="{StaticResource RegisterHeader}" Width="2*" MinWidth="170">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
+                                <TextBlock Text="{Binding PayeeName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PayeeName}" />
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}" />
+                            </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Catégorie" HeaderTemplate="{StaticResource RegisterHeader}" Width="*" MinWidth="135">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
+                                <TextBlock Text="{Binding CategoryName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CategoryName}" />
+                                <TextBlock Text="{Binding SubcategoryName}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SubcategoryName}" />
+                            </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Débit" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DebitText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
+                        <DataGridTextColumn Header="Crédit" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding CreditText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
+                        <DataGridTextColumn Header="Pointage" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding MarkText}" Width="100" MinWidth="90" ElementStyle="{StaticResource CellText}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+                <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="6" Margin="0,8,0,0" Padding="10,7">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                        <Grid MinWidth="715">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="92" /><ColumnDefinition Width="100" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="125" /><ColumnDefinition Width="108" /></Grid.ColumnDefinitions>
+                            <Grid.Resources><Style TargetType="StackPanel"><Setter Property="Margin" Value="0,0,8,0" /></Style></Grid.Resources>
+                            <StackPanel><TextBlock Text="Date" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.DateText, Mode=OneWay}" AutomationProperties.Name="Date de l'opération" /></StackPanel>
+                            <StackPanel Grid.Column="1"><TextBlock Text="Mode" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.PaymentModeName, Mode=OneWay}" AutomationProperties.Name="Mode de paiement" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Tiers" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.PayeeName, Mode=OneWay}" AutomationProperties.Name="Tiers de l'opération" /></StackPanel>
+                            <StackPanel Grid.Column="3"><TextBlock Text="Catégorie" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.CategoryName, Mode=OneWay}" AutomationProperties.Name="Catégorie de l'opération" /></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Montant d'origine" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" TextAlignment="Right" AutomationProperties.Name="Montant d'origine">
+                                <TextBox.Text><MultiBinding StringFormat="{}{0}{1}" Mode="OneWay"><Binding Path="SelectedRow.DebitText" /><Binding Path="SelectedRow.CreditText" /></MultiBinding></TextBox.Text>
+                            </TextBox></StackPanel>
+                            <StackPanel Grid.Column="5" Margin="0"><TextBlock Text="Lecture seule" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><Button Content="Modifier" IsEnabled="False" MinHeight="30" ToolTip="Édition financière non implémentée ; aucune modification ne sera enregistrée." ToolTipService.ShowOnDisabled="True" /></StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
         </Grid>
-
-        <StackPanel Grid.Row="2" Margin="10,2,10,6">
-            <TextBlock x:Name="DevelopmentNotice"
-                       Text="Version de développement — données fictives" FontWeight="SemiBold"
-                       AutomationProperties.AutomationId="DevelopmentNotice" />
-            <TextBlock Text="Disposition des menus provisoire" FontSize="11"
-                       ToolTip="Ordre, séparateurs et accès Alt proposés pour Moneta, non confirmés pour BankPerfect. Quitter est placé provisoirement dans Fichier. Les commandes à emplacement inconnu ou contradictoire (notamment Remplacer, Enregistrer sous, Imprimer, Annuler/Refaire et Aide) sont omises plutôt que placées arbitrairement." />
-        </StackPanel>
-
-        <DataGrid x:Name="TransactionsGrid" Grid.Row="3" Margin="10,0"
-                  ItemsSource="{Binding Rows}"
-                  SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
-                  SelectionChanged="TransactionSelectionChanged"
-                  AutoGenerateColumns="False" IsReadOnly="True"
-                  CanUserAddRows="False" CanUserDeleteRows="False"
-                  CanUserSortColumns="False" CanUserResizeColumns="True"
-                  CanUserReorderColumns="False"
-                  SelectionMode="Single" SelectionUnit="FullRow"
-                  IsSynchronizedWithCurrentItem="False" ClipboardCopyMode="None"
-                  EnableRowVirtualization="True" EnableColumnVirtualization="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
-                  ScrollViewer.CanContentScroll="True"
-                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  HeadersVisibility="Column" RowHeight="27" GridLinesVisibility="Horizontal"
-                  Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
-                  Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"
-                  BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
-                  HorizontalGridLinesBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
-                  AutomationProperties.AutomationId="TransactionsGrid"
-                  AutomationProperties.Name="Opérations fictives du compte sélectionné"
-                  AutomationProperties.HelpText="Lecture seule. Navigation par flèches et Page précédente ou suivante. Tri désactivé pour conserver les soldes chronologiques.">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Date" Binding="{Binding DateText}" Width="92" MinWidth="80"
-                                    ElementStyle="{StaticResource CellText}" />
-                <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" MinWidth="150"
-                                    ElementStyle="{StaticResource CellText}" />
-                <DataGridTextColumn Header="Tiers" Binding="{Binding PayeeName}" Width="145" MinWidth="90"
-                                    ElementStyle="{StaticResource CellText}" />
-                <DataGridTextColumn Header="Catégorie" Binding="{Binding CategoryName}" Width="130" MinWidth="90"
-                                    ElementStyle="{StaticResource CellText}" />
-                <DataGridTextColumn Header="Débit" Binding="{Binding DebitText}" Width="112" MinWidth="95"
-                                    ElementStyle="{StaticResource AmountText}" />
-                <DataGridTextColumn Header="Crédit" Binding="{Binding CreditText}" Width="112" MinWidth="95"
-                                    ElementStyle="{StaticResource AmountText}" />
-                <DataGridTextColumn Header="Solde" Binding="{Binding BalanceText}" Width="145" MinWidth="110"
-                                    ElementStyle="{StaticResource AmountText}" />
-                <DataGridTextColumn Header="Pointage" Binding="{Binding MarkText}" Width="105" MinWidth="90"
-                                    ElementStyle="{StaticResource CellText}" />
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <GridSplitter Grid.Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                      ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
-                      Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                      Focusable="False" ToolTip="Ajuster la hauteur du relevé et du détail" />
-
-        <GroupBox Grid.Row="5" Header="Détail de l'opération sélectionnée — lecture seule" Margin="10,0,10,6">
-            <ScrollViewer x:Name="DetailsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                          Padding="8,4" Focusable="False">
-                <TextBlock x:Name="DetailsText" Text="{Binding SelectedRowDetails, TargetNullValue=''}"
-                           TextWrapping="Wrap"
-                           AutomationProperties.AutomationId="DetailsText" />
-            </ScrollViewer>
-        </GroupBox>
-
-        <StatusBar Grid.Row="6">
-            <StatusBarItem>
-                <TextBlock x:Name="StatusText" Text="{Binding StatusText}" TextWrapping="Wrap"
-                           AutomationProperties.AutomationId="StatusText" />
-            </StatusBarItem>
-        </StatusBar>
+        <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,6">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" Text="{Binding StatusText}" Style="{StaticResource MutedText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding StatusText}" AutomationProperties.AutomationId="StatusText" />
+                <TextBlock x:Name="DevelopmentNotice" Grid.Column="1" Text="Version de développement — données fictives" Style="{StaticResource MutedText}" Margin="16,0,0,0" AutomationProperties.AutomationId="DevelopmentNotice" />
+            </Grid>
+        </Border>
     </Grid>
 </Window>

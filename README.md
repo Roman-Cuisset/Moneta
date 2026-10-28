@@ -1,8 +1,8 @@
 # Moneta
 
-Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : fidélité des fonctions, menus, raccourcis et habitudes de navigation, avec une interface légèrement modernisée et des garanties financières explicites.
+Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 3 : prototype Windows WPF compilable et exécutable, en lecture seule, exclusivement en mémoire et avec données fictives. Ne pas l'utiliser pour de vrais comptes.** Sélection des quatre comptes, registre et détails fonctionnent ; aucun fichier `.moneta` n'est créé, aucun `.bp` n'est lu et aucune saisie financière n'est enregistrée.
+**Mission 4 : refonte visuelle WPF, thèmes Light/Dark, prototype en lecture seule et exclusivement fictif. Ne pas l'utiliser pour de vrais comptes.** Les quatre comptes, le registre et les détails restent en mémoire ; aucun fichier `.moneta` n'est créé, aucun `.bp` n'est lu et aucune saisie financière n'est enregistrée.
 
 ## Objectifs
 
@@ -12,7 +12,7 @@ Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. 
 - Ouvrir les fichiers natifs `.bp` par **Fichier > Ouvrir**, proposer leur conversion et créer un **nouveau `.moneta`**, sans jamais modifier ni supprimer l'original. Objectif prioritaire : le format `.bp` n'est pas encore spécifié ni sa lecture implémentée.
 - Garantir des montants exacts, une persistance transactionnelle, des sauvegardes automatiques vérifiables et une restauration éprouvée.
 
-C#, **.NET 10 LTS**, WPF et MVVM léger sont utilisés. SQLite reste le choix de persistance future, **sans bibliothèque SQLite ni base installée/créée dans ce prototype**. Les composants Windows natifs et fontes système remplacent tout pack graphique ; aucun logo définitif ni actif BankPerfect n'est intégré. MSTest est utilisé uniquement pour les tests.
+C#, **.NET 10 LTS**, WPF et MVVM léger sont utilisés. SQLite reste la persistance future, **sans fournisseur ni base dans ce prototype**. La présentation utilise des contrôles WPF natifs avec styles et palettes Moneta, fontes système et douze pictogrammes vectoriels originaux. Aucun framework graphique, pack d'icônes, logo définitif ou actif BankPerfect. MSTest reste réservé aux tests. Le choix et les alternatives sont documentés dans [VISUAL_IDENTITY.md](docs/VISUAL_IDENTITY.md).
 
 ## Organisation
 
@@ -52,17 +52,45 @@ Après compilation, on peut aussi lancer directement `src\Moneta.App\bin\Release
 
 ## Parcours réellement disponible
 
-- Ouvrir la liste **Compte** sous les menus ; choisir Courant EUR, BYN, RUB ou Épargne EUR. Chaque entrée affiche nom, devise et solde fictif ; le registre est remplacé et l'ancienne sélection/détail est effacée.
-- Parcourir le registre en lecture seule : 3 200 lignes EUR et quatre lignes dans chacun des trois autres comptes. Sélectionner une ligne pour lire ses date, libellé, tiers, catégorie, montant d'origine, pointage et détail.
-- Flèches et Page précédente/suivante naviguent dans le tableau ; barres de défilement et redimensionnement des colonnes sont natifs WPF. Le panneau de détail revient en haut à chaque sélection et sa hauteur peut être ajustée avec le séparateur.
-- **Fichier > Quitter**, la fermeture Windows et **? > À propos de Moneta** sont opérationnels. Les autres commandes sont grisées, avec infobulle d'indisponibilité ; leurs raccourcis affichés ne sont pas actifs.
-- Montants en `decimal`, dates et nombres français, soldes progressifs par compte ; aucune addition/conversion entre devises. Une éventuelle valorisation est un objet distinct du montant d'origine, non calculé ici.
+- Choisir le compte dans la barre d'outils, sous les menus. Le dossier de démonstration est uniquement en mémoire ; ce contrôle ne sélectionne pas un fichier sur disque.
+- Le panneau gauche affiche nom, devise et solde actuel. Le pointé, les échéances et la prévision sont explicitement non calculés/indisponibles ; aucune valeur zéro n'en tient lieu.
+- Le registre affiche Date, Mode, Tiers/libellé sur deux lignes, Catégorie/sous-catégorie, Débit, Crédit et Pointage. Les 3 200 lignes EUR et les quatre lignes de chacun des autres comptes restent virtualisées.
+- Sélectionner une ligne actualise ses détails consultables/copiables à gauche, le solde après opération et la ligne compacte inférieure. Cette dernière est **en lecture seule**, avec action Modifier désactivée.
+- Flèches et pages pour le registre ; colonnes et panneau gauche redimensionnables, ce dernier également avec les flèches quand le séparateur reçoit le focus. Les textes de cellule tronqués ont une infobulle et un détail complet ; les champs inférieurs permettent le défilement du texte.
+- Le sélecteur **Thème : Light / Dark** change réellement toutes les ressources de présentation sans réinitialiser le compte ou l'opération. Préférence limitée à la session ; le contraste élevé Windows reste prioritaire.
+- **Fichier > Quitter**, fermeture Windows et **? > À propos de Moneta** utilisent des commandes WPF. Le dialogue est thématisé. Les outils non développés et leurs raccourcis, filtres d'en-tête et édition sont désactivés, pas simulés.
+- Montants `decimal`, dates/nombres français et soldes progressifs inchangés ; aucune addition/conversion entre devises. Seuls des modes et sous-catégories fictifs ont été ajoutés comme métadonnées d'affichage.
 
 ## Limites et divergences volontaires
 
-L'ordre complet des menus BankPerfect n'est pas confirmé : le prototype signale **« Disposition des menus provisoire »**. Il conserve les parents documentés, dont Nouveau sous Comptes et les échanges sous Fichier ; ordre, séparateurs, accès Alt et positions de Quitter/À propos sont des choix provisoires Moneta. Remplacer, Enregistrer sous, Imprimer, Annuler/Refaire et l'aide native sont omis plutôt que placés dans un emplacement non prouvé. Le prototype n'est pas une reproduction certifiée de l'interface BankPerfect.
+L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et la structure de la principale sont confirmés par la capture privée fournie en mission 4. Cela ne confirme pas les sous-menus fermés, raccourcis Alt ni tous les comportements. Les parents documentés sont conservés ; Quitter/À propos restent des choix Moneta. Remplacer, Enregistrer sous, Imprimer et l'aide non développée ne sont pas arbitrairement placés.
 
-La zone basse est un **détail en lecture seule**, pas la zone de saisie BankPerfect. Pas de barre d'outils décorative, filtre, édition, pointage modifiable, import/export, ouverture/enregistrement, fichier natif, change, transfert effectif, échéancier ou budget. Aucun bouton ne prétend sauvegarder. Le tri est désactivé pour maintenir l'ordre chronologique des soldes progressifs ; largeur des colonnes et défilement horizontal restent disponibles.
+La barre d'outils reprend l'ordre des fonctions observables mais reste désactivée hors sélection du compte. Pas de dossier persistant, filtre effectif, édition, pointage modifiable, import/export, ouverture/enregistrement, change, transfert, échéancier ou budget. Le solde progressif, auparavant en colonne, est consultable à gauche pour l'opération sélectionnée, afin de privilégier la disposition du registre de référence. Le tri demeure désactivé pour conserver sa signification chronologique.
+
+## Vérifications de mission 4
+
+- Debug et Release : **0 erreur, 0 avertissement ; 12 tests réussis dans chaque configuration**, sans suppression ou modification des tests existants.
+- Application Release réellement ouverte : quatre comptes et relevés distincts, sélection au clavier, détails readonly, changement Light/Dark, colonne redimensionnée, panneau gauche ajusté au clavier, dernière opération accessible, menu Ouvrir désactivé, dialogue sombre thématisé fermé avec Échap, puis Quitter sans processus résiduel.
+- Un scénario Windows jetable a exercé 16 combinaisons : deux thèmes × quatre échelles WPF × taille normale/minimale. Échelles 96/120/144/192 DPI appliquées par `WM_DPICHANGED`, confirmées avec `VisualTreeHelper.GetDpi` ; **ce n'est pas une modification de l'échelle du moniteur**, resté à 125 %. À 150/200 %, la taille normale est bornée par l'espace du bureau ; le minimum 900 × 500 DIPs reste parcourable grâce aux défilements et au débordement de barre d'outils. Une campagne physique multi-écran reste à faire.
+- Le scénario vérifie conservation de sélection lors des thèmes, champs non éditables, date non tronquée, filtres désactivés, débordement des outils et virtualisation : seulement 6 à 12 conteneurs de lignes réalisés sur 3 200, selon la taille/échelle observée. Les scripts temporaires sont retirés après vérification.
+- Contraste des paires de texte principal, secondaire, sélection et désactivation : **au moins 5,09:1** dans les palettes fournies, calcul sRGB relatif. Pas de certification d'accessibilité : lecteur d'écran et activation réelle du contraste élevé Windows non exercés.
+- Captures locales de la fenêtre seule : `screenshots-private/moneta-m4-light.png`, `moneta-m4-dark.png` et dialogue sombre ; variantes DPI fictives également locales. **La capture BankPerfect privée n'est ni incorporée aux documents, ni suivie, ni copiée en ressources.**
+
+### Performances après refonte
+
+Même poste Windows 11 x64 10.0.26220, SDK 10.0.401, runtime 10.0.12, Release sans débogueur, thème Light et 3 200 lignes EUR. Même protocole que mission 3 : lancement → `WaitForInputIdle`, cinq secondes de stabilisation puis environ cinq secondes d'échantillon sans inspection UIA. Mesures ponctuelles, pas une comparaison statistique ni un benchmark de premier pixel.
+
+| Mesure | Mission 3 | Mission 4, version finale |
+|---|---:|---:|
+| Démarrage à chaud | 1,627 s | 1,662 s |
+| Working set | 171,83 MiB | 173,38 MiB |
+| Mémoire privée | 123,33 MiB | 124,07 MiB |
+| CPU, équivalent un cœur | 0,00 % / 5,02 s | 0,00 % / 5,01 s |
+
+L'objectif RAM inférieur à 100 Mo n'est toujours pas atteint. Les faibles écarts de cette mesure ne démontrent pas une régression significative ni une absence de régression dans tous les usages.
+
+Un premier échantillon avant le dernier ajustement de fonte a atteint 213,47 MiB et 86,83 % d'un cœur ; **il n'est pas effacé du bilan ni présenté comme repos stable**. Le diagnostic n'a observé aucun événement de disposition récurrent pendant les échantillons instrumentés ; un suivi natif ultérieur de 24 secondes montre un début à 10,85 %, puis cinq fenêtres de deux secondes à 0,00 %. La cause du pic initial n'est pas établie. Le dernier lancement mesuré selon le protocole de référence donne les valeurs du tableau ; surveiller les phases transitoires lors d'une qualification plus longue.
+
 
 ## Vérifications de mission 3
 
@@ -117,4 +145,4 @@ Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
 ## Prochaine mission proposée
 
-Faire valider visuellement ce prototype, compléter les captures BankPerfect manquantes et qualifier les autres facteurs DPI. Puis définir les invariants monétaires et le premier lot de persistance SQLite avec migrations, sauvegarde/restauration exercée et tests avant toute donnée réelle. Le protocole de fichiers `.bp` fictifs demeure nécessaire pour la voie native ; aucune conversion ou API de change n'est ajoutée dans cette mission. Voir [ROADMAP.md](docs/ROADMAP.md) pour les étapes non réalisées.
+Valider visuellement cette nouvelle interface, compléter les menus déroulés BankPerfect sur des captures sans données privées et qualifier plusieurs moniteurs réels/technologies d'assistance. Puis autoriser séparément les invariants monétaires et la persistance SQLite avec migrations, sauvegarde/restauration exercée et tests avant toute donnée réelle. Le corpus `.bp` fictif demeure nécessaire ; aucune conversion, API de change ou édition financière n'est ajoutée ici. Voir [ROADMAP.md](docs/ROADMAP.md).

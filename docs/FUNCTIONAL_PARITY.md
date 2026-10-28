@@ -2,14 +2,14 @@
 
 ## Portée et légende
 
-État mission 3 : **prototype WPF en lecture seule disponible**, avec sélection de comptes fictifs, affichage des opérations/détails et soldes en mémoire. Cette matrice décrit la cible complète : aucune fonction d'édition, persistance, change ou import natif n'est réputée réalisée. L'ouverture `.bp` reste prioritaire mais hors périmètre du prototype et non démontrée ; voir [README](../README.md) pour les capacités réellement exercées.
+État mission 4 : prototype WPF en lecture seule, disposition refondue et thèmes Light/Dark opérationnels. Sélection, registre/détails et soldes fictifs restent en mémoire. La matrice décrit la cible complète : édition, persistance, change et import natif restent futurs. Voir [README](../README.md) pour les capacités et validations réelles.
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
 - **À confirmer** : contradiction, absence de preuve ou détail uniquement observable en fonctionnement.
 - **À développer** : statut de réalisation dans Moneta, distinct du statut de la preuve BankPerfect.
 
-Les noms de menus sont normalisés avec accents dans ce document. Les clés INI restent parfois sans accents. Les `Index` des extensions ne suffisent pas à reconstruire leur position parmi les commandes natives. **L'ordre des menus principaux, l'ordre complet des commandes et les séparateurs ne sont pas établis.** Ne pas les inventer.
+Les libellés documentaires restent normalisés. La capture privée fournie en mission 4 confirme l'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?**, pas l'ordre des commandes dans les menus fermés ni leurs séparateurs. Les `Index` INI ne suffisent toujours pas à reconstruire les inconnus.
 
 L'inventaire exhaustif des fichiers et familles d'extensions figure dans [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md). Les références M01–M18 ci-dessous désignent les pages officielles consultées, recensées en fin de document.
 
@@ -27,9 +27,9 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection en mémoire opérationnelle ; gestion désactivée |
 | Informations bancaires, monnaie du compte, RIB | M02 ; `Scripts/Rib/rib.ini:2-6` : Fichier | Vérifié — manuel et local | Métadonnées facultatives, contrôle RIB et impression | À développer |
 | Mot de passe d'un fichier | M02 : Comptes > Mot de passe | Vérifié — manuel ; protection cryptographique inconnue | Protection à concevoir, pas de simple imitation d'un verrou non étudié | À développer |
-| Agencement principal | M01 : menus, liste des comptes, barre d'outils, informations, filtres, tableau, saisie, état | Vérifié — manuel ; capture officielle indisponible | Même hiérarchie visuelle, modernisation légère | Partiel : menus provisoires, sélecteur, registre et détail WPF ; pas de saisie/filtres |
+| Agencement principal | M01 et capture privée mission 4 : menus, outils, informations à gauche, filtres, tableau, saisie, état | Vérifié — manuel et disposition visible ; sous-menus non observés | Mêmes repères, identité moderne originale | Partiel : structure rétablie, filtres et édition désactivés ; thèmes Light/Dark fonctionnels |
 | Saisie intégrée ou fenêtre séparée | M03, M17 | Vérifié — manuel | Deux modes, mêmes champs et navigation clavier | À développer |
-| Opération : date, mode, tiers, détail, catégorie, montant | M03 | Vérifié — manuel | Saisie, modification, suppression explicites et calcul exact | À développer |
+| Opération : date, mode, tiers, détail, catégorie, montant | M03 ; champs visibles sur capture privée mission 4 | Vérifié — manuel et présentation | Saisie, modification, suppression explicites et calcul exact | Lecture seule disponible, modes/sous-catégories fictifs ; édition à développer |
 | Modes de paiement natifs et personnalisés | M03 : Comptes > Modes de paiements | Vérifié — manuel | Sens débiteur/créditeur et modes personnalisés | À développer |
 | Numérotation des chèques | M03 : numéro dans le détail, progression lors d'une nouvelle saisie | Vérifié — manuel | Reprendre le parcours, stockage structuré sans perdre le détail importé | À développer |
 | Calculatrice dans le montant | M03 : expressions et priorité multiplication/division | Vérifié — manuel | Analyse arithmétique sûre en décimal, sans exécution de code | À développer |
@@ -48,7 +48,7 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Filtres enregistrés et périodes dynamiques | M04 ; `Scripts/Filters/setfilters.ini:2-9` : Affichage + barre d'outils déroulante | Vérifié — manuel et local | Périodes glissantes, application et réinitialisation rapides | À développer |
 | Cacher les lignes inutiles | M03/M04 : Affichage ; critères décrits différemment selon les pages | **À confirmer — règle de frontière** | Masquer sans supprimer ; valider la règle exacte avec jeu synthétique | À développer |
 | Solde tenant compte ou non des filtres | M04, M17 : Outils > Options | Vérifié — manuel | Différencier clairement solde du compte et total filtré ; fidélité du mode à valider | À développer |
-| Affichage une/deux lignes ; une/deux/trois colonnes de montant | M01, M17 | Vérifié — manuel | Même densité et choix de présentation | À développer |
+| Affichage une/deux lignes ; une/deux/trois colonnes de montant | M01, M17 ; double niveau et montants séparés visibles sur capture privée mission 4 | Vérifié — manuel et disposition visible | Même densité et choix de présentation | Partiel : deux niveaux et débit/crédit fixes ; choix de présentation à développer |
 | Gestion des catégories et sous-catégories | M10 : Comptes > Gestion des catégories | Vérifié — manuel | Ordre, renommage, déplacement, tri et conversion de niveau | À développer |
 | Suppression d'une catégorie sans perdre ses sous-catégories | M10 : promotion de la première sous-catégorie | Vérifié — manuel | Reprendre après validation des références d'opérations | À développer |
 | Import/export de catégories texte | M10 : boutons de la gestion des catégories ; `.txt` | Vérifié — manuel | Prévisualisation et contrôles de correspondance | À développer |

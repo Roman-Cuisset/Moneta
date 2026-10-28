@@ -42,6 +42,8 @@ public sealed class LedgerRow
     public string Label => Transaction.Label;
     public string PayeeName => Transaction.Payee.Name;
     public string CategoryName => Transaction.Category.Name;
+    public string SubcategoryName => Transaction.Category.Subcategory ?? string.Empty;
+    public string PaymentModeName => string.IsNullOrWhiteSpace(Transaction.PaymentMode) ? "Non renseigné" : Transaction.PaymentMode;
     public string DebitText { get; }
     public string CreditText { get; }
     public string BalanceText { get; }

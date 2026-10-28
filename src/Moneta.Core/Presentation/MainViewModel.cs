@@ -125,7 +125,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             ? $"Valorisation indicative : {MoneyFormatter.Format(valuation.Amount, valuation.Currency)} · cours du {valuation.RateDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} · source : {valuation.Source}"
             : "Aucune conversion : aucune valorisation disponible.";
         var directionText = transaction.Direction == TransactionDirection.Debit ? "débit" : "crédit";
-        return $"Date : {row.DateText}\nLibellé : {row.Label}\nTiers : {row.PayeeName}\nCatégorie : {row.CategoryName}\nMontant d'origine ({directionText}) : {MoneyFormatter.Format(transaction.Amount, transaction.Currency)}\nÉtat : {row.MarkText}\nDétail : {transaction.Details}\n{valuationText}";
+        return $"Date : {row.DateText}\nLibellé : {row.Label}\nTiers : {row.PayeeName}\nCatégorie : {row.CategoryName}\nSous-catégorie : {row.SubcategoryName}\nMode : {row.PaymentModeName}\nMontant d'origine ({directionText}) : {MoneyFormatter.Format(transaction.Amount, transaction.Currency)}\nÉtat : {row.MarkText}\nDétail : {transaction.Details}\n{valuationText}";
     }
 
     private sealed record AccountLedger(AccountSummary Summary, IReadOnlyList<LedgerRow> Rows, string StatusText);

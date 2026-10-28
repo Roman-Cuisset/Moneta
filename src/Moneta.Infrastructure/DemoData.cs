@@ -28,10 +28,10 @@ public static class DemoData
         Category[] categories =
         [
             new("Revenus fictifs"),
-            new("Alimentation"),
-            new("Restauration"),
-            new("Transport"),
-            new("Culture"),
+            new("Alimentation") { Subcategory = "Courses hebdomadaires" },
+            new("Restauration") { Subcategory = "Pause café" },
+            new("Transport") { Subcategory = "Transports urbains" },
+            new("Culture") { Subcategory = "Livres" },
             new("Loisirs")
         ];
         var transactions = new List<Transaction>(3212);
@@ -49,7 +49,10 @@ public static class DemoData
                 payees[categoryIndex], categories[categoryIndex], amount, euro,
                 isCredit ? TransactionDirection.Credit : TransactionDirection.Debit,
                 (ReconciliationStatus)(index % 3),
-                $"Opération fictive n° {index + 1}. Jeu de démonstration en mémoire ; aucune donnée bancaire réelle."));
+                $"Opération fictive n° {index + 1}. Jeu de démonstration en mémoire ; aucune donnée bancaire réelle.")
+            {
+                PaymentMode = isCredit ? "Virement" : categoryIndex == 3 ? "Prélèvement" : "Carte"
+            });
         }
 
         var otherDate = new DateOnly(2026, 10, 20);
@@ -70,7 +73,12 @@ public static class DemoData
                     payees[categoryIndex], categories[categoryIndex], amounts[index], account.Currency,
                     isCredit ? TransactionDirection.Credit : TransactionDirection.Debit,
                     (ReconciliationStatus)(index % 3),
-                    $"Écriture entièrement fictive du compte {account.Name}. Aucun taux ni conversion appliqué."));
+                    $"Écriture entièrement fictive du compte {account.Name}. Aucun taux ni conversion appliqué.")
+                {
+                    PaymentMode = isCredit || account.Id == accounts[3].Id
+                        ? "Virement"
+                        : categoryIndex == 3 ? "Prélèvement" : "Carte"
+                });
             }
         }
     }

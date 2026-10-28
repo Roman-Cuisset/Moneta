@@ -2,11 +2,38 @@
 
 ## Statut et périmètre
 
-Politique graphique issue de mission 2, à lire avec [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md), [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md) et [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md). **Aucun logo définitif, charte finale ou asset graphique spécifique n'est créé.** Le prototype mission 3 utilise uniquement WPF natif, fontes et couleurs système ; sa vérification visuelle à 125 % est décrite dans le [README](../README.md), sans constituer une qualification de tous les principes ci-dessous.
+**Mission 4 autorise la refonte graphique fonctionnelle du prototype existant**, pas un logo définitif ni l'extension du moteur financier. La structure est guidée par la capture BankPerfect privée fournie par l'utilisateur ; aucun nom, montant, chemin personnel, logo ou dessin de cette image n'est reproduit dans les livrables.
 
-La mission 3 autorise le prototype WPF en mémoire, pas une identité graphique définitive ni l'ensemble des développements financiers. Les futures planches de concepts et ressources spécifiques nécessitent leurs validations propres ; aucun pack tiers ni asset BankPerfect n'est repris.
+Thèmes Light/Dark, palettes, contrôles et pictogrammes originaux sont maintenant implémentés. Les principes `VI-01` à `VI-12` restent les règles de conception ; leur application partielle ne vaut ni conformité d'accessibilité complète ni réalisation des écrans financiers futurs. Voir [README](../README.md) pour les vérifications et mesures.
 
-Les identifiants `VI-01` à `VI-12` stabilisent les principes pour l'architecture et les futurs travaux. Les contraintes absolues ci-dessous sont des décisions utilisateur ; les objectifs d'ergonomie et d'accessibilité sont des exigences de conception future, sans résultat d'essai revendiqué.
+### Comparaison structurelle et direction retenue
+
+| Observation de disposition, sans données privées | Prototype mission 3 | Refonte mission 4 |
+|---|---|---|
+| Menus puis outils horizontaux | Ordre provisoire, outils absents | Ordre observé rétabli ; outils originaux à leur emplacement, fonctions futures désactivées |
+| Informations de compte à gauche | Seulement sélection/solde en haut | Panneau gauche ajustable et défilant : compte, devise, solde actuel, sélection, emplacements pointé/à venir/prévision explicitement indisponibles |
+| Registre principal, modes et cellules à deux niveaux, filtres d'en-tête | Libellé en colonne séparée, aucun mode/sous-catégorie/filtre | Mode, tiers/libellé et catégorie/sous-catégorie sur deux niveaux, débit/crédit alignés, filtres désactivés |
+| Saisie compacte sous le registre | Grand détail inférieur réduisant le tableau | Détail déplacé à gauche ; champs readonly compacts et action Modifier désactivée |
+
+Direction : desktop de productivité, pas application mobile ni grandes cartes. Surfaces neutres, accent indigo original, séparateurs décoratifs fins, frontières et focus distincts, nombres tabulaires, lignes de 42 DIPs. Fenêtre minimale 900 × 500 DIPs avec défilements et débordement des outils plutôt que chevauchements. `Segoe UI Variable Text` existe sur le poste et est prioritaire ; repli `Segoe UI`, aucune fonte embarquée. Aucune animation décorative, image bancaire ou logo définitif.
+
+### Choix de présentation et alternatives
+
+| Solution examinée | Compatibilité, maintenance et licence constatées | Intégration et coût pour Moneta |
+|---|---|---|
+| WPF natif, styles originaux — **retenu** | Contrôles du runtime .NET 10, aucune licence de pack tiers ajoutée | Commandes, DataGrid, clavier et virtualisation conservés ; styles compacts centralisés à maintenir dans le projet. Pas de dépendance graphique supplémentaire |
+| [WPF UI](https://github.com/lepoco/wpfui) | [NuGet 4.3.0](https://www.nuget.org/packages/WPF-UI) : cible net10.0-windows7.0, dépendance WPF-UI.Abstractions ; [licence MIT](https://github.com/lepoco/wpfui/blob/main/LICENSE), notice à conserver si distribué | Fluent, thèmes et nombreux contrôles utiles à d'autres interfaces ; davantage de surface que les menus/tableaux nécessaires ici. Aucun package installé, aucune mesure comparative de performance |
+| [ModernWpf](https://github.com/Kinnara/ModernWpf) | README consulté : branche 1.x active en préversion avec cible .NET 10 ; branche 0.9.x déclarée gelée/non supportée ; [MIT](https://github.com/Kinnara/ModernWpf/blob/master/LICENSE) et notices amont à conserver en cas d'intégration | Styles et contrôles supplémentaires, mais migration/préversion et couche superflue pour ce périmètre. Non installé, compatibilité déclarée et non testée dans Moneta |
+
+Le [Fluent natif .NET 9](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/whats-new/net90) et ses [améliorations .NET 10](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/whats-new/net100) ont été examinés. Dans la [source correspondant au runtime 10.0.12](https://github.com/dotnet/wpf/blob/v10.0.12/src/Microsoft.DotNet.Wpf/src/PresentationFramework/System/Windows/Application.cs), `ThemeMode` reste marqué expérimental `WPF0001`. Moneta utilise des dictionnaires propres et ne masque pas cet avertissement. Les autres bibliothèques n'ont pas été benchmarkées : aucun gain mémoire/performance ne leur est attribué.
+
+### Ressources et provenance de mission 4
+
+- `Themes/Light.xaml`, `Dark.xaml`, `HighContrast.xaml` : palettes sémantiques ; aucun code couleur de présentation dispersé dans la fenêtre.
+- `Themes/Controls.xaml` : contrôles WPF natifs avec gabarits Moneta, états survol/focus/sélection/désactivation, menus et débordements, sans pack tiers.
+- `ThemeController` : préférence Light/Dark en session, palette système prioritaire en contraste élevé, notifications libérées à la fermeture ; légendes natives via DWM lorsque disponible.
+- `MainWindow.Resources` : douze `Geometry` originales Accounts/Open/Save/Undo/Redo/Lock/Budget/Totals/Chart/Filter/Schedule/Transfer, dessinées par primitives XAML pour cette mission par l'assistant. Concepts usuels, pas extraction, décalque ou vectorisation d'icônes BP. Traits cohérents, sans bitmap. Affectation demandée par l'utilisateur à Moneta ; aucune licence générale de publication du projet n'est présumée.
+- Captures Moneta fictives et capture BP restent uniquement dans `screenshots-private/`, hors Git et hors ressources de compilation. Les captures BP ne sont pas incorporées à ce document.
 
 ## VI-01 — Origine absolument indépendante des ressources
 
@@ -36,9 +63,9 @@ L'objectif de fidélité porte sur les **fonctions, repères, gestes et parcours
 
 La référence à un logo existant ne sert qu'à comprendre **où il se trouve et quelle fonction il remplit**. Elle n'est ni un modèle de dessin ni une instruction pour recréer sa silhouette. La présence d'un logo de banque dans BP ne justifie pas de l'afficher dans Moneta.
 
-L'ordre des menus, les séparateurs, les accélérateurs Alt et certains chemins ne sont pas connus. Les stabiliser demande les preuves utilisateur prévues dans SCREEN_INVENTORY ; ils ne seront pas déduits d'une impression visuelle ou de l'ordre des tables documentaires.
+L'ordre principal est désormais confirmé par la capture mission 4. Séparateurs, sous-commandes et accélérateurs Alt restent inconnus ; ils ne sont pas déduits de l'ordre des tables.
 
-## VI-03 — Windows classique, sobre et stable
+## VI-03 — Desktop Windows moderne, sobre et stable
 
 Principes proposés pour les futurs écrans `SCREEN-001` et `SCREEN-002` :
 
@@ -52,7 +79,7 @@ Ces propositions ne sont pas une maquette et ne fixent ni pixels, ni dimensions,
 
 ## VI-04 — Lisibilité des données financières
 
-- Utiliser les fontes système et une taille lisible ; ne pas embarquer une police décorative ou un fichier de fonte provenant de BP. Choix de graisse, taille exacte et éventuels réglages restent à valider.
+- Fonte implémentée : `Segoe UI Variable Text` si disponible, puis `Segoe UI` ; tailles et poids restent affinables. Aucune fonte embarquée ou extraite de BP.
 - Aligner les montants pour faciliter la comparaison ; expliciter devise et précision d'affichage. Distinguer montant natif, montant converti, total filtré, solde du compte et solde pointé par des libellés, pas seulement une couleur ou une position.
 - Maintenir des en-têtes, états de sélection et informations de filtre lisibles. Le détail en seconde ligne et les sous-catégories doivent rester identifiables sans dépendre d'une infobulle.
 - Prévoir le texte long, les libellés français, les signes, séparateurs décimaux et dates, sans tronquer silencieusement l'information essentielle. Une infobulle peut compléter, pas remplacer l'unique moyen de lecture.
@@ -60,7 +87,7 @@ Ces propositions ne sont pas une maquette et ne fixent ni pixels, ni dimensions,
 
 ## VI-05 — Palette sémantique indicative, non définitive
 
-Aucun code couleur, logo, thème exportable ou fichier de palette n'est défini ici. Les rôles ci-dessous guident les futures propositions ; ils devront être adaptés aux réglages système et au contraste élevé.
+La palette de travail est maintenant centralisée dans les trois dictionnaires `Themes/`. Elle n'est pas une identité de marque définitive. Les rôles ci-dessous restent applicables aux écrans futurs ; le contraste élevé substitue les couleurs système.
 
 | Rôle | Intention indicative | Redondance obligatoire |
 |---|---|---|
@@ -83,7 +110,7 @@ Le cahier fonctionnel pourra citer des **concepts**, par exemple ouvrir, enregis
 
 Les actions importantes auront un libellé textuel lorsque l'espace le permet ; les boutons à icône seule auront un nom accessible et une infobulle explicite. Les états désactivés, sélectionnés, pointés et rapprochés devront être compréhensibles sans couleur seule. L'icône ne remplace ni la commande de menu ni le raccourci documenté.
 
-Aucun choix de pack, aucune série d'icônes « provisoires » et aucun logo applicatif ne sont fournis dans cette mission.
+La mission 4 réalise uniquement les douze pictogrammes d'outils originaux consignés ci-dessus. Aucun pack ni logo définitif.
 
 ## VI-07 — HiDPI et adaptation, objectifs futurs
 
@@ -94,7 +121,7 @@ Les futures fenêtres, tableaux, dialogues et icônes devront être examinés à
 - visibilité des colonnes, barres de défilement, totaux et erreurs, sans exiger une résolution unique ;
 - cohérence de la saisie séparée, calendriers et fenêtres modales ; adaptation entre écrans de facteurs différents à prévoir lors de la conception WPF.
 
-**Aucun essai HiDPI ni test multi-écran n'a été effectué.** Les échelles sont des objectifs de validation et des variantes de capture futures, pas une compatibilité acquise.
+Mission 4 : inspection native Windows à 125 % et scénarios de rendu WPF 100/125/150/200 % par messages `WM_DPICHANGED`, avec confirmation de `VisualTreeHelper.GetDpi`, deux thèmes et tailles normale/minimale. Le moniteur reste à 125 %, sans modification des réglages Windows ; les limites de taille du bureau sont respectées. Ces essais synthétiques ne qualifient pas les déplacements entre moniteurs physiques.
 
 ## VI-08 — Clavier, focus, accélérateurs et accessibilité
 
@@ -109,15 +136,15 @@ Objectifs futurs :
 - noms, rôles, valeurs, états et relations de labels exposés par **Windows UI Automation (UIA)**, notamment pour grille, saisie, pointage, messages d'erreur, provenance des taux et rapport de conversion ;
 - validation ultérieure au clavier et avec technologies d'assistance, en distinguant navigation visuelle, arborescence UIA et lecture effective. Une simple capture ne prouve pas l'accessibilité.
 
-Il s'agit d'objectifs de conception et de vérification futurs : **aucun résultat de conformité, test UIA, lecteur d'écran ou contraste n'est revendiqué**.
+Mission 4 : interactions UIA/clavier exercées, champs financiers readonly et focus visibles ; contrastes des paires de texte calculés, résultats dans le README. Aucun essai de lecteur d'écran ni activation réelle d'un thème de contraste élevé Windows ; aucune conformité globale revendiquée.
 
 ## VI-09 — Concept graphique uniquement après accord utilisateur
 
-Avant tout travail graphique, demander l'accord utilisateur sur la réalisation de **planches de concepts originales** et leur périmètre. Cette étape future doit être distincte de la programmation, du gel d'ergonomie et de la décision de stack.
+La mission 4 constitue l'autorisation utilisateur de cette direction et de sa réalisation WPF. Elle ne valide pas un logo définitif ni les écrans financiers futurs. Toute nouvelle recherche de marque ou pack tiers demande son périmètre propre.
 
 Les planches pourront comparer, si autorisé : sobriété du traitement, densité typographique, principes d'icônes et rôles de palette. Chaque proposition devra indiquer ce qui est exploratoire, préserver les repères fonctionnels, et montrer les états nécessaires sans reproduire une capture BP sous un nouveau nom.
 
-Un concept retenu ne sera pas appelé « logo définitif » sans validation explicite. Tout changement de logo, palette ou recours à un pack tiers devra repasser par la décision concernée. **Aucune planche, image, variante de logo ni palette codée n'est produite ici.**
+La palette et les pictogrammes de mission 4 sont une direction applicative à valider visuellement par l'utilisateur, pas un logo définitif. Aucun asset de la référence n'est utilisé comme matériau graphique.
 
 ## VI-10 — Provenance et licence de chaque ressource future
 
@@ -133,7 +160,7 @@ Toute ressource spécialement créée devra disposer d'une provenance explicite 
 | Décision utilisateur, version approuvée et usages prévus | Distinguer exploration et ressource distribuable |
 | Contrôle d'absence de contenu BP et de pack tiers non autorisé | Appliquer VI-01 à toute nouvelle variante |
 
-L'origine originale ne dispense pas de documenter la licence ou l'autorisation applicable. Une mention « gratuit », « trouvé en ligne », « libre » sans preuve ou un simple renommage ne suffit pas. Aucun registre d'assets rempli artificiellement n'est créé puisqu'aucun asset n'existe dans cette mission.
+La provenance des ressources créées en mission 4 est consignée ci-dessus. Elle n'établit ni licence de publication générale ni droit sur des marques tierces. Toute future ressource ou dépendance doit documenter ses propres conditions.
 
 ## VI-11 — Contrôle futur de la chaîne de livraison
 
@@ -147,7 +174,7 @@ Les contrôles futurs devront :
 4. examiner les sorties de build, installateurs et documents pour déceler logos/images BP ou packs non autorisés ; ne pas utiliser ces contrôles comme prétexte pour extraire/décompiler les binaires de référence ;
 5. refuser la livraison de toute ressource sans origine/conditions claires ou contrevenant à VI-01, même si l'application fonctionne.
 
-Ce sont des critères de travail futur. **Aucun script, pipeline, build, installateur ou scan d'assets n'est créé ou exécuté dans cette mission**, et aucune chaîne de build n'est déclarée conforme.
+Le prototype compile ses seules ressources XAML Moneta ; aucun installateur n'est réalisé. Les vérifications de fichiers suivis et exclusions Git n'équivalent pas à une certification d'une future chaîne d'installation.
 
 ## VI-12 — Limites et sources
 
@@ -158,4 +185,4 @@ Ce sont des critères de travail futur. **Aucun script, pipeline, build, install
 
 ### Résumé de décision
 
-**Ergonomie compatible à vérifier, graphisme indépendant à créer spécifiquement Moneta. Aucun asset BP ou pack tiers repris, aucun logo ni palette définitifs, aucun asset créé ici.** Les captures attendues servent à documenter fonctions et emplacements, non à fournir les matériaux graphiques de l'application. Toute future planche de concepts et toute ressource distribuée exigent leur accord et leur provenance propres.
+**Ergonomie structurelle rétablie, graphisme indépendant implémenté dans le périmètre mission 4. Aucun asset BP ou pack tiers repris, aucun logo définitif.** Les captures privées documentent les emplacements, jamais les données ou matériaux graphiques à réutiliser. Les validations restantes et mesures effectives sont dans le README.

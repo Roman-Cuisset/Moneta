@@ -6,9 +6,9 @@
 
 Les faits sont repris de [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md) et de [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md). `M01`–`M18` désignent [les chapitres primaires liés dans la parité](FUNCTIONAL_PARITY.md#sources-officielles-consultées) ; `I` désigne une déclaration INI inventoriée et `S` une analyse statique déjà consignée dans l'audit. Les pages M01/M02/M03/M08/M10/M11/M13/M15/M17 ont aussi été relues pour préciser les contrôles documentés, sans exécuter BankPerfect. Les versions du manuel diffèrent de la référence 2015.
 
-**Les preuves BankPerfect de ces tables restent documentaires, non observées par exécution.** `MON` distingue les propositions Moneta ; le prototype mission 3 a exercé uniquement la principale et son détail en lecture seule, pas les 58 surfaces ni l'édition. Les captures et contrôles réels Moneta sont décrits dans le [README](../README.md), sans remplacer les captures BankPerfect manquantes. Les questions et champs non prouvés restent des inconnus.
+Mission 4 : la capture privée fournie par l'utilisateur confirme une présentation de `SCREEN-001` et de la saisie intégrée `SCREEN-002`, sans démontrer les interactions ou les autres variantes. Aucune donnée de l'image n'est transcrite. Moneta reprend cette structure avec thèmes Light/Dark, détail à gauche et champs inférieurs readonly. Les preuves de fonctionnement Moneta, captures fictives locales et limites DPI sont dans le [README](../README.md). Les autres surfaces restent documentaires/futures.
 
-Les priorités P0/P1/P2 sont les propositions de séquencement de MENU_MAP, non une autorisation de réduire la couverture. La capture de la principale liée par le manuel renvoie 404 selon l'audit ; les illustrations historiques en ligne ne constituent pas un relevé complet et actuel de cette installation.
+Les priorités P0/P1/P2 ne réduisent pas la couverture. Les mentions historiques « capture absente » ci-dessous définissent le protocole complet : la principale est désormais partiellement documentée par l'image utilisateur, mais les menus déroulés, variantes et scénarios avant/après manquent toujours. L'ancienne illustration officielle indisponible n'est pas une preuve concurrente.
 
 ## Principale, dossier, saisie et référentiels
 

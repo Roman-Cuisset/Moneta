@@ -2,7 +2,7 @@
 
 ## Contrat documentaire
 
-Cartographie de conception issue de mission 2, maintenue comme cible : elle ne constitue pas une liste de fonctions implémentées. Le prototype WPF de mission 3 exerce seulement sélection des comptes, registre/détails, navigation et fermeture ; voir [README](../README.md) pour l'état vérifié. Aucun lecteur `.bp` n'existe. Les identifiants `CMD-001` à `CMD-148` restent stables : intentions, gestes ou déclencheurs, **pas 148 entrées de menus**. Les preuves BankPerfect et inconnus sont inchangés ; les écrans relèvent de [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et le graphisme de [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md).
+Cartographie cible, complétée par la capture privée de mission 4 : elle n'est pas une liste de fonctions implémentées. Le prototype conserve sélection, registre/détails, fermeture et ajoute les thèmes ; voir [README](../README.md). Aucun lecteur `.bp`. Les identifiants `CMD-001` à `CMD-148` restent stables : intentions et gestes, **pas 148 entrées de menus**. Les preuves documentaires restent distinctes des observations d'image et de l'exécution Moneta.
 
 ### Lecture des tables
 
@@ -12,7 +12,14 @@ Cartographie de conception issue de mission 2, maintenue comme cible : elle ne c
 - `—` dans la colonne touche = aucun raccourci établi, et non preuve d'absence. Les noms sont fonctionnels et normalisés avec accents ; ce ne sont pas des transcriptions garanties de chaque libellé affiché.
 - Un accès indiqué « bouton », « tableau », « saisie » ou « auto » n'est pas un menu. Les écrans cités sont des surfaces documentaires : leur séparation en fenêtres réelles reste à confirmer.
 
-**Inconnus globaux :** ordre gauche-droite des menus, ordre complet des entrées, séparateurs, accélérateurs Alt, focus initial, Tab/Shift+Tab, états grisés, priorité des raccourcis selon le focus. Les `Index` INI ne permettent pas de les reconstruire. Aucun ordre de table ci-dessous ne vaut ordre d'interface. La capture officielle de la fenêtre principale est indisponible (404, audit mission 1).
+**Ordre principal confirmé par la capture utilisateur de mission 4 : Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?.** Inconnus restants : ordre des sous-commandes, séparateurs, accélérateurs Alt et comportements dépendant du focus. L'image ne montre pas les menus déroulés ; aucune donnée personnelle n'en est retranscrite.
+
+### Présentation Moneta de mission 4
+
+- Barre d'outils : emplacement du dossier/compte, Comptes, Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, Transfert. Le dossier est fictif/en mémoire ; seule la sélection du compte est active. Les autres outils sont explicitement désactivés, avec débordement en fenêtre étroite.
+- Les sous-menus et indications de touches documentés sont conservés, sans activer des raccourcis financiers inexistants. Quitter sous Fichier et À propos sous ? restent des décisions Moneta, pas des observations de menus ouverts BankPerfect.
+- Ajout Moneta, hors commandes BankPerfect : sélecteur **Thème Light/Dark**, à droite des menus, accessible au clavier. Changement de ressources sans perte de sélection, sans fichier de préférences et avec contraste Windows prioritaire.
+
 
 ## Fichier, échanges et ouverture native Moneta
 

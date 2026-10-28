@@ -2,26 +2,26 @@
 
 ## Statut et limites de cette étude
 
-**Mission 3 : prototype WPF réalisé et exercé sur Windows, exclusivement en mémoire et en lecture seule.** L'autorisation porte sur l'interface, les modèles minimaux, les soldes fictifs et leurs tests, pas sur l'ensemble de cette conception. SQLite reste le stockage futur ; aucun fournisseur SQLite, fichier `.moneta`, lecteur `.bp`, connecteur de change ou installateur n'est implémenté. Les sections de fiabilité/persistance/migration ci-dessous restent des exigences futures, pas des garanties acquises du prototype.
+**Mission 4 : prototype WPF refondu, exclusivement en mémoire et en lecture seule.** Présentation desktop moderne, palettes Light/Dark et contraste système ; aucune extension du moteur financier. SQLite, `.moneta`, lecteur `.bp`, change, édition et installateur restent futurs. Les exigences de sûreté ci-dessous ne sont pas des garanties déjà implémentées.
 
 La fidélité vise les usages de BankPerfect Windows, pas la reproduction de son code. Le [sommaire officiel](https://chelly.net/bankperfect/wiki/manuel.html) annonce BankPerfect 8.0.0.373 du 22 novembre 2015 ; les pages sont de dates différentes. Elles ne prouvent pas à elles seules le comportement du binaire local. Notamment, la page [Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) a été actualisée le 10 mars 2016 et décrit un changement de rétention à 200 copies le 7 mars 2016 : ce nombre ne doit pas être attribué sans preuve à une version antérieure.
 
-L'ordre complet des menus, l'arborescence complète des écrans et le rendu exact ne sont **pas vérifiés**. Ils demandent des captures fournies par l'utilisateur sur un dossier synthétique, sans exécuter BankPerfect dans cette mission. Les divergences manuel/référence ne sont pas résolues par invention. L'audit et la matrice de parité restent les inventaires de référence ; ce document ne les remplace pas.
+La capture privée fournie en mission 4 confirme l'ordre principal des menus et l'organisation outils / panneau gauche / registre à deux lignes / filtres d'en-tête / saisie compacte. Elle ne confirme ni les sous-menus fermés ni les comportements non visibles. Aucune donnée de cette capture n'est transcrite dans le code, les tests ou les rapports ; aucun BankPerfect n'est exécuté.
 
 Documents de conception complémentaires : [format `.moneta`](FILE_FORMATS.md), [compatibilité native BankPerfect](BANKPERFECT_IMPORT_STRATEGY.md), [commandes et menus](UI_MENU_MAP.md), [écrans/captures](UI_SCREEN_INVENTORY.md), [identité visuelle](VISUAL_IDENTITY.md). L'[audit initial](BANKPERFECT_AUDIT.md) est conservé comme preuve historique, pas recommencé.
 
-### État implémenté de mission 3
+### État implémenté après mission 4
 
-- `Moneta.App` : WPF natif, fenêtre principale, sélecteur sous les menus, DataGrid en lecture seule avec virtualisation/recyclage, huit colonnes et détail sélectionné. Code-behind limité à fermeture, boîte À propos et remise en haut du détail ; aucune règle financière dans la vue.
+- `Moneta.App` : disposition fidèle à la structure observée, sept colonnes dont Mode et cellules à deux niveaux, panneau gauche réglable/défilant, saisie compacte readonly, outils/filtres futurs désactivés. `WindowCommands` et commandes WPF pour fermeture/À propos ; code-behind limité aux gestes de présentation. `AboutWindow` remplace la boîte système pour partager le thème.
 - `Moneta.Core` : records `Account`, `Transaction`, `Currency`, `Category`, `Payee`, valorisation distincte facultative ; `MainViewModel` testable avec `INotifyPropertyChanged`, relevés préparés par compte, ordre chronologique stable et soldes `decimal` contrôlés. Les projections d'affichage françaises sont mises en cache, pas recalculées au défilement. Ce n'est pas un moteur financier complet ni un engagement sur les politiques futures d'arrondi.
 - `Moneta.Infrastructure` : uniquement `DemoData.Create()`, quatre comptes et 3 212 opérations déterministes fictives. Aucun accès fichier, SQL ou réseau, aucun adaptateur factice promettant une persistance.
-- `Moneta.Tests` : MSTest, 12 scénarios comportementaux ; packages déclarés Microsoft.NET.Test.Sdk 17.14.1, MSTest.TestAdapter et TestFramework 3.6.4. Aucun framework MVVM/DI/ORM ou pack graphique.
+- `Moneta.Tests` : les 12 tests MSTest existants sont conservés. Aucun framework MVVM/DI/ORM ni package graphique n'est ajouté. Les métadonnées facultatives `Transaction.PaymentMode` et `Category.Subcategory` alimentent les projections et le jeu fictif sans changer les comptes, dates, montants, sens ou pointages.
 
 Les références et modèles sont indépendants de WPF. La sélection d'un compte remplace son relevé et efface l'ancienne sélection ; les opérations de devises ou comptes incompatibles sont refusées, pas remappées. Une valorisation distincte ne modifie jamais le solde d'origine ; aucune conversion n'est calculée. Le tri du tableau est volontairement désactivé pour garder le sens des soldes chronologiques.
 
-**Écarts documentés :** ordre des menus et accélérateurs Alt provisoires signalés, Quitter sous Fichier et À propos sous ? sont des choix Moneta. Emplacements inconnus/contradictoires omis ; fonctions futures grisées. Le bas de fenêtre affiche un détail, pas une saisie financière ; aucune barre d'outils ou filtre factice. La fidélité BankPerfect reste à confirmer sur captures, sans ressource graphique copiée.
+**Thèmes :** `Themes/Controls.xaml` porte les styles natifs ; `Light.xaml`, `Dark.xaml`, `HighContrast.xaml` centralisent les couleurs. `ThemeController` remplace seulement la palette, conserve la sélection, écoute le contraste système et se désabonne à la fermeture. Préférence de session uniquement. DWM assombrit la légende native lorsque disponible, sans remplacer les contrôles de fenêtre.
 
-Compilations Debug/Release sans avertissement et 12 tests réussis dans chacune ; interactions Windows et captures à 125 % réellement exercées, autres DPI non qualifiés. [README — vérifications et mesures](../README.md#vérifications-de-mission-3) fournit les commandes, le périmètre et les mesures ; objectif RAM inférieur à 100 Mo non atteint, sans valeur inventée ni promesse d'optimisation acquise.
+**Choix graphique et limites :** [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) compare WPF natif, WPF UI et ModernWpf. Pas d'API `ThemeMode` expérimentale ni de suppression d'avertissement. Le solde progressif est consultable à gauche, pas en colonne ; soldes pointé/prévisionnel non calculés, aucune prévision fictive. [README](../README.md) distingue les vérifications, mesures réelles et limites DPI/accessibilité.
 
 
 ## 1. Choix techniques sobres

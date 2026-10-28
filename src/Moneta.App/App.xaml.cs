@@ -8,6 +8,8 @@ namespace Moneta.App;
 
 public partial class App : Application
 {
+    public static ThemeController ThemeController { get; } = new();
+
     public App()
     {
         var culture = CultureInfo.GetCultureInfo("fr-FR");
@@ -22,6 +24,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        ThemeController.Initialize();
         base.OnStartup(e);
 
         MainWindow = new MainWindow
@@ -29,5 +32,11 @@ public partial class App : Application
             DataContext = new MainViewModel(DemoData.Create())
         };
         MainWindow.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        ThemeController.Dispose();
+        base.OnExit(e);
     }
 }

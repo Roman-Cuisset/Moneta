@@ -2,13 +2,20 @@
 
 ## Portée et règle de lecture
 
-**Mission 3 : prototype d'interface WPF autorisé séparément, réalisé, compilé et exercé sous Windows.** Il fonctionne avec données fictives en mémoire uniquement. Les jalons produit ci-dessous ne sont pas déclarés réalisés par cette seule étape : ouverture/sauvegarde, édition financière, SQLite, lecteur `.bp`, change et outils avancés restent hors périmètre. BankPerfect n'a pas été lancé, aucune référence ou ressource propriétaire n'est utilisée.
+**Mission 4 : refonte visuelle du prototype WPF autorisée, sans persistance ni nouvelle fonction financière.** La capture privée de la principale BankPerfect sert de référence structurelle ; aucun binaire n'est exécuté, aucun asset propriétaire intégré et aucune donnée de cette image recopiée. Les jalons produit ci-dessous restent distincts de la livraison d'interface.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Livraison de présentation — mission 4
+
+Disposition rétablie : ordre des menus confirmé par capture, outils, panneau gauche réglable, registre avec modes et catégories à deux niveaux, filtres désactivés et ligne compacte readonly. Thèmes Light/Dark fonctionnels, contraste Windows prioritaire, pictogrammes originaux et aucun package graphique. Calculs et 12 tests de mission 3 conservés ; aucune persistance, importation ou prévision ajoutée.
+
+Les résultats Windows, conditions de mesure et limites de qualification figurent dans le [README](../README.md). Les essais de mise à l'échelle synthétiques ne remplacent pas une campagne sur plusieurs moniteurs physiques. L'étape suivante reste la validation visuelle utilisateur, puis le lot financier/persistance autorisé séparément ; la refonte ne clôt aucun jalon natif `.bp` ou de durabilité.
+
 
 ### Livraison intermédiaire autorisée — mission 3
 

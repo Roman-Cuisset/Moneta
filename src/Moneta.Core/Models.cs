@@ -4,7 +4,10 @@ public sealed record Currency(string Code, string Name, int DecimalPlaces);
 
 public sealed record Account(Guid Id, string Name, Currency Currency, decimal OpeningBalance);
 
-public sealed record Category(string Name);
+public sealed record Category(string Name)
+{
+    public string? Subcategory { get; init; }
+}
 
 public sealed record Payee(string Name);
 
@@ -37,6 +40,7 @@ public sealed record Transaction(
     string Details)
 {
     public MoneyValuation? Valuation { get; init; }
+    public string? PaymentMode { get; init; }
 }
 
 public sealed record DemoPortfolio(
