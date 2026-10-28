@@ -6,7 +6,7 @@
 
 Les faits sont repris de [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md) et de [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md). `M01`–`M18` désignent [les chapitres primaires liés dans la parité](FUNCTIONAL_PARITY.md#sources-officielles-consultées) ; `I` désigne une déclaration INI inventoriée et `S` une analyse statique déjà consignée dans l'audit. Les pages M01/M02/M03/M08/M10/M11/M13/M15/M17 ont aussi été relues pour préciser les contrôles documentés, sans exécuter BankPerfect. Les versions du manuel diffèrent de la référence 2015.
 
-**État de preuve commun à toutes les lignes : aucun comportement exécuté n'a été observé dans cette mission.** « Documenté » = manuel/déclaration/lecture statique, jamais constat en fonctionnement. Les questions de la colonne « À relever » ne sont pas des observations. `MON` indique une décision ou une proposition Moneta non attribuée à BP ; tous les écrans Moneta restent à développer. Les champs non prouvés ne sont pas inventés pour remplir un formulaire.
+**Les preuves BankPerfect de ces tables restent documentaires, non observées par exécution.** `MON` distingue les propositions Moneta ; le prototype mission 3 a exercé uniquement la principale et son détail en lecture seule, pas les 58 surfaces ni l'édition. Les captures et contrôles réels Moneta sont décrits dans le [README](../README.md), sans remplacer les captures BankPerfect manquantes. Les questions et champs non prouvés restent des inconnus.
 
 Les priorités P0/P1/P2 sont les propositions de séquencement de MENU_MAP, non une autorisation de réduire la couverture. La capture de la principale liée par le manuel renvoie 404 selon l'audit ; les illustrations historiques en ligne ne constituent pas un relevé complet et actuel de cette installation.
 

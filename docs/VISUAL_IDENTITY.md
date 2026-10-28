@@ -2,9 +2,9 @@
 
 ## Statut et périmètre
 
-Document d'analyse au 28 octobre 2026, à lire avec [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md), [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md) et les limites de [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md). **Aucun logo définitif, aucune charte couleur définitive, aucune maquette ni ressource graphique n'est créé ou livré pendant cette mission.** Aucun aspect visuel de Moneta n'est présenté comme implémenté ou testé.
+Politique graphique issue de mission 2, à lire avec [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md), [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md) et [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md). **Aucun logo définitif, charte finale ou asset graphique spécifique n'est créé.** Le prototype mission 3 utilise uniquement WPF natif, fontes et couleurs système ; sa vérification visuelle à 125 % est décrite dans le [README](../README.md), sans constituer une qualification de tous les principes ci-dessous.
 
-Le format `.moneta` et la stack C# / .NET 10 LTS / WPF / SQLite / MVVM léger / tests sont des décisions de projet acquises, pas une invitation à lancer le développement dans cette mission. La programmation ultérieure et la présentation de concepts graphiques nécessitent leurs validations propres ; ni ce document ni la décision de stack ne valent accord sur un logo.
+La mission 3 autorise le prototype WPF en mémoire, pas une identité graphique définitive ni l'ensemble des développements financiers. Les futures planches de concepts et ressources spécifiques nécessitent leurs validations propres ; aucun pack tiers ni asset BankPerfect n'est repris.
 
 Les identifiants `VI-01` à `VI-12` stabilisent les principes pour l'architecture et les futurs travaux. Les contraintes absolues ci-dessous sont des décisions utilisateur ; les objectifs d'ergonomie et d'accessibilité sont des exigences de conception future, sans résultat d'essai revendiqué.
 

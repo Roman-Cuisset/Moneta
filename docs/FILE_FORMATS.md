@@ -1,6 +1,6 @@
 # Formats de fichiers Moneta
 
-Étude documentaire du **28 octobre 2026**. Les choix utilisateur sont acquis ; les mécanismes décrits sont un **contrat de réalisation future**, pas une base, un schéma SQL, un lecteur ou des essais déjà disponibles. Aucune dépendance n'est installée. Ce document complète [ARCHITECTURE.md](ARCHITECTURE.md) et [BANKPERFECT_IMPORT_STRATEGY.md](BANKPERFECT_IMPORT_STRATEGY.md), sans modifier les preuves de [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md).
+Contrat de format issu de la mission documentaire 2. La mission 3 réalise un prototype WPF **sans persistance**, aucun fournisseur SQLite, schéma, fichier `.moneta` ou essai de sauvegarde/restauration. Les exigences suivantes restent futures ; elles ne décrivent pas une capacité du prototype. Voir [ARCHITECTURE.md](ARCHITECTURE.md), [BANKPERFECT_IMPORT_STRATEGY.md](BANKPERFECT_IMPORT_STRATEGY.md) et [README](../README.md). Les preuves de l'audit initial sont conservées.
 
 Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. « Doit » exprime une exigence Moneta ; une propriété documentée de SQLite n'est pas une garantie d'implémentation Moneta.
 

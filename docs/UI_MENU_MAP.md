@@ -2,7 +2,7 @@
 
 ## Contrat documentaire
 
-État au 28 octobre 2026. Analyse uniquement : aucune interface Moneta, aucun lecteur `.bp`, aucune action décrite ici n'est implémentée ou exécutée. Ce document étend [l'audit existant](BANKPERFECT_AUDIT.md) et [la parité](FUNCTIONAL_PARITY.md), sans recommencer l'audit. Les identifiants `CMD-001` à `CMD-148` sont stables ; ils identifient des intentions de commande, des actions locales ou des déclencheurs, **pas 148 entrées de menus**. Les écrans `SCREEN-xxx` et les captures attendues sont définis dans [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md). L'identité graphique indépendante relève de [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md).
+Cartographie de conception issue de mission 2, maintenue comme cible : elle ne constitue pas une liste de fonctions implémentées. Le prototype WPF de mission 3 exerce seulement sélection des comptes, registre/détails, navigation et fermeture ; voir [README](../README.md) pour l'état vérifié. Aucun lecteur `.bp` n'existe. Les identifiants `CMD-001` à `CMD-148` restent stables : intentions, gestes ou déclencheurs, **pas 148 entrées de menus**. Les preuves BankPerfect et inconnus sont inchangés ; les écrans relèvent de [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et le graphisme de [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md).
 
 ### Lecture des tables
 

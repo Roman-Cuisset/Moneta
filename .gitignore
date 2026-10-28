@@ -49,6 +49,7 @@
 *.local.*
 secrets.json
 secrets.*.json
+*.secrets.json
 appsettings.*.local.json
 *.pfx
 *.p12

@@ -2,7 +2,7 @@
 
 ## Portée et légende
 
-État mission 2 au 28 octobre 2026 : **aucune fonction Moneta n'est développée**. Cette matrice définit la cible, pas des capacités disponibles. L'ouverture native `.bp` est désormais un **objectif prioritaire décidé**, mais sa faisabilité complète n'est pas démontrée.
+État mission 3 : **prototype WPF en lecture seule disponible**, avec sélection de comptes fictifs, affichage des opérations/détails et soldes en mémoire. Cette matrice décrit la cible complète : aucune fonction d'édition, persistance, change ou import natif n'est réputée réalisée. L'ouverture `.bp` reste prioritaire mais hors périmètre du prototype et non démontrée ; voir [README](../README.md) pour les capacités réellement exercées.
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
@@ -24,10 +24,10 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | À développer |
 | Nouveau fichier, solde initial | M02 : Comptes > Créer un nouveau fichier de comptes | Vérifié — manuel ; emplacement local à confirmer | Même commande et parcours | À développer |
 | Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; **Fichier > Ouvrir** ouvre `.moneta` ou propose la conversion d'un `.bp` ; aucun enregistrement vers `.bp` | À développer |
-| Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | À développer |
+| Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection en mémoire opérationnelle ; gestion désactivée |
 | Informations bancaires, monnaie du compte, RIB | M02 ; `Scripts/Rib/rib.ini:2-6` : Fichier | Vérifié — manuel et local | Métadonnées facultatives, contrôle RIB et impression | À développer |
 | Mot de passe d'un fichier | M02 : Comptes > Mot de passe | Vérifié — manuel ; protection cryptographique inconnue | Protection à concevoir, pas de simple imitation d'un verrou non étudié | À développer |
-| Agencement principal | M01 : menus, liste des comptes, barre d'outils, informations, filtres, tableau, saisie, état | Vérifié — manuel ; capture officielle indisponible | Même hiérarchie visuelle, modernisation légère | À développer |
+| Agencement principal | M01 : menus, liste des comptes, barre d'outils, informations, filtres, tableau, saisie, état | Vérifié — manuel ; capture officielle indisponible | Même hiérarchie visuelle, modernisation légère | Partiel : menus provisoires, sélecteur, registre et détail WPF ; pas de saisie/filtres |
 | Saisie intégrée ou fenêtre séparée | M03, M17 | Vérifié — manuel | Deux modes, mêmes champs et navigation clavier | À développer |
 | Opération : date, mode, tiers, détail, catégorie, montant | M03 | Vérifié — manuel | Saisie, modification, suppression explicites et calcul exact | À développer |
 | Modes de paiement natifs et personnalisés | M03 : Comptes > Modes de paiements | Vérifié — manuel | Sens débiteur/créditeur et modes personnalisés | À développer |

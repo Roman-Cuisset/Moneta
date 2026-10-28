@@ -2,13 +2,27 @@
 
 ## Portée et règle de lecture
 
-Feuille de route mise à jour pour la **mission 2**, le **28 octobre 2026**, sans programmation. Les décisions de stack, de format `.moneta` SQLite et de ressources graphiques toutes originales sont acquises ; **les jalons de réalisation ci-dessous restent futurs**, non réalisés. Aucune application, dépendance, lecteur `.bp`, ressource graphique ou installation n'est créée ici ; aucun BankPerfect n'est lancé. Les tests/captures décrits ne sont pas des résultats revendiqués.
+**Mission 3 : prototype d'interface WPF autorisé séparément, réalisé, compilé et exercé sous Windows.** Il fonctionne avec données fictives en mémoire uniquement. Les jalons produit ci-dessous ne sont pas déclarés réalisés par cette seule étape : ouverture/sauvegarde, édition financière, SQLite, lecteur `.bp`, change et outils avancés restent hors périmètre. BankPerfect n'a pas été lancé, aucune référence ou ressource propriétaire n'est utilisée.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Livraison intermédiaire autorisée — mission 3
+
+| Élément | État vérifié / limite |
+|---|---|
+| Solution et quatre projets | Moneta.slnx ; App WPF, Core, Infrastructure de données fictives, Tests MSTest ; SDK 10.0.401 présent, aucune dépendance système installée |
+| Navigation en mémoire | Quatre comptes EUR/BYN/RUB/épargne, changement réel de relevé, sélection/détail, dates et nombres français ; solde initial et flux calculés en decimal, aucune consolidation de devises |
+| Interface | Huit colonnes, clavier, défilement 3 200 lignes EUR, colonnes redimensionnables, détail en lecture seule ; menus futurs désactivés, ordre provisoire annoncé |
+| Validation | Debug/Release : zéro erreur/avertissement ; 12 tests réussis dans chaque configuration ; UI Automation et inspection visuelle à 125 %, fenêtre normale/minimale ; fermeture par menu vérifiée |
+| Performances | Mesures réelles et limites dans le README ; démarrage à chaud observé sous 2 s, objectif RAM <100 Mo non atteint ; autres facteurs DPI à tester |
+| Stockage et migration | Aucun fichier `.moneta`, fournisseur SQLite, lecteur `.bp`, API de taux ou sauvegarde implémenté ; aucun jalon natif/persistance acquis |
+
+Ce lot constitue une **validation partielle des intentions U01**, pas une réalisation du parcours ouvrir/saisir/enregistrer. Il ne clôt ni B03, ni D01–D03, ni S01–S05, ni U01–U04 dans leur totalité. L'autorisation de mission 3 permet ce prototype sans attendre le diagnostic natif ; elle ne contourne pas les portes de sûreté avant utilisation financière réelle.
+
 
 ## 1. Avant toute programmation : preuves et validation utilisateur
 
@@ -128,7 +142,7 @@ Sources de comportement : [échéancier](https://chelly.net/bankperfect/wiki/L-e
 | Validation utilisateur des changements de parité pour sécurité. | E05 puis chaque divergence nouvelle. | Décision explicite avant mise en œuvre d'un comportement différent, y compris raccourcis ; ne pas reproduire aveuglément FTP clair/mail non chiffré ni présenter un retrait comme une parité. |
 | Preuve proportionnée, sans extrapolation. | Chaque critère d'acceptation. | Lien/source, scénario, version, résultat attendu/réel et limites documentés ; une réponse API ponctuelle ne vaut pas disponibilité garantie, une base intègre ne vaut pas migration métier complète, des soldes égaux ne prouvent pas les liens. |
 
-**Prochaine action proposée : obtenir le corpus et les captures selon les protocoles, réaliser B02/B03 puis décider E06 — pas programmer maintenant.** L'étude NBRB complète reste à achever avant F02. Les documents n'autorisent aucune exécution BankPerfect ; l'utilisateur peut produire les fichiers ou donner ultérieurement une autorisation explicite dans un environnement isolé.
+**Suite proposée après mission 3 :** revue visuelle utilisateur et captures BankPerfect, qualification DPI restante et profilage mémoire ; puis spécification des invariants/arrondis et lot SQLite avec migrations, sauvegarde/restauration exercée avant toute donnée réelle. La voie native attend toujours les fichiers fictifs et B02/B03. Toute nouvelle réalisation financière doit être explicitement autorisée ; le prototype ne justifie ni import natif inventé ni persistance prématurée.
 
 ## 9. Estimation de planification demandée
 

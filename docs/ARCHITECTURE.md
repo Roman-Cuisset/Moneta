@@ -2,13 +2,27 @@
 
 ## Statut et limites de cette étude
 
-Étude mise à jour pour la **mission 2**, le 28 octobre 2026. **Aucune architecture décrite ci-dessous n'est implémentée** : ni application, projet Visual Studio, schéma SQLite, lecteur `.bp`, service de change, dépendance ou installateur. Les décisions utilisateur sont acquises : **C# / .NET 10 LTS / WPF / SQLite / MVVM léger / tests automatiques**, extension native **`.moneta`**, logiciel indépendant et **ressources graphiques toutes originales**. Les modalités techniques restantes sont des propositions documentées, pas des résultats exécutés. La programmation reste soumise à une autorisation distincte.
+**Mission 3 : prototype WPF réalisé et exercé sur Windows, exclusivement en mémoire et en lecture seule.** L'autorisation porte sur l'interface, les modèles minimaux, les soldes fictifs et leurs tests, pas sur l'ensemble de cette conception. SQLite reste le stockage futur ; aucun fournisseur SQLite, fichier `.moneta`, lecteur `.bp`, connecteur de change ou installateur n'est implémenté. Les sections de fiabilité/persistance/migration ci-dessous restent des exigences futures, pas des garanties acquises du prototype.
 
 La fidélité vise les usages de BankPerfect Windows, pas la reproduction de son code. Le [sommaire officiel](https://chelly.net/bankperfect/wiki/manuel.html) annonce BankPerfect 8.0.0.373 du 22 novembre 2015 ; les pages sont de dates différentes. Elles ne prouvent pas à elles seules le comportement du binaire local. Notamment, la page [Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) a été actualisée le 10 mars 2016 et décrit un changement de rétention à 200 copies le 7 mars 2016 : ce nombre ne doit pas être attribué sans preuve à une version antérieure.
 
 L'ordre complet des menus, l'arborescence complète des écrans et le rendu exact ne sont **pas vérifiés**. Ils demandent des captures fournies par l'utilisateur sur un dossier synthétique, sans exécuter BankPerfect dans cette mission. Les divergences manuel/référence ne sont pas résolues par invention. L'audit et la matrice de parité restent les inventaires de référence ; ce document ne les remplace pas.
 
 Documents de conception complémentaires : [format `.moneta`](FILE_FORMATS.md), [compatibilité native BankPerfect](BANKPERFECT_IMPORT_STRATEGY.md), [commandes et menus](UI_MENU_MAP.md), [écrans/captures](UI_SCREEN_INVENTORY.md), [identité visuelle](VISUAL_IDENTITY.md). L'[audit initial](BANKPERFECT_AUDIT.md) est conservé comme preuve historique, pas recommencé.
+
+### État implémenté de mission 3
+
+- `Moneta.App` : WPF natif, fenêtre principale, sélecteur sous les menus, DataGrid en lecture seule avec virtualisation/recyclage, huit colonnes et détail sélectionné. Code-behind limité à fermeture, boîte À propos et remise en haut du détail ; aucune règle financière dans la vue.
+- `Moneta.Core` : records `Account`, `Transaction`, `Currency`, `Category`, `Payee`, valorisation distincte facultative ; `MainViewModel` testable avec `INotifyPropertyChanged`, relevés préparés par compte, ordre chronologique stable et soldes `decimal` contrôlés. Les projections d'affichage françaises sont mises en cache, pas recalculées au défilement. Ce n'est pas un moteur financier complet ni un engagement sur les politiques futures d'arrondi.
+- `Moneta.Infrastructure` : uniquement `DemoData.Create()`, quatre comptes et 3 212 opérations déterministes fictives. Aucun accès fichier, SQL ou réseau, aucun adaptateur factice promettant une persistance.
+- `Moneta.Tests` : MSTest, 12 scénarios comportementaux ; packages déclarés Microsoft.NET.Test.Sdk 17.14.1, MSTest.TestAdapter et TestFramework 3.6.4. Aucun framework MVVM/DI/ORM ou pack graphique.
+
+Les références et modèles sont indépendants de WPF. La sélection d'un compte remplace son relevé et efface l'ancienne sélection ; les opérations de devises ou comptes incompatibles sont refusées, pas remappées. Une valorisation distincte ne modifie jamais le solde d'origine ; aucune conversion n'est calculée. Le tri du tableau est volontairement désactivé pour garder le sens des soldes chronologiques.
+
+**Écarts documentés :** ordre des menus et accélérateurs Alt provisoires signalés, Quitter sous Fichier et À propos sous ? sont des choix Moneta. Emplacements inconnus/contradictoires omis ; fonctions futures grisées. Le bas de fenêtre affiche un détail, pas une saisie financière ; aucune barre d'outils ou filtre factice. La fidélité BankPerfect reste à confirmer sur captures, sans ressource graphique copiée.
+
+Compilations Debug/Release sans avertissement et 12 tests réussis dans chacune ; interactions Windows et captures à 125 % réellement exercées, autres DPI non qualifiés. [README — vérifications et mesures](../README.md#vérifications-de-mission-3) fournit les commandes, le périmètre et les mesures ; objectif RAM inférieur à 100 Mo non atteint, sans valeur inventée ni promesse d'optimisation acquise.
+
 
 ## 1. Choix techniques sobres
 
@@ -36,9 +50,9 @@ Un processus de bureau principal et un chemin de commandes d'écriture suffisent
 | Sauvegardes/restauration | Snapshot cohérent SQLite, manifeste, validation métier, restauration dans une copie et bascule protégée. | Réutilise la persistance et les invariants ; jamais simple copie à chaud du fichier principal. |
 | Rapports/exports | Sélection/agrégation partagées avec le cœur ; modèle de rapport puis rendu/export dans l'infrastructure et aperçu dans l'interface. | Même vérité comptable et filtres explicités ; aucune seconde base de soldes. |
 
-Organisation proposée pour le **développement futur**, sans créer de projet maintenant : `Moneta.Desktop` (WPF et composition), `Moneta.Core` (domaine, cas d'usage et contrats utiles), `Moneta.Infrastructure` (SQLite, fichiers, BP, sources de change et rendus), `Moneta.Tests` (tests automatiques du cœur et de l'infrastructure). Les sept modules restent des dossiers/espaces de noms dans ces trois projets de production. Dépendances : Desktop → Core/Infrastructure ; Infrastructure → Core ; Tests → Core/Infrastructure ; aucune dépendance inverse.
+Organisation réalisée : `Moneta.App` (WPF et composition, nom retenu par la mission 3 à la place de `Moneta.Desktop`), `Moneta.Core`, `Moneta.Infrastructure` et `Moneta.Tests`. Les responsabilités futures restent des dossiers/espaces de noms dans trois projets de production. Dépendances : App → Core/Infrastructure ; Infrastructure → Core ; Tests → Core/Infrastructure ; aucune dépendance inverse. Infrastructure ne contient aujourd'hui que le jeu fictif ; pas de SQLite ou service externe factice.
 
-Assemblage explicite au démarrage ; pas de conteneur DI, bus, ORM, framework de plugin ou interface générique par table. Une frontière abstraite n'est ajoutée que pour un effet externe ou un contrat réellement nécessaire. Un fournisseur SQLite et un seul framework de test seront choisis après validation ; aucun package n'est installé ici.
+Assemblage explicite au démarrage ; pas de conteneur DI, bus, ORM, framework de plugin ou interface générique par table. Une frontière abstraite n'est ajoutée que pour un effet externe ou contrat nécessaire. MSTest est retenu pour les tests ; le fournisseur SQLite sera choisi et justifié lors d'une mission de persistance autorisée. Aucun package de production tiers n'est nécessaire au prototype.
 
 Les rapports, budgets et éventuelles représentations graphiques doivent utiliser les **mêmes données et règles de sélection** que les tableaux : aucun registre financier parallèle, aucun graphique redondant présentant les mêmes données sans besoin utilisateur validé. Une projection dérivée éventuelle doit rester recalculable et ne jamais devenir une seconde vérité comptable.
 

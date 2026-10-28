@@ -1,6 +1,6 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
-Étude française du **28 octobre 2026**, exclusivement documentaire. Aucun lecteur `.bp`, fichier synthétique BankPerfect, projet, moteur financier, dépendance ou exécutable Moneta n'est créé. Aucun BankPerfect, script BP, installateur, EXE, DLL ou PYC n'est exécuté, décompilé ou désassemblé. Aucun contenu de `identity.dat`, secret ou compte réel n'est consulté. La référence BankPerfect demeure immuable, hors Git.
+Stratégie native issue de la mission documentaire 2. Le prototype WPF mission 3 **n'implémente aucun lecteur/conversion `.bp`**, ne produit aucun fichier BankPerfect synthétique et n'ajoute aucune donnée réelle. Aucun BankPerfect, script BP, EXE/DLL/PYC ou installateur propriétaire n'est exécuté, décompilé ou désassemblé ; aucun contenu de `identity.dat`, secret ou compte réel n'est consulté. La référence reste immuable, hors Git. Voir [README](../README.md) pour les seuls parcours Moneta opérationnels.
 
 Documents de départ lus : [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md), notamment sections 5–7 ; [ARCHITECTURE.md](ARCHITECTURE.md), modèle et persistance ; [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md), toutes les fonctions et ajouts demandés. Il ne s'agit pas d'un nouvel audit. Le format cible indépendant est décrit dans [FILE_FORMATS.md](FILE_FORMATS.md). Identifiants de contrats `IMP-*`, de couverture `COV-*`, de corpus `BP-Fxx` et de preuves `BP-Pxx` stables.
 
