@@ -48,7 +48,7 @@ Avant activation : définir la distribution d'un dépôt privé, l'autorisation 
 
 | Intention | Raccourci préparé | Décision et état |
 |---|---|---|
-| Ouvrir / Enregistrer | Ctrl+O / Ctrl+S | Documentés BP, désactivés ; aucune sauvegarde simulée |
+| Ouvrir / Enregistrer | Ctrl+O / Ctrl+S | **Actifs** : ouverture/commit d'un dossier `.moneta` ; Enregistrer sous = F12. Aucune réécriture d'un `.bp` |
 | Annuler / Refaire une écriture | Ctrl+Z / Ctrl+Y envisagés | Désactivés et aucune liaison globale de ces touches ; l'éditeur de texte garde ses propres commandes natives |
 | Rechercher | Ctrl+F | Souhait mission 5, recherche désactivée. Conflit avec **Champs automatiques** BP : le Ctrl+F affiché sur cette ancienne commande a été retiré, pas conservé simultanément ; affectation historique future à arbitrer avant son développement |
 | Supprimer une opération | Suppr et Ctrl+Suppr préparés | Suppr souhait mission 5, Ctrl+Suppr historique ; commande désactivée. Aucun effacement financier |
@@ -58,4 +58,6 @@ Le catalogue historique [UI_MENU_MAP](UI_MENU_MAP.md) reste une preuve BankPerfe
 
 ## Vérifications réalisées
 
-29 tests Debug/Release : les 12 historiques inchangés, 10 tests de comptes/devises et 7 cas de préférences (dont corruption/version/écriture impossible). Tests WPF jetables : ajout par le véritable dialogue, 105 comptes et plusieurs comptes EUR, registre 3 200 lignes conservé, devise d'affichage sans conversion, thème enregistré/rechargé et deux options sauvegardées puis restaurées. Sélection TextBox/ComboBox active/inactive/readonly/désactivée examinée dans les deux thèmes ; gestes souris/clavier et Ctrl+Z natif vérifiés sous Windows. Pas de qualification de lecteur d'écran ou de plusieurs moniteurs physiques nouvelle dans cette mission.
+Mission 5 : 29 tests Debug/Release — les 12 historiques inchangés, 10 tests de comptes/devises et 7 cas de préférences (dont corruption/version/écriture impossible). Tests WPF jetables : ajout par le véritable dialogue, 105 comptes et plusieurs comptes EUR, registre 3 200 lignes conservé, devise d'affichage sans conversion, thème enregistré/rechargé et deux options sauvegardées puis restaurées. Sélection TextBox/ComboBox active/inactive/readonly/désactivée examinée dans les deux thèmes ; gestes souris/clavier et Ctrl+Z natif vérifiés sous Windows.
+
+Mission 6 : **91 tests Debug et Release**, les 29 précédents conservés, avec format/erreurs/verrous/checkpoint/résistance, sauvegarde-restauration, migration sur copie et transitions de dossier. Parcours WPF réel sur quatre comptes synthétiques EUR/BYN/RUB, sauvegarde, restauration comparée et réouverture. Mesures et limites, y compris le CPU non résolu d'une fenêtre de démonstration visible, dans le [README](../README.md). Pas de qualification de lecteur d'écran ou de plusieurs moniteurs physiques nouvelle dans cette mission.
