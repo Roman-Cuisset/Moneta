@@ -10,5 +10,6 @@
     <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
     <ProjectReference Include="../../src/Moneta.Core/Moneta.Core.csproj" />
     <ProjectReference Include="../../src/Moneta.Infrastructure/Moneta.Infrastructure.csproj" />
+    <Compile Include="../../src/Moneta.App/SettingsStore.cs" Link="SettingsStore.cs" />
   </ItemGroup>
 </Project>

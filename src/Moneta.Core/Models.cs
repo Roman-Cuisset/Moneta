@@ -1,8 +1,23 @@
 namespace Moneta.Core;
 
-public sealed record Currency(string Code, string Name, int DecimalPlaces);
+public sealed record Currency(string Code, string Name, int DecimalPlaces)
+{
+    public string Symbol { get; init; } = Code;
+    public CurrencyDisplayRules DisplayRules { get; init; } = new();
+}
 
-public sealed record Account(Guid Id, string Name, Currency Currency, decimal OpeningBalance);
+public sealed record CurrencyDisplayRules(
+    string CultureName = "fr-FR",
+    bool UseSymbol = false,
+    bool SymbolBeforeAmount = false);
+
+public sealed record Account(Guid Id, string Name, Currency Currency, decimal OpeningBalance)
+{
+    // Native currency is fixed when the account is created, never by a display preference.
+    public Currency Currency { get; } = Currency;
+    public string? Type { get; init; }
+    public string? Notes { get; init; }
+}
 
 public sealed record Category(string Name)
 {
@@ -25,6 +40,16 @@ public enum ReconciliationStatus
 }
 
 public sealed record MoneyValuation(decimal Amount, Currency Currency, DateOnly RateDate, string Source);
+
+// Published Value units of QuoteCurrency for Scale units of BaseCurrency.
+// This is a dated source contract only, not a conversion service or a computed rate.
+public sealed record ExchangeRateQuote(
+    Currency BaseCurrency,
+    Currency QuoteCurrency,
+    decimal Value,
+    int Scale,
+    DateOnly RateDate,
+    string Source);
 
 public sealed record Transaction(
     Guid Id,

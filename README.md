@@ -2,7 +2,7 @@
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 4 : refonte visuelle WPF, thèmes Light/Dark, prototype en lecture seule et exclusivement fictif. Ne pas l'utiliser pour de vrais comptes.** Les quatre comptes, le registre et les détails restent en mémoire ; aucun fichier `.moneta` n'est créé, aucun `.bp` n'est lu et aucune saisie financière n'est enregistrée.
+**Mission 5 : sélection de texte corrigée, comptes de démonstration dynamiques, devise d'affichage et préférences locales. Ne pas utiliser pour de vrais comptes.** Les comptes/opérations restent en mémoire ; seul le fichier de préférences non financières est enregistré. Aucun `.moneta`, lecteur `.bp`, taux fictif, change réel ou sauvegarde financière.
 
 ## Objectifs
 
@@ -57,15 +57,41 @@ Après compilation, on peut aussi lancer directement `src\Moneta.App\bin\Release
 - Le registre affiche Date, Mode, Tiers/libellé sur deux lignes, Catégorie/sous-catégorie, Débit, Crédit et Pointage. Les 3 200 lignes EUR et les quatre lignes de chacun des autres comptes restent virtualisées.
 - Sélectionner une ligne actualise ses détails consultables/copiables à gauche, le solde après opération et la ligne compacte inférieure. Cette dernière est **en lecture seule**, avec action Modifier désactivée.
 - Flèches et pages pour le registre ; colonnes et panneau gauche redimensionnables, ce dernier également avec les flèches quand le séparateur reçoit le focus. Les textes de cellule tronqués ont une infobulle et un détail complet ; les champs inférieurs permettent le défilement du texte.
-- Le sélecteur **Thème : Light / Dark** change réellement toutes les ressources de présentation sans réinitialiser le compte ou l'opération. Préférence limitée à la session ; le contraste élevé Windows reste prioritaire.
+- **Affichage → Thème → Clair / Sombre** remplace le sélecteur supérieur. Le choix est enregistré dans les préférences locales et restauré à la session suivante ; le contraste élevé Windows reste prioritaire. Aucun mode « Suivre Windows » non vérifié n'est proposé.
 - **Fichier > Quitter**, fermeture Windows et **? > À propos de Moneta** utilisent des commandes WPF. Le dialogue est thématisé. Les outils non développés et leurs raccourcis, filtres d'en-tête et édition sont désactivés, pas simulés.
 - Montants `decimal`, dates/nombres français et soldes progressifs inchangés ; aucune addition/conversion entre devises. Seuls des modes et sous-catégories fictifs ont été ajoutés comme métadonnées d'affichage.
+- **Comptes → Ajouter un compte de démonstration** : nom, devise native, type libre, solde initial exact et notes facultatives. Collection dynamique sans plafond produit ; plusieurs comptes peuvent partager une devise. Ces ajouts disparaissent à la fermeture.
+- À côté du solde actuel, choisir EUR/BYN/RUB : la devise native affiche le montant réel du compte fictif ; toute autre affiche **Cours indisponible**, sans changer ni monnaie native, ni opérations, ni solde.
+- **Outils → Options** : cinq rubriques, préférence de thème et deux options de démarrage enregistrables. Mise à jour et taux sont explicitement **préférences uniquement, services non développés** : aucune requête, installation ou actualisation n'est simulée.
+- Les règles de devises extensibles, contrats de cours, paramètres locaux et conflits de raccourcis sont décrits dans [CURRENCIES_AND_SETTINGS.md](docs/CURRENCIES_AND_SETTINGS.md).
 
 ## Limites et divergences volontaires
 
 L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et la structure de la principale sont confirmés par la capture privée fournie en mission 4. Cela ne confirme pas les sous-menus fermés, raccourcis Alt ni tous les comportements. Les parents documentés sont conservés ; Quitter/À propos restent des choix Moneta. Remplacer, Enregistrer sous, Imprimer et l'aide non développée ne sont pas arbitrairement placés.
 
 La barre d'outils reprend l'ordre des fonctions observables mais reste désactivée hors sélection du compte. Pas de dossier persistant, filtre effectif, édition, pointage modifiable, import/export, ouverture/enregistrement, change, transfert, échéancier ou budget. Le solde progressif, auparavant en colonne, est consultable à gauche pour l'opération sélectionnée, afin de privilégier la disposition du registre de référence. Le tri demeure désactivé pour conserver sa signification chronologique.
+
+## Vérifications de mission 5
+
+Debug et Release : **0 erreur, 0 avertissement ; 29 tests réussis dans chaque configuration**. Les 12 tests initiaux sont inchangés ; 10 cas de comptes/devises et 7 cas de paramètres couvrent notamment absence de mutation financière, quatrième devise, nombreux comptes, précision, bornes, rechargement et préservation des JSON invalides.
+
+Défaut de sélection reproduit visuellement avant correction : le rendu historique WPF par adorner recouvrait les glyphes avec la sélection opaque et ignorait `SelectionTextBrush`. `TextSelectionRendering` choisit le rendu natif du texte avant création des contrôles ; styles partagés et sélection inactive cohérents, y compris ComboBox éditables. Matrice Light/Dark observée : actif, sans focus, readonly, désactivé, lignes et menus. Gestes souris/clavier et Ctrl+Z natif exercés sous Windows. Captures fictives `screenshots-private/selection-before-*`, `selection-after-*` et `m5-*`, jamais suivies.
+
+Scénario WPF réel : ajout via dialogue, sélection du nouveau compte, plus de cent comptes, plusieurs EUR, 3 200 lignes conservées, devise d'affichage sans taux, thèmes enregistrés/rechargés et options persistées. Aucun réseau ou service de taux/mise à jour n'est présent. Scripts temporaires retirés après validation.
+
+### Performances de mission 5
+
+Windows x64 10.0.26220, SDK 10.0.401/runtime 10.0.12 ; Release Light, sans débogueur ni inspection UIA pendant la mesure. Lancement → `WaitForInputIdle` (pas premier pixel), cinq secondes de stabilisation puis 5,01 secondes de CPU. Le commit M4 a été reconstruit dans un dossier temporaire pour comparer les deux versions **sur le poste dans son état actuel**, sans toucher à l'historique ou au travail courant.
+
+| Mesure | M4 historique | M4 contrôle actuel `660add7` | M5 actuel |
+|---|---:|---:|---:|
+| Démarrage à chaud | 1,662 s | 3,734 s | 3,326 s |
+| Mémoire résidente | 173,38 Mio | 176,56 Mio | 177,56 Mio |
+| Mémoire privée | 124,07 Mio | 124,62 Mio | 123,97 Mio |
+| CPU, un cœur logique | 0,00 % | 0,00 % | 0,00 % |
+
+L'ancien commit est également plus lent qu'à sa mesure historique ; ces échantillons ne permettent pas d'attribuer ce ralentissement global aux ajouts M5. Pas de conclusion statistique ni garantie de performance. Premier lancement M5 observé : 3,550 s, 195,89 Mio résidents/138,30 Mio privés, CPU 0,00 %. Objectif RAM <100 Mo toujours non atteint. Pas de processus permanent de mise à jour ou de cours.
+
 
 ## Vérifications de mission 4
 
@@ -124,18 +150,21 @@ Après une inspection UI Automation intensive et un grand défilement, un échan
 | [Cartographie des commandes](docs/UI_MENU_MAP.md) | Menus prouvés/provisoires, raccourcis, comportements, fenêtres et priorités |
 | [Inventaire des écrans](docs/UI_SCREEN_INVENTORY.md) | Champs, interactions, preuves manquantes et protocole de captures synthétiques |
 | [Identité visuelle](docs/VISUAL_IDENTITY.md) | Ressources entièrement originales, principes Windows classiques et validation graphique séparée |
+| [Devises et paramètres](docs/CURRENCIES_AND_SETTINGS.md) | Comptes dynamiques, contrat de cours, préférences locales, commandes et architecture des futurs services |
 
 La référence statique prouve une présence ou une déclaration ; elle ne prouve pas qu'une commande fonctionne encore. Les pages du manuel sont anciennes et parfois contradictoires. Aucun exécutable ou script BankPerfect n'a été lancé ; aucune décompilation ni aucun désassemblage n'a été effectué.
 
 ## Confidentialité et Git
 
-- Dépôt **local uniquement** ; aucun distant ni dépôt GitHub créé. Ne pas publier sans décision explicite.
+- Dépôt GitHub **privé** créé à la demande de l'utilisateur en mission 5 : <https://github.com/Roman-Cuisset/Moneta>. Identité et visibilité `private` contrôlées par l'API avant tout envoi. Aucune publication publique, Pages, release ou licence de diffusion publique.
 - `reference-bankperfect/` est entièrement ignoré, y compris ses scripts et ressources. Ne jamais forcer son ajout avec `git add -f`.
 - Les dossiers `data/`, `private/`, `imports/`, `exports/`, `backups/` et `screenshots-private/` sont réservés aux fichiers privés et ignorés. Aucun n'est requis pour cette mission.
 - Les fichiers BankPerfect, **`.moneta` et leurs auxiliaires/manifestes**, SQLite, exports bancaires, archives, secrets, journaux et productions `bin/obj` sont exclus. Les règles restent conservatrices : CSV, XML, HTML, TXT, PDF et DAT sont aussi ignorés hors des dossiers privés. Aucun véritable fichier de comptes ne doit être suivi.
 - Un `.gitignore` ne détecte pas une donnée personnelle dans un Markdown et ne protège pas un fichier déjà suivi. **Avant chaque ajout : liste explicite de fichiers autorisés et inspection du contenu.** Ne pas utiliser `git add .` pour des données de migration.
 - Les futures données de test doivent être entièrement fictives. Toute exception d'exclusion devra être étroite et revue ; jamais une base réelle ou un export bancaire réel dans le dépôt.
 - Ne pas ouvrir ni recopier les valeurs de `identity.dat`, les identifiants, numéros de comptes, chemins personnels ou secrets dans les rapports. Les rapports présents ne reproduisent pas ces contenus.
+
+- Avant création : 40 fichiers suivis et les 4 commits/68 versions de fichiers existants examinés ; aucun artefact privé interdit ou signature de secret recherchée détecté. Les ajouts passent par une liste explicite et le contrôle est réexécuté sur l'historique final avant envoi. Ce contrôle n'est pas une garantie universelle de détection ; les captures et données privées restent hors historique.
 
 ## Référence et propriété intellectuelle
 

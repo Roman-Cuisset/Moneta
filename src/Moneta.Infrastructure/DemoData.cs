@@ -6,9 +6,10 @@ public static class DemoData
 {
     public static DemoPortfolio Create()
     {
-        var euro = new Currency("EUR", "Euro", 2);
-        var belarusianRuble = new Currency("BYN", "Rouble biélorusse", 2);
-        var russianRuble = new Currency("RUB", "Rouble russe", 2);
+        var currencies = new CurrencyRegistry();
+        var euro = currencies.Get("EUR");
+        var belarusianRuble = currencies.Get("BYN");
+        var russianRuble = currencies.Get("RUB");
         Account[] accounts =
         [
             new(new Guid("10000000-0000-0000-0000-000000000001"), "Courant EUR — démo", euro, 1650.25m),

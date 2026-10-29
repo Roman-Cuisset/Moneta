@@ -92,6 +92,7 @@
         <Setter Property="SelectionBrush" Value="{DynamicResource SelectionBrush}" />
         <Setter Property="SelectionTextBrush" Value="{DynamicResource SelectionTextBrush}" />
         <Setter Property="SelectionOpacity" Value="1" />
+        <Setter Property="IsInactiveSelectionHighlightEnabled" Value="True" />
         <Setter Property="Padding" Value="8,5" />
         <Setter Property="MinHeight" Value="30" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -107,6 +108,8 @@
                         <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" />
+                            <Setter Property="SelectionBrush" Value="{DynamicResource SubtleBrush}" />
+                            <Setter Property="SelectionTextBrush" Value="{DynamicResource DisabledBrush}" />
                             <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SubtleBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -155,7 +158,8 @@
                         <ContentPresenter x:Name="SelectedContent" IsHitTestVisible="False" Margin="{TemplateBinding Padding}"
                                           VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" />
-                        <TextBox x:Name="PART_EditableTextBox" Visibility="Collapsed" Margin="3,1,25,1" MinHeight="0" Padding="5,3"
+                        <TextBox x:Name="PART_EditableTextBox" Style="{StaticResource {x:Type TextBox}}"
+                                 Visibility="Collapsed" Margin="3,1,25,1" MinHeight="0" Padding="5,3"
                                  Background="{TemplateBinding Background}" Foreground="{TemplateBinding Foreground}"
                                  BorderThickness="0" IsReadOnly="{TemplateBinding IsReadOnly}" />
                         <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
@@ -203,7 +207,10 @@
                 <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
             </Trigger>
-            <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" /></Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" />
+                <Setter Property="Background" Value="{DynamicResource TransparentBrush}" />
+            </Trigger>
         </Style.Triggers>
     </Style>
     <Style TargetType="Menu">
@@ -266,7 +273,10 @@
                             <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SelectionBrush}" />
                             <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
                         </Trigger>
-                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" />
+                            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource TransparentBrush}" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -417,6 +427,10 @@
                 <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
             </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" />
+                <Setter Property="Background" Value="{DynamicResource SubtleBrush}" />
+            </Trigger>
         </Style.Triggers>
     </Style>
     <Style TargetType="DataGridCell">
@@ -448,6 +462,11 @@
                 </MultiTrigger.Conditions>
                 <Setter Property="BorderBrush" Value="{DynamicResource SelectionTextBrush}" />
             </MultiTrigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource DisabledBrush}" />
+                <Setter Property="Background" Value="{DynamicResource SubtleBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource TransparentBrush}" />
+            </Trigger>
         </Style.Triggers>
     </Style>
     <Style x:Key="HeaderGripper" TargetType="Thumb">

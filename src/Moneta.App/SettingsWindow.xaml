@@ -1,0 +1,111 @@
+<Window x:Class="Moneta.App.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Paramètres — Moneta" Width="780" Height="560" MinWidth="700" MinHeight="460"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Style="{StaticResource {x:Type Window}}">
+    <Window.Resources>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SubtleBrush}" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Chrome" Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Padding="{TemplateBinding Padding}" Margin="0,0,3,0" CornerRadius="4,4,0,0">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SelectionBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock Text="Paramètres" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Text="Préférences locales non financières. Les changements ne sont appliqués qu'après enregistrement."
+                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0" />
+        </StackPanel>
+        <TabControl Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
+                    Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource BorderBrush}">
+            <TabItem Header="_Général">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18">
+                    <StackPanel>
+                        <TextBlock Text="Préférences sur cet ordinateur" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                        <TextBlock Text="Le thème et les deux options de démarrage sont enregistrés dans le profil Windows courant. Aucun compte, opération, solde ou taux de change n'est enregistré dans ce fichier."
+                                   TextWrapping="Wrap" Margin="0,0,0,14" />
+                        <TextBlock Text="Fichier des préférences" Margin="0,0,0,5" />
+                        <TextBox x:Name="SettingsPath" IsReadOnly="True" TextWrapping="Wrap"
+                                 AutomationProperties.Name="Chemin du fichier de préférences" />
+                        <TextBlock x:Name="LoadWarning" TextWrapping="Wrap" Margin="0,14,0,0"
+                                   Foreground="{DynamicResource NegativeBrush}" Visibility="Collapsed" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="_Apparence">
+                <StackPanel Margin="18">
+                    <TextBlock Text="Thème de l'application" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <Label Target="{Binding ElementName=ThemeChoice}" Content="_Thème" Padding="0,0,0,5"
+                           Foreground="{DynamicResource TextBrush}" />
+                    <ComboBox x:Name="ThemeChoice" HorizontalAlignment="Left" MinWidth="210"
+                              AutomationProperties.Name="Thème de l'application">
+                        <ComboBoxItem Content="Clair" Tag="Light" />
+                        <ComboBoxItem Content="Sombre" Tag="Dark" />
+                    </ComboBox>
+                    <TextBlock Text="Le contraste élevé de Windows reste prioritaire. Le thème choisi est conservé et revient lorsque le contraste élevé est désactivé."
+                               TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0" />
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="_Devises et taux">
+                <StackPanel Margin="18">
+                    <TextBlock Text="Actualisation des taux" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <CheckBox x:Name="RefreshRates" Content="_Actualiser les taux au démarrage (préférence uniquement)"
+                              Foreground="{DynamicResource TextBrush}" />
+                    <TextBlock Text="Service non développé, aucune requête. Cette option est enregistrée sans déclencher d'accès réseau, sans récupérer de taux et sans convertir de montant."
+                               TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,14" />
+                    <TextBlock Text="La devise d'affichage se choisit dans la fenêtre principale. Sans taux de conversion, les montants conservent leur devise d'origine ; aucun taux n'est inventé."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="_Mises à jour">
+                <StackPanel Margin="18">
+                    <TextBlock Text="Recherche de mises à jour" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <CheckBox x:Name="CheckUpdates" Content="_Rechercher les mises à jour au démarrage (préférence uniquement)"
+                              Foreground="{DynamicResource TextBrush}" />
+                    <TextBlock Text="Service non développé, aucune requête. Cette option est enregistrée sans contacter de serveur, télécharger de fichier ni installer de mise à jour."
+                               TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,0" />
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="_Sauvegardes">
+                <StackPanel Margin="18">
+                    <TextBlock Text="Sauvegardes non disponibles" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBlock Text="Les comptes et opérations de démonstration restent en mémoire et sont réinitialisés à la fermeture. Aucune sauvegarde financière, automatique ou manuelle, n'est mise en œuvre."
+                               TextWrapping="Wrap" Margin="0,0,0,12" />
+                    <TextBlock Text="L'enregistrement des préférences locales n'est pas une sauvegarde de vos comptes."
+                               TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="_Enregistrer" MinWidth="120" IsDefault="True" Click="Save_Click" Margin="0,0,10,0" />
+            <Button Content="_Annuler" MinWidth="110" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

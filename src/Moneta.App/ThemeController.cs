@@ -40,6 +40,7 @@ public sealed class ThemeController : IDisposable
         Refresh();
     }
 
+    /// <summary>Applies presentation only. Use <see cref="App.ChangeTheme"/> for a persisted user choice.</summary>
     public void Apply(string mode)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

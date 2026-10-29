@@ -10,6 +10,16 @@
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.Close" Executed="Close_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.About}" Executed="About_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Settings}" Executed="Settings_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.AddDemoAccount}" Executed="AddAccount_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Theme}" Executed="Theme_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Open}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Save}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Search}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.FinancialUndo}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.FinancialRedo}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.DeleteTransaction}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.RefreshRates}" CanExecute="Unavailable_CanExecute" />
     </Window.CommandBindings>
     <Window.Resources>
         <!-- Géométries originales Moneta : aucune ressource ni forme extraite de BankPerfect. -->
@@ -70,8 +80,8 @@
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <Menu KeyboardNavigation.TabNavigation="Once" VerticalAlignment="Center" AutomationProperties.AutomationId="MainMenu">
                     <MenuItem Header="_Fichier">
-                        <MenuItem Header="_Ouvrir…" InputGestureText="Ctrl+O" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="_Enregistrer" InputGestureText="Ctrl+S" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Ouvrir…" Command="{x:Static local:WindowCommands.Open}" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Enregistrer" Command="{x:Static local:WindowCommands.Save}" Style="{StaticResource UnavailableMenuItem}" />
                         <Separator />
                         <MenuItem Header="_Importer">
                             <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
@@ -91,8 +101,16 @@
                     <MenuItem Header="_Édition">
                         <MenuItem Header="_Copier" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="C_oller" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Annuler une opération" Command="{x:Static local:WindowCommands.FinancialUndo}" InputGestureText="Ctrl+Z (futur)" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Refaire une opération" Command="{x:Static local:WindowCommands.FinancialRedo}" InputGestureText="Ctrl+Y (futur)" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Rechercher" Command="{x:Static local:WindowCommands.Search}" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
                     <MenuItem Header="_Affichage">
+                        <MenuItem Header="_Thème" SubmenuOpened="ThemeMenu_Opened">
+                            <MenuItem x:Name="LightThemeItem" Header="_Clair" IsCheckable="True" Command="{x:Static local:WindowCommands.Theme}" CommandParameter="Light" />
+                            <MenuItem x:Name="DarkThemeItem" Header="_Sombre" IsCheckable="True" Command="{x:Static local:WindowCommands.Theme}" CommandParameter="Dark" />
+                        </MenuItem>
+                        <Separator />
                         <MenuItem Header="Affichage sur _2 lignes" InputGestureText="F4" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Dates de pointage" InputGestureText="F11" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Filtres enregistrés…" InputGestureText="F7" Style="{StaticResource UnavailableMenuItem}" />
@@ -101,6 +119,7 @@
                     <MenuItem Header="_Comptes">
                         <MenuItem Header="_Nouveau fichier de comptes…" InputGestureText="Ctrl+N" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Gestion des comptes…" InputGestureText="Ctrl+G" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Ajouter un compte de démonstration…" Command="{x:Static local:WindowCommands.AddDemoAccount}" />
                         <MenuItem Header="Mot de passe…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Tiers…" InputGestureText="F5" Style="{StaticResource UnavailableMenuItem}" />
@@ -111,7 +130,7 @@
                         <MenuItem Header="Sauvegardes…" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
                     <MenuItem Header="_Opérations">
-                        <MenuItem Header="_Supprimer" InputGestureText="Ctrl+Suppr" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Supprimer" Command="{x:Static local:WindowCommands.DeleteTransaction}" InputGestureText="Suppr / Ctrl+Suppr" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Charger un tiers…" InputGestureText="F10" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Date de pointage…" InputGestureText="Ctrl+Maj+P" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="Saisie multiple…" InputGestureText="F2" Style="{StaticResource UnavailableMenuItem}" />
@@ -123,13 +142,14 @@
                         <MenuItem Header="Ajouter à l'échéancier…" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
                     <MenuItem Header="O_utils">
-                        <MenuItem Header="_Options…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="_Options…" Command="{x:Static local:WindowCommands.Settings}" /><Separator />
+                        <MenuItem Header="Actualiser les cours officiels" Command="{x:Static local:WindowCommands.RefreshRates}" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Budget mensuel…" InputGestureText="Ctrl+B" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Budget annuel…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Graphiques…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Totaux par catégories…" InputGestureText="Ctrl+T" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Totaux par tiers…" InputGestureText="Ctrl+Alt+T" Style="{StaticResource UnavailableMenuItem}" /><Separator />
-                        <MenuItem Header="Calcul automatique des champs…" InputGestureText="Ctrl+F" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Calcul automatique des champs…" Style="{StaticResource UnavailableMenuItem}" ToolTip="Ancien Ctrl+F BankPerfect ; conflit documenté avec Rechercher, réservé par la mission 5." />
                         <MenuItem Header="Notes…" InputGestureText="Ctrl+Maj+N" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Conversions de devises…" InputGestureText="Ctrl+D" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Inverser les monnaies…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
@@ -150,14 +170,6 @@
                         <MenuItem Header="À _propos de Moneta…" Command="{x:Static local:WindowCommands.About}" />
                     </MenuItem>
                 </Menu>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,4,0">
-                    <Label Content="Thè_me" Target="{Binding ElementName=ThemeSelector}" VerticalAlignment="Center" FontSize="11.5" />
-                    <ComboBox x:Name="ThemeSelector" Width="90" SelectedIndex="0" SelectionChanged="Theme_SelectionChanged"
-                              AutomationProperties.AutomationId="ThemeSelector" AutomationProperties.Name="Thème"
-                              ToolTip="Thème de présentation. Le contraste élevé Windows reste prioritaire. La préférence n'est pas enregistrée.">
-                        <ComboBoxItem Content="Light" /><ComboBoxItem Content="Dark" />
-                    </ComboBox>
-                </StackPanel>
             </Grid>
         </Border>
         <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
@@ -175,11 +187,11 @@
                         </ComboBox>
                     </StackPanel>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Comptes"><StackPanel><Path Data="{StaticResource AccountsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Comptes" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Ouvrir"><StackPanel><Path Data="{StaticResource OpenIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Ouvrir" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Enregistrer"><StackPanel><Path Data="{StaticResource SaveIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Enregistrer" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.Open}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Ouvrir"><StackPanel><Path Data="{StaticResource OpenIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Ouvrir" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.Save}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Enregistrer"><StackPanel><Path Data="{StaticResource SaveIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Enregistrer" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Separator />
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Annuler"><StackPanel><Path Data="{StaticResource UndoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Annuler" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Refaire"><StackPanel><Path Data="{StaticResource RedoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Refaire" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.FinancialUndo}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Annuler"><StackPanel><Path Data="{StaticResource UndoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Annuler" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.FinancialRedo}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Refaire"><StackPanel><Path Data="{StaticResource RedoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Refaire" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Verrouillage"><StackPanel><Path Data="{StaticResource LockIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Verrouiller" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Separator />
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Budget"><StackPanel><Path Data="{StaticResource BudgetIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Budget" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
@@ -207,7 +219,11 @@
                         <DockPanel Margin="0,0,0,9"><TextBlock Text="Solde pointé" /><TextBlock Text="Non calculé" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Le calcul du solde pointé n'est pas implémenté." /></DockPanel>
                         <DockPanel Margin="0,0,0,14"><TextBlock Text="À venir" /><TextBlock Text="Indisponible" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Échéancier non implémenté." /></DockPanel>
                         <TextBlock Text="Solde actuel" Style="{StaticResource MutedText}" />
-                        <TextBlock Text="{Binding SelectedAccountBalanceText}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,16" AutomationProperties.AutomationId="AccountBalance" />
+                        <Grid Margin="0,4,0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="64" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding DisplayBalanceText}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="AccountBalance" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding DisplayCurrencies}" DisplayMemberPath="Code" SelectedItem="{Binding DisplayCurrency, Mode=TwoWay}" AutomationProperties.AutomationId="BalanceCurrencySelector" AutomationProperties.Name="Devise d'affichage du solde" ToolTip="Affichage seulement : ne modifie ni la devise native ni les opérations." />
+                        </Grid>
+                        <TextBlock Text="{Binding DisplayRateDescription}" Style="{StaticResource MutedText}" Margin="0,0,0,12" />
                         <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,0,0,14" />
                         <TextBlock Text="OPÉRATION SÉLECTIONNÉE" Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,0,0,8" />
                     </StackPanel>

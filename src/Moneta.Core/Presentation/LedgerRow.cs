@@ -7,12 +7,14 @@ public sealed class AccountSummary
     internal AccountSummary(Account account, decimal balance)
     {
         Account = account;
+        Balance = balance;
         BalanceText = MoneyFormatter.Format(balance, account.Currency);
     }
 
     public Account Account { get; }
     public string Name => Account.Name;
     public string CurrencyCode => Account.Currency.Code;
+    public decimal Balance { get; }
     public string BalanceText { get; }
 }
 

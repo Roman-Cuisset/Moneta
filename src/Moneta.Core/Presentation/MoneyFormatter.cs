@@ -13,6 +13,12 @@ public static class MoneyFormatter
         ArgumentNullException.ThrowIfNull(currency);
         ArgumentOutOfRangeException.ThrowIfNegative(currency.DecimalPlaces);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(currency.DecimalPlaces, 28);
-        return $"{amount.ToString(NumberFormats[currency.DecimalPlaces], FrenchCulture)} {currency.Code}";
+        var rules = currency.DisplayRules;
+        var culture = rules.CultureName == FrenchCulture.Name
+            ? FrenchCulture
+            : CultureInfo.GetCultureInfo(rules.CultureName);
+        var number = amount.ToString(NumberFormats[currency.DecimalPlaces], culture);
+        var unit = rules.UseSymbol ? currency.Symbol : currency.Code;
+        return rules.UseSymbol && rules.SymbolBeforeAmount ? $"{unit} {number}" : $"{number} {unit}";
     }
 }

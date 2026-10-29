@@ -2,7 +2,7 @@
 
 ## Portée et légende
 
-État mission 4 : prototype WPF en lecture seule, disposition refondue et thèmes Light/Dark opérationnels. Sélection, registre/détails et soldes fictifs restent en mémoire. La matrice décrit la cible complète : édition, persistance, change et import natif restent futurs. Voir [README](../README.md) pour les capacités et validations réelles.
+État mission 5 : prototype WPF fictif, ajout/sélection de comptes dynamiques en mémoire et préférences locales non financières. Sélection de texte corrigée, thèmes persistés dans Affichage et devise d'affichage sans taux inventé. La cible complète reste future : édition d'opérations, stockage financier, change et import natif. Voir [README](../README.md) et [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
@@ -24,7 +24,7 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | À développer |
 | Nouveau fichier, solde initial | M02 : Comptes > Créer un nouveau fichier de comptes | Vérifié — manuel ; emplacement local à confirmer | Même commande et parcours | À développer |
 | Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; **Fichier > Ouvrir** ouvre `.moneta` ou propose la conversion d'un `.bp` ; aucun enregistrement vers `.bp` | À développer |
-| Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection en mémoire opérationnelle ; gestion désactivée |
+| Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection et ajout de comptes de démonstration sans plafond produit ; modification/suppression et persistance non implémentées |
 | Informations bancaires, monnaie du compte, RIB | M02 ; `Scripts/Rib/rib.ini:2-6` : Fichier | Vérifié — manuel et local | Métadonnées facultatives, contrôle RIB et impression | À développer |
 | Mot de passe d'un fichier | M02 : Comptes > Mot de passe | Vérifié — manuel ; protection cryptographique inconnue | Protection à concevoir, pas de simple imitation d'un verrou non étudié | À développer |
 | Agencement principal | M01 et capture privée mission 4 : menus, outils, informations à gauche, filtres, tableau, saisie, état | Vérifié — manuel et disposition visible ; sous-menus non observés | Mêmes repères, identité moderne originale | Partiel : structure rétablie, filtres et édition désactivés ; thèmes Light/Dark fonctionnels |

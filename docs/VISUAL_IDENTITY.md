@@ -6,6 +6,15 @@
 
 Thèmes Light/Dark, palettes, contrôles et pictogrammes originaux sont maintenant implémentés. Les principes `VI-01` à `VI-12` restent les règles de conception ; leur application partielle ne vaut ni conformité d'accessibilité complète ni réalisation des écrans financiers futurs. Voir [README](../README.md) pour les vérifications et mesures.
 
+### Ajustements opérationnels de mission 5
+
+La sélection de texte était recouverte par l'adorner historique WPF lorsque son opacité valait 1 ; il ignorait le premier plan sélectionné. `TextSelectionRendering` choisit le rendu du texte avant création des contrôles, les styles partagés activent la sélection inactive et couvrent le TextBox éditable des ComboBox. La sélection de ligne reste un mécanisme distinct. Captures avant/après et matrice de contrôles Light/Dark examinées ; gestes souris/clavier et Ctrl+Z natif vérifiés, sans recopier les données de la référence.
+
+Le thème quitte la barre supérieure pour **Affichage → Thème → Clair / Sombre** et est conservé dans le profil local. Pas de suivi Light/Dark Windows non qualifié ; le contraste élevé système reste prioritaire. Un sélecteur de monnaie compact accompagne le solde : montant natif ou état lisible **Cours indisponible**, jamais une valeur convertie supposée.
+
+Fenêtres d'ajout de comptes fictifs et de paramètres dans les mêmes ressources, avec avertissements explicites sur le stockage en mémoire et les options sans service. Aucun framework, logo ou ressource BP ajouté. Les détails et validations figurent dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) et le README ; les principes historiques ci-dessous sont maintenus.
+
+
 ### Comparaison structurelle et direction retenue
 
 | Observation de disposition, sans données privées | Prototype mission 3 | Refonte mission 4 |
@@ -31,7 +40,7 @@ Le [Fluent natif .NET 9](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/wh
 
 - `Themes/Light.xaml`, `Dark.xaml`, `HighContrast.xaml` : palettes sémantiques ; aucun code couleur de présentation dispersé dans la fenêtre.
 - `Themes/Controls.xaml` : contrôles WPF natifs avec gabarits Moneta, états survol/focus/sélection/désactivation, menus et débordements, sans pack tiers.
-- `ThemeController` : préférence Light/Dark en session, palette système prioritaire en contraste élevé, notifications libérées à la fermeture ; légendes natives via DWM lorsque disponible.
+- `ThemeController` : palettes Light/Dark et priorité du contraste élevé ; depuis mission 5, choix de thème conservé par `SettingsStore`, sans stockage de données financières. Notifications libérées à la fermeture, légendes natives via DWM lorsque disponible.
 - `MainWindow.Resources` : douze `Geometry` originales Accounts/Open/Save/Undo/Redo/Lock/Budget/Totals/Chart/Filter/Schedule/Transfer, dessinées par primitives XAML pour cette mission par l'assistant. Concepts usuels, pas extraction, décalque ou vectorisation d'icônes BP. Traits cohérents, sans bitmap. Affectation demandée par l'utilisateur à Moneta ; aucune licence générale de publication du projet n'est présumée.
 - Captures Moneta fictives et capture BP restent uniquement dans `screenshots-private/`, hors Git et hors ressources de compilation. Les captures BP ne sont pas incorporées à ce document.
 

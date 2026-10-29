@@ -2,13 +2,22 @@
 
 ## Portée et règle de lecture
 
-**Mission 4 : refonte visuelle du prototype WPF autorisée, sans persistance ni nouvelle fonction financière.** La capture privée de la principale BankPerfect sert de référence structurelle ; aucun binaire n'est exécuté, aucun asset propriétaire intégré et aucune donnée de cette image recopiée. Les jalons produit ci-dessous restent distincts de la livraison d'interface.
+**Mission 5 : sélection de texte corrigée, comptes fictifs dynamiques, référentiel de devises et préférences locales.** La persistance financière, les fournisseurs de cours, le lecteur `.bp`, l'édition des opérations et les mises à jour restent futurs. La publication GitHub n'est autorisée qu'en privé après audit des fichiers et de tout l'historique.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Livraison de préparation fonctionnelle — mission 5
+
+- Sélection de texte distincte de la sélection de ligne : cause WPF adorner reproduite, correction partagée et contrôles Light/Dark actifs/inactifs/readonly/désactivés observés.
+- Comptes de démonstration ajoutables/sélectionnables en mémoire, sans plafond produit, plusieurs comptes par devise ; référentiel extensible et affichage sans taux inventé.
+- Thèmes déplacés dans Affichage, préférences conservées ; cinq rubriques Options. Mise à jour et cours : choix enregistrables uniquement, aucun service actif.
+- 29 tests Debug/Release et scénarios Windows ; performances et témoin de l'ancien commit dans le README. Les tests initiaux sont conservés.
+- La suite reste : qualifier le prototype et ses raccourcis, puis autoriser la persistance/sauvegarde fiable avant toute donnée réelle ; services NBRB/CBR et mises à jour signées en lots séparés. Aucun jalon d'importation native ou durabilité n'est clos par ces préférences locales.
+
 
 ### Livraison de présentation — mission 4
 

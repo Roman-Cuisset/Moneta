@@ -2,7 +2,7 @@
 
 ## Statut et limites de cette étude
 
-**Mission 4 : prototype WPF refondu, exclusivement en mémoire et en lecture seule.** Présentation desktop moderne, palettes Light/Dark et contraste système ; aucune extension du moteur financier. SQLite, `.moneta`, lecteur `.bp`, change, édition et installateur restent futurs. Les exigences de sûreté ci-dessous ne sont pas des garanties déjà implémentées.
+**Mission 5 : interface WPF, comptes fictifs dynamiques et préférences locales non financières.** Comptes/opérations restent exclusivement en mémoire ; aucune persistance financière, conversion effective, lecture `.bp`, actualisation de taux ou installation automatique. Les exigences de sûreté/persistance futures ci-dessous ne sont pas des garanties acquises du prototype.
 
 La fidélité vise les usages de BankPerfect Windows, pas la reproduction de son code. Le [sommaire officiel](https://chelly.net/bankperfect/wiki/manuel.html) annonce BankPerfect 8.0.0.373 du 22 novembre 2015 ; les pages sont de dates différentes. Elles ne prouvent pas à elles seules le comportement du binaire local. Notamment, la page [Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) a été actualisée le 10 mars 2016 et décrit un changement de rétention à 200 copies le 7 mars 2016 : ce nombre ne doit pas être attribué sans preuve à une version antérieure.
 
@@ -10,18 +10,29 @@ La capture privée fournie en mission 4 confirme l'ordre principal des menus et 
 
 Documents de conception complémentaires : [format `.moneta`](FILE_FORMATS.md), [compatibilité native BankPerfect](BANKPERFECT_IMPORT_STRATEGY.md), [commandes et menus](UI_MENU_MAP.md), [écrans/captures](UI_SCREEN_INVENTORY.md), [identité visuelle](VISUAL_IDENTITY.md). L'[audit initial](BANKPERFECT_AUDIT.md) est conservé comme preuve historique, pas recommencé.
 
-### État implémenté après mission 4
+### État implémenté après mission 5
 
 - `Moneta.App` : disposition fidèle à la structure observée, sept colonnes dont Mode et cellules à deux niveaux, panneau gauche réglable/défilant, saisie compacte readonly, outils/filtres futurs désactivés. `WindowCommands` et commandes WPF pour fermeture/À propos ; code-behind limité aux gestes de présentation. `AboutWindow` remplace la boîte système pour partager le thème.
 - `Moneta.Core` : records `Account`, `Transaction`, `Currency`, `Category`, `Payee`, valorisation distincte facultative ; `MainViewModel` testable avec `INotifyPropertyChanged`, relevés préparés par compte, ordre chronologique stable et soldes `decimal` contrôlés. Les projections d'affichage françaises sont mises en cache, pas recalculées au défilement. Ce n'est pas un moteur financier complet ni un engagement sur les politiques futures d'arrondi.
 - `Moneta.Infrastructure` : uniquement `DemoData.Create()`, quatre comptes et 3 212 opérations déterministes fictives. Aucun accès fichier, SQL ou réseau, aucun adaptateur factice promettant une persistance.
-- `Moneta.Tests` : les 12 tests MSTest existants sont conservés. Aucun framework MVVM/DI/ORM ni package graphique n'est ajouté. Les métadonnées facultatives `Transaction.PaymentMode` et `Category.Subcategory` alimentent les projections et le jeu fictif sans changer les comptes, dates, montants, sens ou pointages.
+- `Moneta.Tests` : les 12 tests initiaux sont conservés ; 10 tests de comptes/devises et 7 cas de paramètres ajoutés. `SettingsStore.cs`, indépendant de WPF, est lié au projet de tests pour exercer son vrai code sans rendre le domaine dépendant de WPF. Aucun framework supplémentaire.
 
 Les références et modèles sont indépendants de WPF. La sélection d'un compte remplace son relevé et efface l'ancienne sélection ; les opérations de devises ou comptes incompatibles sont refusées, pas remappées. Une valorisation distincte ne modifie jamais le solde d'origine ; aucune conversion n'est calculée. Le tri du tableau est volontairement désactivé pour garder le sens des soldes chronologiques.
 
-**Thèmes :** `Themes/Controls.xaml` porte les styles natifs ; `Light.xaml`, `Dark.xaml`, `HighContrast.xaml` centralisent les couleurs. `ThemeController` remplace seulement la palette, conserve la sélection, écoute le contraste système et se désabonne à la fermeture. Préférence de session uniquement. DWM assombrit la légende native lorsque disponible, sans remplacer les contrôles de fenêtre.
+**Thèmes et sélection :** dictionnaires de ressources conservés ; `TextSelectionRendering` choisit avant initialisation WPF le rendu du texte respectant `SelectionTextBrush` plutôt que l'adorner opaque. Style partagé pour sélection inactive et TextBox internes des ComboBox. Menu **Affichage → Thème**, préférence locale persistée, contraste élevé prioritaire ; DWM conserve les légendes natives.
 
 **Choix graphique et limites :** [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) compare WPF natif, WPF UI et ModernWpf. Pas d'API `ThemeMode` expérimentale ni de suppression d'avertissement. Le solde progressif est consultable à gauche, pas en colonne ; soldes pointé/prévisionnel non calculés, aucune prévision fictive. [README](../README.md) distingue les vérifications, mesures réelles et limites DPI/accessibilité.
+
+### Ajouts de mission 5 et frontières maintenues
+
+- Core : `CurrencyRegistry` extensible, métadonnées d'affichage des devises, monnaie native de compte get-only, collection observable readonly et ajout validé en mémoire. Aucun plafond du nombre de comptes ; contraintes de précision et bornes monétaires explicites. `DisplayCurrency` ne modifie aucune écriture ; absence de taux affichée, sans moteur de conversion.
+- `ExchangeRateQuote` est un contrat passif valeur/échelle/date/source, pas un fournisseur actif. NBRB et CBR restent des adaptateurs futurs séparés ; aucun repli estimé ou inter-fournisseur implicite.
+- App : `SettingsStore` JSON versionné dans le profil local, exclusivement non financier ; temporaire vidé sur disque puis renommage dans le même dossier. Défauts de chargement visibles, fichiers invalides non écrasés, `Current` modifié après succès seulement. Aucun mécanisme de sauvegarde financière n'en est déduit.
+- `WindowCommands` relie menus/outils aux mêmes intentions. Commandes financières non développées désactivées ; Ctrl+Z/Y non liés globalement pour préserver l'édition de texte. La réservation de Ctrl+F pour la recherche souhaitée par mission 5 entre en conflit avec Champs automatiques BP, explicitement documenté, pas doublement affecté.
+- Cinq rubriques de paramètres : thème opérationnel ; options réseau enregistrables mais étiquetées sans service. Aucune requête, boucle, tâche permanente ou téléchargement ne découle des booléens.
+
+Voir [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) pour les contrats, limitations, sécurité des mises à jour futures et validations effectives.
+
 
 
 ## 1. Choix techniques sobres

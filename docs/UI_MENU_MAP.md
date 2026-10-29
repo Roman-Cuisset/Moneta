@@ -18,7 +18,8 @@ Cartographie cible, complétée par la capture privée de mission 4 : elle n'est
 
 - Barre d'outils : emplacement du dossier/compte, Comptes, Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, Transfert. Le dossier est fictif/en mémoire ; seule la sélection du compte est active. Les autres outils sont explicitement désactivés, avec débordement en fenêtre étroite.
 - Les sous-menus et indications de touches documentés sont conservés, sans activer des raccourcis financiers inexistants. Quitter sous Fichier et À propos sous ? restent des décisions Moneta, pas des observations de menus ouverts BankPerfect.
-- Ajout Moneta, hors commandes BankPerfect : sélecteur **Thème Light/Dark**, à droite des menus, accessible au clavier. Changement de ressources sans perte de sélection, sans fichier de préférences et avec contraste Windows prioritaire.
+- Mission 5 : **Affichage → Thème → Clair / Sombre**, sélecteur supérieur supprimé, préférence locale conservée et contraste Windows prioritaire. **Comptes → Ajouter un compte de démonstration** et **Outils → Options** opérationnels ; pas de gestion financière persistante.
+- `WindowCommands` centralise ouvrir/enregistrer/recherche/suppression/annulations futures, menus et outils communs, avec `CanExecute=false`. Aucun Ctrl+Z/Y global au détriment du texte. Ctrl+F demandé pour recherche entre en conflit avec Champs automatiques BP : indication Ctrl+F retirée de cette dernière dans le prototype, recherche elle-même désactivée ; arbitrage historique conservé dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
 
 
 ## Fichier, échanges et ouverture native Moneta
