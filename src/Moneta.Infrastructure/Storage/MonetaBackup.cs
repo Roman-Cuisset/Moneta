@@ -1,0 +1,326 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Data.Sqlite;
+using Moneta.Core;
+
+namespace Moneta.Infrastructure.Storage;
+
+public sealed record BackupResult(string FilePath, string Sha256, Guid DocumentId);
+
+/// <summary>
+/// Certified SQLite snapshots. The manifest detects accidental modification; it is not
+/// an authenticity signature and neither the database nor its manifest is encrypted.
+/// </summary>
+public static class MonetaBackup
+{
+    private const int ManifestVersion = 1;
+    private static readonly string[] DatabaseCompanions = ["-wal", "-shm", "-journal", ".lock"];
+    private static readonly JsonSerializerOptions ManifestJson = new()
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        WriteIndented = true
+    };
+
+    public static BackupResult Create(MonetaFile source, string destination) => Execute(() =>
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var target = NewDestination(destination, requireManifest: true);
+        string? temporary = null;
+        string? temporaryManifest = null;
+        try
+        {
+            var expected = Digest(source.Snapshot);
+            var live = MonetaFile.ReadValidated(source.Connection);
+            RequireEqual(expected, Digest(live), "Le dossier actif a changé depuis son ouverture ou sa dernière sauvegarde.");
+            temporary = ReserveTemporary(target);
+            var copied = CopyDatabase(source.Connection, temporary);
+            RequireEqual(expected, Digest(copied), "La copie SQLite ne correspond pas au dossier actif.");
+            var certification = Certify(temporary, copied);
+            temporaryManifest = ReserveTemporary(target + ".manifest.json");
+            using (var stream = new FileStream(temporaryManifest, FileMode.Open, FileAccess.Write, FileShare.None))
+            {
+                JsonSerializer.Serialize(stream, certification, ManifestJson);
+                stream.Flush(flushToDisk: true);
+            }
+            File.Move(temporary, target, overwrite: false);
+            temporary = null;
+            // Publication is deliberately last: an interrupted publication is not certified.
+            File.Move(temporaryManifest, target + ".manifest.json", overwrite: false);
+            temporaryManifest = null;
+            return new BackupResult(target, certification.Sha256, copied.Id);
+        }
+        finally
+        {
+            DeleteTemporary(temporaryManifest);
+            DeleteTemporary(temporary);
+        }
+    }, "Création de la sauvegarde impossible.");
+
+    public static MonetaFile Restore(string backup, string destination) => Execute(() =>
+    {
+        var target = NewDestination(destination, requireManifest: false);
+        var sourcePath = ExistingPath(backup);
+        var manifest = ReadManifest(sourcePath + ".manifest.json");
+        string? temporary = null;
+        try
+        {
+            // Keep the certified file read-locked through the copy and the second hash.
+            using (var sourceBytes = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var source = MonetaFile.OpenConnection(sourcePath, readOnly: true))
+            {
+                VerifyFile(sourceBytes, manifest);
+                var snapshot = MonetaFile.ReadValidated(source);
+                VerifySnapshot(snapshot, manifest);
+                temporary = ReserveTemporary(target);
+                var copied = CopyDatabase(source, temporary);
+                VerifySnapshot(copied, manifest);
+                VerifyFile(sourceBytes, manifest);
+            }
+            return PublishAndOpen(ref temporary, target, manifest.SnapshotDigest);
+        }
+        finally { DeleteTemporary(temporary); }
+    }, "Restauration de la sauvegarde impossible.");
+
+    public static MonetaFile Migrate(string source, string destination) => Execute(() =>
+    {
+        var target = NewDestination(destination, requireManifest: false);
+        var sourcePath = ExistingPath(source);
+        string? temporary = null;
+        string expected;
+        try
+        {
+            using (var sourceBytes = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var connection = MonetaFile.OpenConnection(sourcePath, readOnly: true))
+            {
+                var originalHash = Hash(sourceBytes);
+                var original = MonetaFile.ReadValidated(connection, allowVersion1: true);
+                if (original.SchemaVersion != 1)
+                    throw new DocumentException(DocumentError.InvalidData, "Seul le brouillon interne de schéma 1 nécessite cette migration par copie.");
+                expected = Digest(original with { SchemaVersion = MonetaFile.CurrentSchemaVersion });
+                temporary = ReserveTemporary(target);
+                using (var copy = MonetaFile.OpenConnection(temporary, readOnly: false))
+                {
+                    connection.BackupDatabase(copy);
+                    RequireEqual(Digest(original), Digest(MonetaFile.ReadValidated(copy, allowVersion1: true)), "La copie avant migration diffère du dossier source.");
+                    MonetaFile.UpgradeV1(copy);
+                    RequireEqual(expected, Digest(MonetaFile.ReadValidated(copy)), "La migration a modifié les données du dossier.");
+                    MakeStandalone(copy);
+                }
+                RequireEqual(originalHash, Hash(sourceBytes), "Le dossier source a changé pendant la migration.");
+            }
+            return PublishAndOpen(ref temporary, target, expected);
+        }
+        finally { DeleteTemporary(temporary); }
+    }, "Migration par copie impossible.");
+
+    private static FinancialDocument CopyDatabase(SqliteConnection source, string temporary)
+    {
+        using var copy = MonetaFile.OpenConnection(temporary, readOnly: false);
+        source.BackupDatabase(copy);
+        var snapshot = MonetaFile.ReadValidated(copy);
+        MakeStandalone(copy);
+        return snapshot;
+    }
+
+    private static void MakeStandalone(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+        using (var reader = command.ExecuteReader())
+        {
+            if (!reader.Read() || reader.GetInt64(0) != 0)
+                throw new DocumentException(DocumentError.Locked, "La copie SQLite ne peut pas être consolidée.");
+        }
+        command.CommandText = "PRAGMA journal_mode=DELETE;";
+        if (!string.Equals(command.ExecuteScalar()?.ToString(), "delete", StringComparison.OrdinalIgnoreCase))
+            throw new DocumentException(DocumentError.VerificationFailed, "La sauvegarde dépend encore d'un journal SQLite.");
+    }
+
+    private static MonetaFile PublishAndOpen(ref string? temporary, string destination, string expected)
+    {
+        // Reopen the standalone copy without creating a temporary ownership-lock file.
+        using (var check = MonetaFile.OpenConnection(temporary!, readOnly: true))
+            RequireEqual(expected, Digest(MonetaFile.ReadValidated(check)), "La réouverture de la copie a changé ses données.");
+        File.Move(temporary!, destination, overwrite: false);
+        temporary = null;
+        var result = MonetaFile.Open(destination);
+        try
+        {
+            RequireEqual(expected, Digest(result.Snapshot), "Le dossier publié ne correspond pas à la copie vérifiée.");
+            return result;
+        }
+        catch { result.Dispose(); throw; }
+    }
+
+    private static Certification Certify(string path, FinancialDocument snapshot)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return new Certification(ManifestVersion, Hash(stream), stream.Length, snapshot.SchemaVersion,
+            snapshot.Id, Digest(snapshot), snapshot.Currencies.Count, snapshot.Accounts.Count);
+    }
+
+    private static Certification ReadManifest(string path)
+    {
+        if (!File.Exists(path))
+            throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde absent : cette copie n'est pas certifiée.");
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (stream.Length is <= 0 or > 65536)
+            throw new DocumentException(DocumentError.VerificationFailed, "Taille du manifeste de sauvegarde invalide.");
+        Certification? manifest;
+        try { manifest = JsonSerializer.Deserialize<Certification>(stream, ManifestJson); }
+        catch (JsonException ex) { throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde illisible.", ex); }
+        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion != MonetaFile.CurrentSchemaVersion ||
+            manifest.DocumentId == Guid.Empty || manifest.Length <= 0 || manifest.CurrencyCount < 0 || manifest.AccountCount < 0 ||
+            !ValidHash(manifest.Sha256) || !ValidHash(manifest.SnapshotDigest))
+            throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde invalide ou non pris en charge.");
+        return manifest;
+    }
+
+    private static bool ValidHash(string? value) => value is { Length: 64 } && value.All(Uri.IsHexDigit);
+
+    private static void VerifyFile(FileStream stream, Certification manifest)
+    {
+        if (stream.Length != manifest.Length)
+            throw new DocumentException(DocumentError.VerificationFailed, "La taille de la sauvegarde ne correspond pas au manifeste.");
+        RequireEqual(manifest.Sha256, Hash(stream), "L'empreinte SHA-256 de la sauvegarde ne correspond pas au manifeste.");
+    }
+
+    private static void VerifySnapshot(FinancialDocument snapshot, Certification manifest)
+    {
+        if (snapshot.Id != manifest.DocumentId || snapshot.SchemaVersion != manifest.SchemaVersion ||
+            snapshot.Currencies.Count != manifest.CurrencyCount || snapshot.Accounts.Count != manifest.AccountCount)
+            throw new DocumentException(DocumentError.VerificationFailed, "L'identité ou le contenu de la sauvegarde ne correspond pas au manifeste.");
+        RequireEqual(manifest.SnapshotDigest, Digest(snapshot), "Les données complètes de la sauvegarde ne correspondent pas au manifeste.");
+    }
+
+    // Canonical, culture-independent full snapshot, retaining the document's list order.
+    private static string Digest(FinancialDocument snapshot)
+    {
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteNumber("schema", snapshot.SchemaVersion);
+            writer.WriteString("id", snapshot.Id);
+            writer.WriteString("name", snapshot.Name);
+            writer.WriteString("created", snapshot.CreatedUtc.ToUniversalTime());
+            writer.WriteString("modified", snapshot.ModifiedUtc.ToUniversalTime());
+            if (snapshot.SelectedAccountId is { } selected) writer.WriteString("selected", selected);
+            else writer.WriteNull("selected");
+            writer.WriteStartArray("currencies");
+            foreach (var currency in snapshot.Currencies)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("code", currency.Code);
+                writer.WriteString("name", currency.Name);
+                writer.WriteNumber("decimals", currency.DecimalPlaces);
+                writer.WriteString("symbol", currency.Symbol);
+                writer.WriteString("culture", currency.DisplayRules.CultureName);
+                writer.WriteBoolean("useSymbol", currency.DisplayRules.UseSymbol);
+                writer.WriteBoolean("symbolBefore", currency.DisplayRules.SymbolBeforeAmount);
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+            writer.WriteStartArray("accounts");
+            foreach (var account in snapshot.Accounts)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("id", account.Id);
+                writer.WriteString("name", account.Name);
+                writer.WriteString("currency", account.Currency.Code);
+                writer.WriteNumber("openingMinor", ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency));
+                writer.WriteString("type", account.Type);
+                writer.WriteString("notes", account.Notes);
+                writer.WriteBoolean("archived", account.IsArchived);
+                writer.WriteString("created", account.CreatedUtc.ToUniversalTime());
+                writer.WriteString("modified", account.ModifiedUtc.ToUniversalTime());
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+        return Convert.ToHexString(SHA256.HashData(buffer.GetBuffer().AsSpan(0, checked((int)buffer.Length))));
+    }
+
+    private static string Hash(FileStream stream)
+    {
+        stream.Position = 0;
+        return Convert.ToHexString(SHA256.HashData(stream));
+    }
+
+    private static void RequireEqual(string expected, string actual, string message)
+    {
+        if (!string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
+            throw new DocumentException(DocumentError.VerificationFailed, message);
+    }
+
+    private static string ExistingPath(string path)
+    {
+        MonetaFile.ValidatePath(path, mustExist: true);
+        return Path.GetFullPath(path);
+    }
+
+    private static string NewDestination(string path, bool requireManifest)
+    {
+        MonetaFile.ValidatePath(path, mustExist: false);
+        var full = Path.GetFullPath(path);
+        foreach (var suffix in DatabaseCompanions)
+            if (File.Exists(full + suffix) || Directory.Exists(full + suffix))
+                throw new DocumentException(DocumentError.DestinationExists, "Un fichier compagnon de destination existe déjà ; il ne sera pas remplacé.");
+        if (requireManifest && (File.Exists(full + ".manifest.json") || Directory.Exists(full + ".manifest.json")))
+            throw new DocumentException(DocumentError.DestinationExists, "Le manifeste de destination existe déjà ; il ne sera pas remplacé.");
+        return full;
+    }
+
+    private static string ReserveTemporary(string destination)
+    {
+        var temporary = Path.Combine(Path.GetDirectoryName(destination)!, ".moneta-" + Guid.NewGuid().ToString("N") + ".tmp");
+        using var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        return temporary;
+    }
+
+    private static void DeleteTemporary(string? path)
+    {
+        if (path is null) return;
+        try { File.Delete(path); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
+
+    private static T Execute<T>(Func<T> action, string message)
+    {
+        try { return action(); }
+        catch (DocumentException) { throw; }
+        catch (UnauthorizedAccessException ex) { throw new DocumentException(DocumentError.AccessDenied, message, ex); }
+        catch (FileNotFoundException ex) { throw new DocumentException(DocumentError.MissingFile, message, ex); }
+        catch (DirectoryNotFoundException ex) { throw new DocumentException(DocumentError.MissingFile, message, ex); }
+        catch (SqliteException ex)
+        {
+            var error = ex.SqliteErrorCode switch
+            {
+                5 or 6 => DocumentError.Locked,
+                11 or 26 => DocumentError.Corrupt,
+                8 or 23 => DocumentError.AccessDenied,
+                _ => DocumentError.WriteFailed
+            };
+            throw new DocumentException(error, message, ex);
+        }
+        catch (IOException ex)
+        {
+            var error = (ex.HResult & 0xffff) is 80 or 183 ? DocumentError.DestinationExists : DocumentError.WriteFailed;
+            throw new DocumentException(error, message, ex);
+        }
+        catch (ArgumentException ex) { throw new DocumentException(DocumentError.InvalidData, message, ex); }
+    }
+
+    private sealed record Certification(
+        [property: JsonRequired] int ManifestVersion,
+        [property: JsonRequired] string Sha256,
+        [property: JsonRequired] long Length,
+        [property: JsonRequired] int SchemaVersion,
+        [property: JsonRequired] Guid DocumentId,
+        [property: JsonRequired] string SnapshotDigest,
+        [property: JsonRequired] int CurrencyCount,
+        [property: JsonRequired] int AccountCount);
+}

@@ -2,7 +2,7 @@
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 5 : sélection de texte corrigée, comptes de démonstration dynamiques, devise d'affichage et préférences locales. Ne pas utiliser pour de vrais comptes.** Les comptes/opérations restent en mémoire ; seul le fichier de préférences non financières est enregistré. Aucun `.moneta`, lecteur `.bp`, taux fictif, change réel ou sauvegarde financière.
+**Mission 6 : dossiers `.moneta` SQLite, comptes multidevises persistants et sauvegarde/restauration vérifiées. Version de développement à qualifier sur données fictives avant tout usage réel.** Les opérations restent limitées à un mode démonstration explicite en mémoire. Aucun lecteur `.bp`, taux inventé, édition financière complète ou sauvegarde automatique.
 
 ## Objectifs
 
@@ -12,7 +12,7 @@ Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. 
 - Ouvrir les fichiers natifs `.bp` par **Fichier > Ouvrir**, proposer leur conversion et créer un **nouveau `.moneta`**, sans jamais modifier ni supprimer l'original. Objectif prioritaire : le format `.bp` n'est pas encore spécifié ni sa lecture implémentée.
 - Garantir des montants exacts, une persistance transactionnelle, des sauvegardes automatiques vérifiables et une restauration éprouvée.
 
-C#, **.NET 10 LTS**, WPF et MVVM léger sont utilisés. SQLite reste la persistance future, **sans fournisseur ni base dans ce prototype**. La présentation utilise des contrôles WPF natifs avec styles et palettes Moneta, fontes système et douze pictogrammes vectoriels originaux. Aucun framework graphique, pack d'icônes, logo définitif ou actif BankPerfect. MSTest reste réservé aux tests. Le choix et les alternatives sont documentés dans [VISUAL_IDENTITY.md](docs/VISUAL_IDENTITY.md).
+C#, **.NET 10 LTS**, WPF et MVVM léger, avec SQLite direct via `Microsoft.Data.Sqlite` **10.0.12** et `SQLitePCLRaw.bundle_e_sqlite3` **3.0.5**. Moteur **3.53.4 observé à l'exécution**, corrigé pour WAL-reset. Interface WPF native, palettes et pictogrammes Moneta originaux ; aucun framework graphique, logo définitif ou actif BankPerfect. Quatre projets conservés, aucun ORM/serveur/service cloud. Voir [ARCHITECTURE](docs/ARCHITECTURE.md) et [FILE_FORMATS](docs/FILE_FORMATS.md).
 
 ## Organisation
 
@@ -21,7 +21,7 @@ Moneta/
 ├── reference-bankperfect/   # Référence locale immuable, exclue de Git
 ├── src/Moneta.App/          # WPF, fenêtre et interactions de présentation
 ├── src/Moneta.Core/         # Modèles, projections de soldes, navigation testable
-├── src/Moneta.Infrastructure/ # Jeu fictif déterministe, sans stockage ni réseau
+├── src/Moneta.Infrastructure/ # SQLite, sauvegarde/restauration et jeu fictif séparé
 ├── tests/Moneta.Tests/      # Tests MSTest indépendants de WPF
 ├── docs/
 ├── tools/                  # Aucun outil applicatif
@@ -48,28 +48,54 @@ dotnet test Moneta.slnx -c Release --no-build
 dotnet run --project src/Moneta.App/Moneta.App.csproj -c Release --no-build
 ```
 
-Après compilation, on peut aussi lancer directement `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`. Le runtime WindowsDesktop .NET 10 est requis sur le poste d'exécution ; aucun installateur autonome n'est fourni. La restauration des trois packages de test peut nécessiter Internet ; **l'application n'a aucune connexion réseau au démarrage** et fonctionne sans NuGet ni SDK une fois compilée, avec le runtime présent.
+Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`. Le runtime WindowsDesktop .NET 10 est requis ; aucun installateur autonome fourni. La restauration NuGet des tests et de SQLite peut nécessiter Internet. **Aucune connexion réseau au démarrage de l'application** ; aucun service permanent de taux ou de mise à jour.
 
 ## Parcours réellement disponible
 
-- Choisir le compte dans la barre d'outils, sous les menus. Le dossier de démonstration est uniquement en mémoire ; ce contrôle ne sélectionne pas un fichier sur disque.
-- Le panneau gauche affiche nom, devise et solde actuel. Le pointé, les échéances et la prévision sont explicitement non calculés/indisponibles ; aucune valeur zéro n'en tient lieu.
-- Le registre affiche Date, Mode, Tiers/libellé sur deux lignes, Catégorie/sous-catégorie, Débit, Crédit et Pointage. Les 3 200 lignes EUR et les quatre lignes de chacun des autres comptes restent virtualisées.
-- Sélectionner une ligne actualise ses détails consultables/copiables à gauche, le solde après opération et la ligne compacte inférieure. Cette dernière est **en lecture seule**, avec action Modifier désactivée.
-- Flèches et pages pour le registre ; colonnes et panneau gauche redimensionnables, ce dernier également avec les flèches quand le séparateur reçoit le focus. Les textes de cellule tronqués ont une infobulle et un détail complet ; les champs inférieurs permettent le défilement du texte.
-- **Affichage → Thème → Clair / Sombre** remplace le sélecteur supérieur. Le choix est enregistré dans les préférences locales et restauré à la session suivante ; le contraste élevé Windows reste prioritaire. Aucun mode « Suivre Windows » non vérifié n'est proposé.
-- **Fichier > Quitter**, fermeture Windows et **? > À propos de Moneta** utilisent des commandes WPF. Le dialogue est thématisé. Les outils non développés et leurs raccourcis, filtres d'en-tête et édition sont désactivés, pas simulés.
-- Montants `decimal`, dates/nombres français et soldes progressifs inchangés ; aucune addition/conversion entre devises. Seuls des modes et sous-catégories fictifs ont été ajoutés comme métadonnées d'affichage.
-- **Comptes → Ajouter un compte de démonstration** : nom, devise native, type libre, solde initial exact et notes facultatives. Collection dynamique sans plafond produit ; plusieurs comptes peuvent partager une devise. Ces ajouts disparaissent à la fermeture.
-- À côté du solde actuel, choisir EUR/BYN/RUB : la devise native affiche le montant réel du compte fictif ; toute autre affiche **Cours indisponible**, sans changer ni monnaie native, ni opérations, ni solde.
-- **Outils → Options** : cinq rubriques, préférence de thème et deux options de démarrage enregistrables. Mise à jour et taux sont explicitement **préférences uniquement, services non développés** : aucune requête, installation ou actualisation n'est simulée.
-- Les règles de devises extensibles, contrats de cours, paramètres locaux et conflits de raccourcis sont décrits dans [CURRENCIES_AND_SETTINGS.md](docs/CURRENCIES_AND_SETTINGS.md).
+1. **Fichier → Nouveau dossier / Ctrl+N** : saisir un nom ; dossier vierge en mémoire, sans compte ni opération fictive. Le démarrage n'ouvre aucun dossier automatiquement.
+2. **Comptes → Ajouter un compte** : nom, devise native, type libre, solde initial français exact et notes. Plusieurs comptes de même devise, aucun plafond produit. Le compte est sélectionné et le dossier marqué **non enregistré**.
+3. **Fichier → Enregistrer / Ctrl+S** : choisir un nouveau fichier `.moneta` au premier enregistrement ; les suivants commitent les modifications atomiquement. Ajouter n'enregistre pas automatiquement. Une erreur conserve le brouillon et ne produit pas l'état « enregistré ». **Enregistrer sous / F12** crée une copie neuve, sans modifier l'ancien fichier.
+4. **Fichier → Ouvrir / Ctrl+O** : identité, version, intégrité et références vérifiées avant affichage. Comptes, devises, UUID, notes, soldes exacts et dernière sélection enregistrée sont relus, sans fusion avec l'ancien dossier. Fermer/remplacer un dossier modifié propose enregistrer / abandonner / annuler. Un `.bp` reçoit une information d'importation future, jamais une écriture.
+5. **Fichier → Sauvegarder le dossier** : enregistrer d'abord les modifications, choisir un nouveau nom ; copie via API SQLite, contrôle du snapshot complet, puis publication de `Sauvegarde.moneta` et `Sauvegarde.moneta.manifest.json`. **Conserver les deux ensemble.** Copier le seul fichier actif ne constitue pas une sauvegarde.
+6. **Fichier → Restaurer une sauvegarde** : choisir une sauvegarde avec son manifeste et une destination neuve. Taille/hash, format, schéma, intégrité, clés et données sont vérifiés ; la copie est effectivement rouverte et comparée. Le dossier affiché et ses brouillons restent intacts. Ouvrir ensuite la copie restaurée pour une bascule volontaire ; ne pas travailler directement dans l'archive certifiée.
+7. **Fichier → Mode démonstration** : quatre comptes fictifs et 3 212 opérations, dont 3 200 sur le premier compte. Ajout de comptes en mémoire possible, enregistrement financier désactivé. Aucun passage silencieux de ces données dans un dossier réel.
+
+Navigation conservée : sélection de compte, registre/détails readonly, clavier, défilement et virtualisation, colonnes et panneau gauche redimensionnables. Un dossier réel n'a pas encore d'opérations persistantes ; son registre est vide, le solde actuel est son solde initial.
+
+**Devise d'affichage** : native = montant réel ; autre = **Cours indisponible**, sans modifier compte/opérations. **Affichage → Thème → Clair / Sombre** conserve la préférence locale et la correction de sélection ; contraste élevé prioritaire. **Outils → Options** conserve ses cinq rubriques ; options de taux et de mises à jour enregistrables uniquement, services non développés. Voir [CURRENCIES_AND_SETTINGS](docs/CURRENCIES_AND_SETTINGS.md).
 
 ## Limites et divergences volontaires
 
-L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et la structure de la principale sont confirmés par la capture privée fournie en mission 4. Cela ne confirme pas les sous-menus fermés, raccourcis Alt ni tous les comportements. Les parents documentés sont conservés ; Quitter/À propos restent des choix Moneta. Remplacer, Enregistrer sous, Imprimer et l'aide non développée ne sont pas arbitrairement placés.
+L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et l'organisation de la principale restent fidèles à la capture privée. Elle ne prouve ni sous-menus fermés ni accélérateurs Alt. Choix Moneta explicites : Nouveau dans Fichier (également accessible sous Comptes), Enregistrer sous dans Fichier, sauvegarde/restauration manuelles et mode démonstration. F12 est documenté historiquement, pas l'emplacement exact d'Enregistrer sous. Aucun menu inconnu déclaré identique à BankPerfect.
 
-La barre d'outils reprend l'ordre des fonctions observables mais reste désactivée hors sélection du compte. Pas de dossier persistant, filtre effectif, édition, pointage modifiable, import/export, ouverture/enregistrement, change, transfert, échéancier ou budget. Le solde progressif, auparavant en colonne, est consultable à gauche pour l'opération sélectionnée, afin de privilégier la disposition du registre de référence. Le tri demeure désactivé pour conserver sa signification chronologique.
+Pas encore d'édition/suppression de compte, d'opérations persistantes, filtre effectif, pointage modifiable, import/export, change, transfert, échéancier, budget ou automatisation des sauvegardes. Le drapeau archivé est conservé par le format, sans action UI. Le solde progressif fictif reste à gauche ; le tri est désactivé pour conserver sa signification.
+
+**Erreurs et sécurité :** fichier absent/incompatible/corrompu ou version future refusé, aucune base vide substituée ; destinations existantes et journaux de récupération préservés. Une session par chemin via verrou système `.moneta.lock` ; fichier vide résiduel normal après fermeture/crash. Attente SQLite bornée, checkpoint bloqué signalé en gardant la session utilisable. Stockage actif local uniquement : réseau refusé, dossiers synchronisés non pris en charge. SQLite et sauvegardes **non chiffrés/non signés** ; protéger les droits du dossier et le support. Ne jamais supprimer WAL/SHM/journal pour débloquer.
+
+## Vérifications de mission 6
+
+Parcours WPF réellement exercé sous Windows : annuler Nouveau et le premier Enregistrer ; créer un dossier vide ; ajouter quatre comptes synthétiques EUR/BYN/RUB dont deux EUR ; enregistrer ; sélectionner BYN et vérifier l'absence de conversion inventée ; sauvegarder à chaud ; restaurer une nouvelle copie, comparer UUID et montants exacts ; Enregistrer sous ; revenir à la démonstration 3 200 lignes puis rouvrir le dossier, retrouver la sélection et fermer proprement. Captures clair/sombre de données fictives examinées dans `screenshots-private/moneta-m6-*.png`, exclues de Git.
+
+Reprise en processus distincts : un commit encore dans le WAL survit à une terminaison forcée sans `Dispose` ; une transaction non validée ayant écrit 254 frames WAL est annulée après terminaison. Les snapshots complets, montants au-delà de la précision entière de `double`, identifiants/devises, intégrité SQLite et clés étrangères restent exacts. Une deuxième instance est refusée pendant détention du verrou, puis peut rouvrir après la mort du propriétaire. **Ce n'est pas un essai de coupure électrique matérielle.**
+
+Scénarios d'intégration supplémentaires : base inconnue/future/altérée, fractions et bornes, isolation, destination déjà existante, erreurs de Save, lecteur bloquant le checkpoint puis reprise, écritures externes détectées, journaux orphelins préservés, manifeste absent/altéré, restauration et migration 1 → 2 sur copie. Disque plein forcé, panne matérielle et toutes les frontières possibles d'interruption ne sont pas qualifiés.
+
+### Performances et limites de mission 6
+
+Windows x64 10.0.26220, 12 processeurs logiques, SDK 10.0.401/runtime 10.0.12, Release sans débogueur ni inspection UIA pendant les fenêtres CPU. Une fenêtre visible au premier plan, cinq secondes de stabilisation, puis fenêtres de 5 s. Démarrage mesuré jusqu'à `WaitForInputIdle`, pas premier pixel ; deux échantillons seulement, sans valeur statistique.
+
+| Mesure à vide | Échantillon 1 | Échantillon 2 |
+|---|---:|---:|
+| Démarrage | 2,286 s | 2,303 s |
+| Mémoire résidente | 185,74 Mio | 172,21 Mio |
+| Mémoire privée | 118,72 Mio | 108,14 Mio |
+| CPU au repos, équivalent un cœur | 0,00 % / 5,01 s | 0,00 % / 5,01 s |
+
+Ouverture d'un dossier persistant synthétique à quatre comptes depuis l'interface réelle : **1,496 s** puis **0,862 s** du choix du fichier à l'interface prête (dialogue exclu, attente pilotée par UIA). Chargement et validation seuls, sans interface : 4 comptes **6,6–9,6 ms** (médiane 8,3 ms, 10 essais alternés) ; 1 000 comptes **24,7–66,2 ms** (médiane 29,8 ms). Ces durées incluent la validation lecture seule puis écriture, pas la fermeture/checkpoint ni un démarrage à froid.
+
+**Constat non résolu, non introduit par cette mission :** en mode démonstration, une fenêtre **visible au premier plan** consomme durablement 15–100 % d'un cœur et sa mémoire résidente croît de 198 à 251 Mio sur une trentaine de secondes ; minimisée, la consommation retombe à **0,00 %**. Le même protocole appliqué à la version de mission 5 reconstruite depuis le commit `7248ad1` donne 15,6–81,3 % et la même croissance mémoire. Les mesures historiques « 0,00 % » correspondaient donc à un état sans rendu actif, pas à un repos visible comparable. La cause n'est pas établie : elle demande une enquête de rendu/layout distincte, sans modifier ici l'interface validée. Aucun processus permanent, service réseau ou minuterie applicative n'est présent dans le code.
+
+Les campagnes disque plein, coupure électrique matérielle, supports amovibles, plusieurs moniteurs physiques et lecteurs d'écran restent non exercées.
 
 ## Vérifications de mission 5
 
@@ -91,6 +117,8 @@ Windows x64 10.0.26220, SDK 10.0.401/runtime 10.0.12 ; Release Light, sans débo
 | CPU, un cœur logique | 0,00 % | 0,00 % | 0,00 % |
 
 L'ancien commit est également plus lent qu'à sa mesure historique ; ces échantillons ne permettent pas d'attribuer ce ralentissement global aux ajouts M5. Pas de conclusion statistique ni garantie de performance. Premier lancement M5 observé : 3,550 s, 195,89 Mio résidents/138,30 Mio privés, CPU 0,00 %. Objectif RAM <100 Mo toujours non atteint. Pas de processus permanent de mise à jour ou de cours.
+
+**Correction de lecture apportée en mission 6 :** ces `0,00 %` ne représentent pas une fenêtre visible et active. En mesurant une fenêtre de démonstration au premier plan, la version M5 reconstruite depuis `7248ad1` consomme elle aussi 15–81 % d'un cœur et croît en mémoire ; minimisée, elle retombe à 0 %. Voir « Performances et limites de mission 6 ». Cette constatation ne réécrit pas les valeurs historiques, elle en précise la portée.
 
 
 ## Vérifications de mission 4
@@ -174,4 +202,4 @@ Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
 ## Prochaine mission proposée
 
-Valider visuellement cette nouvelle interface, compléter les menus déroulés BankPerfect sur des captures sans données privées et qualifier plusieurs moniteurs réels/technologies d'assistance. Puis autoriser séparément les invariants monétaires et la persistance SQLite avec migrations, sauvegarde/restauration exercée et tests avant toute donnée réelle. Le corpus `.bp` fictif demeure nécessaire ; aucune conversion, API de change ou édition financière n'est ajoutée ici. Voir [ROADMAP.md](docs/ROADMAP.md).
+Valider ce cycle de dossier et la restauration sur données synthétiques ; ajouter ensuite les opérations persistantes (saisie, règles de correction, catégories/tiers/modes et pointage) par migration, avec soldes et historique vérifiés. Qualifier les sauvegardes avant cadence/rétention automatiques. Le corpus `.bp` fictif demeure nécessaire pour le lecteur indépendant prioritaire ; aucun export n'est assimilé à une migration complète. Change daté, transferts, accessibilité multi-écran et automatisation restent des lots distincts. Voir [ROADMAP](docs/ROADMAP.md).

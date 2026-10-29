@@ -1,6 +1,6 @@
 # Formats de fichiers Moneta
 
-Contrat de format issu de la mission documentaire 2. La mission 3 réalise un prototype WPF **sans persistance**, aucun fournisseur SQLite, schéma, fichier `.moneta` ou essai de sauvegarde/restauration. Les exigences suivantes restent futures ; elles ne décrivent pas une capacité du prototype. Voir [ARCHITECTURE.md](ARCHITECTURE.md), [BANKPERFECT_IMPORT_STRATEGY.md](BANKPERFECT_IMPORT_STRATEGY.md) et [README](../README.md). Les preuves de l'audit initial sont conservées.
+**État mission 6 : format natif SQLite et sauvegarde/restauration manuelles implémentés pour les dossiers, devises et comptes.** Schéma courant 2 ; opérations uniquement dans la démonstration en mémoire. Les identifiants FMT restent stables. Les exigences d'automatisation, d'association Windows et de qualification non exercées restent explicitement futures ; voir [README](../README.md), [ARCHITECTURE](ARCHITECTURE.md) et [stratégie BP](BANKPERFECT_IMPORT_STRATEGY.md).
 
 Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. « Doit » exprime une exigence Moneta ; une propriété documentée de SQLite n'est pas une garantie d'implémentation Moneta.
 
@@ -10,8 +10,17 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 - Ce n'est **ni une archive ZIP**, ni un conteneur à décompresser, ni un `.bp` renommé, ni une encapsulation de BankPerfect. Aucune installation, API ou exécution BankPerfect n'est nécessaire au format natif Moneta.
 - Le fichier commence par les 16 octets de signature SQLite `SQLite format 3\0` (zéro terminal). Cette signature identifie SQLite, **pas Moneta**. L'extension seule n'identifie aucun format et une base SQLite quelconque renommée `.moneta` doit être refusée comme dossier Moneta.
 - L'identification doit combiner signature, `PRAGMA application_id`, métadonnées Moneta, version et schéma reconnu. `application_id` est le champ applicatif 32 bits de l'en-tête SQLite ; `user_version` est une convention de l'application. Ne pas utiliser `schema_version`, que SQLite gère pour son propre schéma, comme numéro de migration Moneta [S01, S02].
-- Proposition de contrat de métadonnées : marqueur littéral `Moneta`, identifiant stable du dossier, version entière du format/schéma, version minimale de lecteur et d'écrivain compatible, version de l'application créatrice, dates UTC de création/migration et historique des migrations. `application_id` doit être non nul, constant pour cette famille et publié avec le premier schéma ; sa valeur devra être choisie sans collision connue dans la liste SQLite. **Aucun identifiant numérique n'est réservé ou prétendu enregistré dans cette mission.** La version native Moneta est indépendante des versions BankPerfect et du numéro de version SQLite. L'accord des deux représentations de version (`user_version` et métadonnées) est contrôlé ; une discordance n'est pas réparée silencieusement.
-- La forme des tables, contraintes et métadonnées sera figée lors de la réalisation autorisée. Il n'existe aujourd'hui **aucun schéma Moneta livré**. Les exigences ci-dessus évitent précisément de présenter n'importe quelle base comme une version 1 existante.
+- Contrat livré : marqueur `Moneta`, `application_id=0x4D4E5441` (`MNTA`), `user_version=2` et métadonnées concordantes ; UUID stable du dossier, nom, versions minimales lecteur/écrivain, application créatrice, horodatages UTC et compte sélectionné facultatif. Cet identifiant n'avait pas de collision dans la liste SQLite consultée ; aucune réservation officielle n'est revendiquée.
+- Quatre tables `STRICT`, sans colonnes monétaires `REAL` :
+
+| Table | Champs / relations réalisés |
+|---|---|
+| `Document` | Une ligne singleton ; identité, versions, nom, création/modification UTC, sélection |
+| `Currencies` | Code unique, nom, symbole, précision, culture/règles d'affichage et ordre ; EUR/BYN/RUB proposés à la création, registre extensible |
+| `Accounts` | UUID unique, nom, type, devise native FK vers `Currencies`, `opening_minor INTEGER`, notes, archive, création/modification UTC et ordre |
+| `MigrationHistory` | Version source/cible, identifiant/définition de migration et date UTC ; seules les définitions reconnues sont acceptées |
+
+Les opérations, tiers, catégories, relations de virements et ventilations viendront par migrations normalisées, pas par champs inutilisés. Leur absence du fichier actuel est intentionnelle et annoncée ; les données fictives ne sont jamais injectées dans un nouveau dossier.
 - SQLite ordinaire n'apporte pas de chiffrement implicite. Aucun mot de passe BP, clé, secret ou protection inconnue n'est transféré ou émulé. La protection future d'un dossier est un sujet explicite distinct, pas une propriété déduite de l'extension.
 
 ## FMT-02 — Reconnaître avant d'écrire ou de créer
@@ -27,7 +36,7 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 
 ### Création d'un nouveau dossier
 
-Commande distincte « Nouveau », nom et destination explicites, chemin local admissible, espace/droits contrôlés, création exclusive d'un temporaire dans le dossier de destination. Valider ce temporaire, le fermer et le publier sans écraser un fichier concurrent. **Ouvrir** n'est pas **Créer**. Ni une erreur de lecture ni une annulation ne doivent déclencher cette procédure. La publication et sa résistance aux pannes seront éprouvées sur les systèmes de fichiers Windows retenus ; le mot « atomique » ne vaut pas garantie universelle entre volumes ou sur support réseau.
+**Fichier → Nouveau / Ctrl+N** demande un nom et prépare un dossier vide en mémoire. Le premier Enregistrer demande la destination. Création exclusive d'un temporaire voisin, schéma/identité/données vérifiés, fermeture puis publication sans écrasement et réouverture comparée. Un principal existant ou un journal compagnon préexistant bloque la création, sans supprimer ces fichiers. Annuler ne crée aucun dossier financier. Les copies restent sur le même volume pendant publication ; aucune atomicité inter-volume n'est revendiquée.
 
 ### Versions anciennes, futures ou inconnues
 
@@ -38,9 +47,9 @@ Commande distincte « Nouveau », nom et destination explicites, chemin local ad
 
 ## FMT-03 — Valeurs financières et dates exactes
 
-Le modèle logique suit l'architecture ; il ne constitue pas ici un DDL.
+Le solde initial et les horodatages techniques sont réalisés. Les autres représentations ci-dessous sont des contrats pour les futurs domaines persistants, pas des tables existantes.
 
-| Donnée | Contrat de stockage futur | Validation requise |
+| Donnée | Contrat de stockage | Validation requise |
 | --- | --- | --- |
 | Montant comptabilisé et solde initial | `INTEGER` 64 bits en unités mineures, devise et échelle explicites ; pour une opération, magnitude non négative avec sens débit/crédit séparé | Pas de supposition « toute devise a deux décimales ». À deux décimales, 12,34 EUR = 1234 unités ; solde négatif et sens restent distincts. Débordement ou fraction sous l'unité rejetés explicitement, jamais tronqués |
 | Taux, quantité de titres, prix unitaire | `TEXT` décimal canonique invariant, point décimal, sans séparateur de milliers ; précision, unité et provenance explicites | Ex. taux fictif `3.2500`, quantité `2.5`. Préserver la précision source nécessaire ; ne pas passer par `double` ou `REAL` |
@@ -48,7 +57,7 @@ Le modèle logique suit l'architecture ; il ne constitue pas ici un DDL.
 | Horodatages techniques | UTC avec représentation non ambiguë | Création/import/sauvegarde ne remplacent jamais les dates métier |
 | Texte utilisateur | Unicode, valeur et provenance conservées | Aucune translittération ou normalisation destructive silencieuse ; ne pas exécuter les champs de règles historiques |
 
-SQLite `REAL` est binaire flottant ; `DECIMAL(10,2)` ne garantit ni échelle ni exactitude. Le fournisseur Microsoft documente le stockage de `decimal` en `TEXT` ; cela ne signifie pas que ce fournisseur est installé ou définitivement sélectionné [S08, S09]. Les calculs futurs sont en C# `decimal`/entiers contrôlés, sans repli flottant après dépassement ; les sommes sont vérifiées par devise. **Pas de calcul financier par `TOTAL`, `AVG`, conversion `REAL` ou somme SQL implicite de nombres `TEXT`.** Sens des taux, échelles, étapes et politique d'arrondi sont versionnés et visibles dans les calculs [ARCHITECTURE.md](ARCHITECTURE.md).
+SQLite `REAL` est binaire flottant ; `DECIMAL(10,2)` ne garantit ni échelle ni exactitude. `Microsoft.Data.Sqlite` **10.0.12** est utilisé avec des paramètres entiers explicites pour les soldes, pas sa conversion automatique de `decimal`. `ExactMoney` rejette toute fraction sous l'unité et tout dépassement de `±long.MaxValue` unités mineures ; **aucun arrondi à la saisie**. Les taux/prix futurs resteront distincts, exacts et sourcés. Pas de `TOTAL`, `AVG`, cast `REAL` ou somme implicite de valeurs `TEXT` pour une vérité financière.
 
 Contraintes de domaine, unicité, références et transactions doivent maintenir les soldes, les deux jambes des transferts et les ventilations équilibrées. Un montant ou une relation indéchiffrable à l'import ne devient pas zéro ou une relation déduite par ressemblance.
 
@@ -65,7 +74,7 @@ SQLite peut créer des fichiers de travail adjacents dont le nom **ajoute** un s
 
 Le WAL peut contenir des transactions validées encore absentes du fichier principal. `-shm` est un index de coordination, pas une sauvegarde de remplacement. Un journal de retour arrière « chaud » peut être indispensable à la récupération. D'autres temporaires SQLite restent possibles : ne pas promettre une liste exhaustive de fichiers physiques ni une suppression systématique à la fermeture.
 
-**Politique Moneta proposée :** base active sur disque local, WAL avec `synchronous=FULL`, chemin d'écriture unique et contrôle des ouvertures incompatibles. La version exacte du moteur est à sélectionner avant développement : la documentation SQLite signale le défaut de corruption « WAL-reset », corrigé en **3.51.3 et suivantes**, ainsi que par certains rétroportages 3.44.6/3.50.7 [S03, section 11]. Exiger une version maintenue qui inclut ce correctif et les corrections pertinentes ultérieures ; ne pas figer une ancienne version minimale comme garantie suffisante. Cette lecture documentaire n'est pas un diagnostic du poste.
+**Politique réalisée :** disque local, WAL, `synchronous=FULL`, `foreign_keys=ON`, `trusted_schema=OFF`, extensions désactivées, pool désactivé et attente de verrou bornée à trois secondes ; valeurs critiques vérifiées. Bundle explicite `SQLitePCLRaw.bundle_e_sqlite3` **3.0.5**, moteur **3.53.4 observé à l'exécution** ; minimum corrigé **3.51.3** exigé. Voir [package fournisseur](https://www.nuget.org/packages/Microsoft.Data.Sqlite/10.0.12), [bundle](https://www.nuget.org/packages/SQLitePCLRaw.bundle_e_sqlite3/3.0.5) et défaut WAL-reset [S03].
 
 ### Checkpoint, concurrence et durabilité
 
@@ -74,6 +83,8 @@ Le WAL peut contenir des transactions validées encore absentes du fichier princ
 - Prévoir attente bornée/annulation et message visible en cas de verrouillage. Un checkpoint incomplet ne justifie jamais de supprimer le WAL. Tant que l'état autonome n'est pas établi, ne pas annoncer « prêt à copier comme fichier unique ».
 - `synchronous=FULL` demande les synchronisations nécessaires aux commits WAL ; ce n'est pas une garantie contre un matériel qui ment sur les écritures, un système de fichiers défectueux, toute coupure ou toute erreur d'E/S [S03, S04]. Ne pas dégrader silencieusement vers `NORMAL`, `OFF` ou `journal_mode=OFF`.
 - Disque plein, droits perdus, déconnexion du support, échec de commit/checkpoint/fermeture : échec explicite ; aucune réussite inventée, aucun nettoyage des fichiers de reprise. L'application ne supprime ni ne renomme manuellement un journal chaud.
+
+Un fichier adjacent `.moneta.lock` porte le verrou exclusif de session Moneta. Son existence n'indique pas une session active : le handle système est libéré après fermeture/crash, le fichier vide reste volontairement présent. Ne pas le confondre avec un journal SQLite. Un échec de checkpoint conserve connexion et verrou pour permettre la reprise ; pas d'annonce de fermeture autonome prématurée. Une écriture externe détectée au prochain Save est refusée avant toute modification.
 
 ### Réseau, synchronisation et transport
 
@@ -90,34 +101,33 @@ Après crash, conserver principal et journaux à leurs noms et emplacements coh�
 
 ## FMT-05 — Créer une sauvegarde vérifiable
 
-**Procédure future requise, non exécutée :**
+**Procédure manuelle réalisée :**
 
-1. Identifier le dossier/version et le point cohérent visé ; protéger la source contre les écritures incompatibles avec les comparaisons. Utiliser l'**Online Backup API** ou un mécanisme SQLite cohérent explicitement validé via le fournisseur retenu, pas une copie de fichiers actifs [S05].
-2. Créer une destination temporaire exclusive sur le volume où la sauvegarde sera publiée ; ne jamais réutiliser l'unique sauvegarde valide comme destination de travail. Contrôler tous les codes de retour de l'API, y compris finalisation et fermeture ; annulation/`BUSY`/disque plein ne vaut pas succès.
-3. Fermer proprement la destination et la rendre autonome ; la rouvrir pour vérification bornée en lecture seule, contrôler signature/identité/version, `integrity_check`, `foreign_key_check` et invariants métier. Comparer comptes, devises, nombres de lignes, soldes initiaux/finals, totaux débit/crédit, pointage/rapprochement, transferts et ventilations au **même snapshot** source, pas à une source qui aurait évolué entre deux mesures.
-4. Fermer tous les accès de validation, calculer **SHA-256 et longueur** du fichier final stable. Établir le manifeste technique : identifiant de sauvegarde/dossier, versions, instants UTC établis, taille, empreinte et résultats des contrôles, sans noms de tiers/comptes, numéros bancaires ou soldes dans la version partageable. Conserver **séparément une référence de rapprochement financière privée** du même snapshot : comptes identifiés techniquement, nombres et totaux par devise/état, soldes et relations attendus ; la lier à cette sauvegarde par identifiant et empreinte. Elle ne va ni dans Git ni dans les journaux partageables. Une empreinte ne chiffre rien et ne prouve pas seule l'authenticité.
-5. Publier sous un nom neuf par bascule sur le même volume sans écrasement concurrent, avec gestion vérifiée des erreurs et de la durabilité. Ne déclarer « sauvegarde créée et contrôlée » qu'après la publication et ses contrôles ; un temporaire restant après incident est identifié comme incomplet, pas découvert comme sauvegarde réussie.
-6. Conserver l'ancienne copie valide ; rétention configurable et consentie, support externe indépendant recommandé. L'indisponibilité du support ou l'échec de rotation reste visible, jamais compensé par l'effacement de la dernière copie valide. La copie de référence BP n'est pas une cible de sauvegarde Moneta.
+1. Enregistrer d'abord les modifications en attente. La sauvegarde représente les données committées, pas un brouillon.
+2. Comparer le snapshot vivant au dernier snapshot enregistré ; utiliser `SqliteConnection.BackupDatabase` vers un temporaire exclusif voisin de la destination.
+3. Vérifier identité, version, schéma exact, `integrity_check`, `foreign_key_check` et empreinte canonique de **tous** les champs du dossier, devises et comptes, ordre compris. Consolider le WAL de la copie puis passer cette copie autonome en journal `DELETE`.
+4. Fermer et calculer SHA-256/longueur. Le manifeste JSON version 1 contient version de manifeste/schéma, UUID du dossier, empreinte du fichier et du snapshot complet, nombres de comptes/devises. Aucun nom, note ou solde en clair ; pas de référence financière séparée requise puisque le rapprochement intégral utilise ce digest du même snapshot.
+5. Publier la base sous un nom neuf, puis son `<nom>.moneta.manifest.json` **en dernier**. Le couple n'est pas une transaction multifichier : sans manifeste final ou en cas de divergence, la copie n'est pas certifiée. Une publication interrompue ne supprime aucune ancienne sauvegarde.
+6. Conserver les deux fichiers ensemble, à l'écart du dossier actif, et tester une restauration. L'empreinte n'est ni chiffrement ni signature d'authenticité. Ne pas ouvrir/enregistrer directement l'archive comme dossier de travail : son hash pourrait changer ; restaurer une nouvelle copie.
 
-La base et ses pièces de contrôle ne forment pas magiquement une transaction multifichier : publier le manifeste d'achèvement après la base et les références privées requises validées, puis traiter toute publication interrompue comme non certifiée jusqu'à recontrôle. En l'absence de référence financière, ne pas revendiquer une comparaison au snapshot source non disponible. Les garanties de renommage/flush Windows devront être éprouvées ; aucune promesse d'atomicité inter-volume.
+La date UTC propre à la sauvegarde, un identifiant de génération distinct du hash, la planification, la rétention et les copies externes automatisées restent à réaliser avant automatisation. Aucun déclenchement automatique ni rotation n'est annoncé. Les invariants d'opérations/liens feront partie du digest et du rapprochement lorsqu'ils seront persistés.
 
 ## FMT-06 — Restaurer réellement, pas seulement vérifier un hash
 
-1. Choisir une sauvegarde et vérifier longueur/hash, identité et compatibilité ; si le manifeste manque, ne pas la déclarer préalablement certifiée.
-2. **Restaurer effectivement vers un nouveau fichier local**, distinct du dossier courant et de l'archive de sauvegarde. Aucun écrasement direct de l'unique exemplaire.
-3. Ouvrir la copie restaurée, refaire les contrôles structurels, clés étrangères et invariants de FMT-05, puis réconcilier comptes, opérations, devises, soldes et liens avec le manifeste financier privé du snapshot. Un `integrity_check=ok` seul ne prouve pas une reprise financière correcte.
-4. Fermer/réouvrir cette copie avec le futur logiciel et exercer le parcours de lecture utile ; comparer à nouveau les valeurs attendues. **Une restauration doit être réellement exercée**, non remplacée par l'ouverture du fichier de sauvegarde ou par une promesse.
-5. Présenter la comparaison. Pour une bascule consentie, préserver auparavant l'état courant dans une sauvegarde cohérente, fermer toutes les connexions et publier la destination validée. Ne jamais supprimer l'archive ni le dossier précédent après un échec.
+1. Choisir la sauvegarde **et conserver son manifeste adjacent**. Manifeste absent/incomplet/inconnu, hash/taille divergents, identité/version/schéma invalides ou corruption : refus.
+2. Restaurer par API SQLite vers un temporaire local distinct ; aucun fichier principal ou compagnon de destination existant n'est remplacé.
+3. Vérifier le contenu complet contre le digest certifié, puis publier sous un nouveau nom, rouvrir avec `MonetaFile.Open` et comparer à nouveau. Un hash ou `integrity_check=ok` isolé ne suffit pas.
+4. Le dialogue annonce uniquement une **restauration sur nouvelle copie rouverte et comparée**. Le dossier actuellement affiché, ses données et brouillons restent inchangés. Utiliser ensuite Fichier → Ouvrir pour une bascule volontaire.
 
-Statuts distincts : « sauvegarde créée/contrôlée », « restauration sur copie exercée et réconciliée », « bascule effectuée ». Une seule de ces réussites ne permet pas de revendiquer les trois. **Aucune de ces opérations n'a été exercée dans cette mission.**
+La restauration est effectivement exercée par les tests et le scénario WPF avec plusieurs comptes EUR/BYN/RUB, montants signés, UUID, notes et sélection retrouvés. Elle ne certifie pas des opérations absentes du schéma.
 
 ## FMT-07 — Migration du schéma, sans rétrogradation
 
-Chaque migration a une version source/cible connue, un identifiant, une empreinte de définition et des pré/postconditions. Avant de modifier : contrôler l'identité source, disposer d'une sauvegarde cohérente **avec restauration sur copie exercée**, d'espace/droits suffisants et du consentement requis.
+Schéma courant **2**. Seule transition connue **1 → 2** : brouillon interne synthétique identique hormis l'absence de `Accounts.is_archived`, ajouté avec valeur fausse. La version 1 n'est pas présentée comme une ancienne version distribuée de Moneta.
 
-Contrat privilégié : migrer **une copie de travail distincte**, jamais le seul original. Relever avant transformation les identifiants, comptes/devises, nombres, soldes, états/dates de pointage, liens, ventilation, échéances, budgets et autres domaines persistés ; appliquer les migrations ordonnées et transactionnelles quand SQLite le permet ; écrire la version cible seulement avec la transformation réussie. Pour une opération non transactionnelle, produire une nouvelle copie cohérente, pas une demi-migration publiée.
+L'ouverture normale d'une version 1 signale une migration nécessaire. L'utilisateur choisit explicitement de créer une copie et sa nouvelle destination. L'API SQLite copie d'abord le source en lecture seule ; la copie avant transformation est contrôlée et comparée intégralement. Reconstruction transactionnelle de la table, historique/version mis à jour ensemble, comparaison après transformation puis réouverture de la copie publiée. Le hash du principal source est contrôlé inchangé ; aucun fichier original ni journal n'est supprimé.
 
-Après transformation : contrôles FMT-05 et **comparaison avant/après des données et invariants**. Les différences attendues de représentation sont décrites par la migration ; toute différence financière inattendue bloque la publication. Réouverture de la copie cible, conservation des preuves et publication contrôlée sans destruction de la source. Une erreur laisse le dossier d'origine utilisable avec sa version compatible ; ni version artificiellement abaissée, ni downgrade automatique. Le retour à l'état antérieur passe par la copie conservée et l'application compatible, pas par une migration inverse improvisée.
+Version future, définition inconnue ou schéma altéré : refus, jamais de downgrade. Pour les futures versions publiées, étendre ce catalogue et les essais d'interruption à chaque frontière, avec sauvegarde cohérente/restauration préalable qualifiée. Aucun mécanisme générique de « réparation » ou migration automatique sur l'unique original.
 
 ## FMT-08 — Association Windows consentie, ultérieure
 
@@ -129,11 +139,11 @@ Aucune modification du registre, association ou installation n'est réalisée pe
 - Le changement de programme par défaut relève de l'interface Windows et du choix utilisateur. **Ne pas écraser `UserChoice`, modifier son hash, forcer le défaut ou rétablir Moneta après un choix contraire.** La documentation « Default Programs » avertit que ses anciennes API de changement ne s'appliquent pas à Windows 10 ; ce n'est pas une recette à réutiliser aveuglément [S12].
 - Désinstallation : retirer uniquement les entrées possédées par Moneta ; ne supprimer aucun document ni préférence d'un autre programme. Aucune icône/logo BP ni pack graphique réutilisé ; l'identité visuelle Moneta reste originale.
 
-## FMT-09 — Validations futures obligatoires
+## FMT-09 — Critères de validation et limites des preuves
 
-Cette liste est une spécification d'acceptation, **pas un compte rendu de tests**. Aucun test SQLite applicatif, fichier `.moneta`, projet ou générateur n'est créé ici.
+Les tests d'intégration et scénarios Windows de mission 6 couvrent le socle décrit ci-dessus ; résultats et limites dans le README. La matrice reste le contrat élargi : disque plein forcé, coupure électrique matérielle, toutes les frontières de migration et association Windows ne sont **pas** déclarés qualifiés.
 
-| ID | Exercice futur sur données entièrement synthétiques | Résultat exigé |
+| ID | Exercice sur données entièrement synthétiques | Résultat exigé |
 | --- | --- | --- |
 | FMT-V01 | Fichier absent/vide/tronqué, ZIP, faux suffixe, SQLite d'une autre application | Refus sans création ni écriture ; identification explicite |
 | FMT-V02 | Versions connues anciennes, future, métadonnées incohérentes, schéma altéré | Migration uniquement connue ; refus futur/incohérent sans downgrade |
@@ -154,10 +164,10 @@ Cette liste est une spécification d'acceptation, **pas un compte rendu de tests
 | S02 | [SQLite — PRAGMA](https://www.sqlite.org/pragma.html), sections [application_id](https://www.sqlite.org/pragma.html#pragma_application_id), [user_version](https://www.sqlite.org/pragma.html#pragma_user_version), [integrity_check](https://www.sqlite.org/pragma.html#pragma_integrity_check), [foreign_key_check](https://www.sqlite.org/pragma.html#pragma_foreign_key_check), [wal_checkpoint](https://www.sqlite.org/pragma.html#pragma_wal_checkpoint) | Identité/version et contrôles distincts ; les PRAGMA inconnus peuvent être ignorés |
 | S03 | [SQLite — Write-Ahead Logging](https://www.sqlite.org/wal.html) | Fichiers latéraux, checkpoints, `BUSY`, réseau, durabilité et correctif WAL-reset (section 11) |
 | S04 | [SQLite — Atomic Commit](https://www.sqlite.org/atomiccommit.html) | Hypothèses matérielles et rôle de la récupération ; pas garantie absolue du poste |
-| S05 | [SQLite — Online Backup API](https://www.sqlite.org/backup.html) | Snapshot cohérent via l'API ; aucun essai Moneta réalisé |
+| S05 | [SQLite — Online Backup API](https://www.sqlite.org/backup.html) | Copie cohérente utilisée par Moneta via `BackupDatabase` ; essais dans le README |
 | S07 | [SQLite — Security](https://www.sqlite.org/security.html) | Limites et schéma non fiable ; aucune base étrangère exécutée |
 | S08 | [SQLite — Datatypes](https://www.sqlite.org/datatype3.html) | Référence reliée à l'étude d'architecture : affinités et flottants, pas type financier décimal automatique |
-| S09 | [Microsoft — SQLite types](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/types) | Référence existante d'architecture sur `decimal`/`TEXT` ; fournisseur candidat non installé |
+| S09 | [Microsoft — SQLite types](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/types) | Différence `decimal`/`TEXT` ; Moneta lie explicitement les soldes en `INTEGER` |
 | S10 | [Microsoft — File Types](https://learn.microsoft.com/en-us/windows/win32/shell/fa-file-types) | ProgID, `OpenWithProgids`, enregistrement par utilisateur |
 | S11 | [Microsoft — Launching Applications](https://learn.microsoft.com/en-us/windows/win32/shell/launch) | Commande du verbe d'ouverture, chemins cités |
 | S12 | [Microsoft — Default Programs](https://learn.microsoft.com/en-us/windows/win32/shell/default-programs) et [changement Windows 10](https://blogs.windows.com/windows-insider/2015/05/20/announcing-windows-10-insider-preview-build-10122-for-pcs/) | Limite des anciennes API et contrôle utilisateur du défaut ; vérifier l'intégration sur les Windows supportés lors de sa réalisation |

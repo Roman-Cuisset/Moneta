@@ -1,0 +1,64 @@
+namespace Moneta.Core;
+
+public sealed record FinancialDocument(
+    Guid Id,
+    string Name,
+    DateTimeOffset CreatedUtc,
+    DateTimeOffset ModifiedUtc,
+    IReadOnlyList<Currency> Currencies,
+    IReadOnlyList<Account> Accounts)
+{
+    public int SchemaVersion { get; init; } = 2;
+    public Guid? SelectedAccountId { get; init; }
+
+    public static FinancialDocument New(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        var now = DateTimeOffset.UtcNow;
+        return new(Guid.NewGuid(), name.Trim(), now, now, new CurrencyRegistry().Currencies.ToArray(), Array.Empty<Account>());
+    }
+}
+
+public enum DocumentError
+{
+    MissingFile, InvalidFormat, Corrupt, UnsupportedVersion, MigrationRequired,
+    AccessDenied, InUse, Locked, WriteFailed, DestinationExists, InvalidData, VerificationFailed
+}
+
+public sealed class DocumentException : Exception
+{
+    public DocumentError Error { get; }
+    public DocumentException(DocumentError error, string message, Exception? inner = null) : base(message, inner) => Error = error;
+}
+
+public static class ExactMoney
+{
+    public static long ToMinorUnits(decimal amount, Currency currency)
+    {
+        var scale = Scale(currency);
+        decimal scaled;
+        try { scaled = checked(amount * scale); }
+        catch (OverflowException) { throw new ArgumentOutOfRangeException(nameof(amount), "Montant hors limites."); }
+        if (decimal.Truncate(scaled) != scaled)
+            throw new ArgumentException("Précision monétaire excessive : aucun arrondi automatique.", nameof(amount));
+        if (scaled < -long.MaxValue || scaled > long.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(amount), "Montant hors limites des unités mineures.");
+        return checked((long)scaled);
+    }
+
+    public static decimal FromMinorUnits(long amount, Currency currency)
+    {
+        if (amount == long.MinValue) throw new ArgumentOutOfRangeException(nameof(amount));
+        return amount / Scale(currency);
+    }
+
+    private static decimal Scale(Currency currency)
+    {
+        ArgumentNullException.ThrowIfNull(currency);
+        ArgumentOutOfRangeException.ThrowIfNegative(currency.DecimalPlaces);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(currency.DecimalPlaces, 28);
+        decimal scale = 1;
+        for (var i = 0; i < currency.DecimalPlaces; i++) scale *= 10;
+        return scale;
+    }
+}

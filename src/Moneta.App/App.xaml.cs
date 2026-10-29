@@ -70,10 +70,7 @@ public partial class App : Application
         ThemeController.Apply(Settings.Current.Theme);
         base.OnStartup(e);
 
-        MainWindow = new MainWindow
-        {
-            DataContext = new MainViewModel(DemoData.Create())
-        };
+        MainWindow = new MainWindow();
         MainWindow.Show();
         if (settingsError is not null)
         {

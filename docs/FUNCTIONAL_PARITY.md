@@ -2,7 +2,7 @@
 
 ## Portée et légende
 
-État mission 5 : prototype WPF fictif, ajout/sélection de comptes dynamiques en mémoire et préférences locales non financières. Sélection de texte corrigée, thèmes persistés dans Affichage et devise d'affichage sans taux inventé. La cible complète reste future : édition d'opérations, stockage financier, change et import natif. Voir [README](../README.md) et [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
+État mission 6 : dossiers `.moneta` SQLite persistants pour comptes/devises, enregistrement manuel, sauvegarde et restauration vérifiées. Les opérations restent fictives en mémoire ; édition financière, change et import natif restent futurs. Voir [README](../README.md), [FILE_FORMATS](FILE_FORMATS.md) et [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
@@ -21,10 +21,10 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 
 | Fonction BankPerfect | Emplacement connu / preuve | État de la preuve | Cible Moneta | Réalisation |
 |---|---|---|---|---|
-| Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | À développer |
-| Nouveau fichier, solde initial | M02 : Comptes > Créer un nouveau fichier de comptes | Vérifié — manuel ; emplacement local à confirmer | Même commande et parcours | À développer |
-| Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; **Fichier > Ouvrir** ouvre `.moneta` ou propose la conversion d'un `.bp` ; aucun enregistrement vers `.bp` | À développer |
-| Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection et ajout de comptes de démonstration sans plafond produit ; modification/suppression et persistance non implémentées |
+| Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | Partiel : format, plusieurs comptes et dossiers indépendants réels ; opérations encore en mémoire |
+| Nouveau fichier, solde initial | M02 : Comptes > Créer un nouveau fichier de comptes | Vérifié — manuel ; emplacement local à confirmer | Même commande et parcours | Partiel : nouveau dossier vierge nommé, solde initial par compte ajouté ; pas de solde initial global au dialogue de création |
+| Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; **Fichier > Ouvrir** ouvre `.moneta` ou propose la conversion d'un `.bp` ; aucun enregistrement vers `.bp` | Partiel : ouvrir/enregistrer/enregistrer sous/sauvegarde/restauration réalisés sur `.moneta` ; `.bp` refusé proprement et import non implémenté ; impression absente |
+| Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection et ajout persistant sans plafond produit ; modification/suppression non proposées, drapeau archivé seulement conservé |
 | Informations bancaires, monnaie du compte, RIB | M02 ; `Scripts/Rib/rib.ini:2-6` : Fichier | Vérifié — manuel et local | Métadonnées facultatives, contrôle RIB et impression | À développer |
 | Mot de passe d'un fichier | M02 : Comptes > Mot de passe | Vérifié — manuel ; protection cryptographique inconnue | Protection à concevoir, pas de simple imitation d'un verrou non étudié | À développer |
 | Agencement principal | M01 et capture privée mission 4 : menus, outils, informations à gauche, filtres, tableau, saisie, état | Vérifié — manuel et disposition visible ; sous-menus non observés | Mêmes repères, identité moderne originale | Partiel : structure rétablie, filtres et édition désactivés ; thèmes Light/Dark fonctionnels |

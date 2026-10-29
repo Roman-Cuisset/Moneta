@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Moneta.App"
-        Title="Moneta — démonstration" Width="1280" Height="800" MinWidth="900" MinHeight="500"
+        Title="Moneta" Width="1280" Height="800" MinWidth="900" MinHeight="500"
         WindowStartupLocation="CenterScreen" FontFamily="{DynamicResource AppFont}" FontSize="13"
         Background="{DynamicResource CanvasBrush}" Foreground="{DynamicResource TextBrush}"
         UseLayoutRounding="True" SnapsToDevicePixels="True"
@@ -11,10 +11,15 @@
         <CommandBinding Command="ApplicationCommands.Close" Executed="Close_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.About}" Executed="About_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.Settings}" Executed="Settings_Executed" />
-        <CommandBinding Command="{x:Static local:WindowCommands.AddDemoAccount}" Executed="AddAccount_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.AddAccount}" Executed="AddAccount_Executed" CanExecute="AddAccount_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Theme}" Executed="Theme_Executed" />
-        <CommandBinding Command="{x:Static local:WindowCommands.Open}" CanExecute="Unavailable_CanExecute" />
-        <CommandBinding Command="{x:Static local:WindowCommands.Save}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.New}" Executed="New_Executed" CanExecute="Available_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Open}" Executed="Open_Executed" CanExecute="Available_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Save}" Executed="Save_Executed" CanExecute="Save_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.SaveAs}" Executed="SaveAs_Executed" CanExecute="Save_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Backup}" Executed="Backup_Executed" CanExecute="Backup_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Restore}" Executed="Restore_Executed" CanExecute="Available_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Demo}" Executed="Demo_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Search}" CanExecute="Unavailable_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.FinancialUndo}" CanExecute="Unavailable_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.FinancialRedo}" CanExecute="Unavailable_CanExecute" />
@@ -80,8 +85,15 @@
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <Menu KeyboardNavigation.TabNavigation="Once" VerticalAlignment="Center" AutomationProperties.AutomationId="MainMenu">
                     <MenuItem Header="_Fichier">
-                        <MenuItem Header="_Ouvrir…" Command="{x:Static local:WindowCommands.Open}" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="_Enregistrer" Command="{x:Static local:WindowCommands.Save}" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Nouveau dossier…" Command="{x:Static local:WindowCommands.New}" AutomationProperties.AutomationId="NewDocumentCommand" />
+                        <MenuItem Header="_Ouvrir…" Command="{x:Static local:WindowCommands.Open}" AutomationProperties.AutomationId="OpenDocumentCommand" />
+                        <MenuItem Header="_Enregistrer" Command="{x:Static local:WindowCommands.Save}" />
+                        <MenuItem Header="Enregistrer _sous…" Command="{x:Static local:WindowCommands.SaveAs}" />
+                        <Separator />
+                        <MenuItem Header="_Sauvegarder le dossier…" Command="{x:Static local:WindowCommands.Backup}" />
+                        <MenuItem Header="_Restaurer une sauvegarde…" Command="{x:Static local:WindowCommands.Restore}" />
+                        <Separator />
+                        <MenuItem Header="Mode _démonstration" Command="{x:Static local:WindowCommands.Demo}" ToolTip="Données fictives en mémoire, sans possibilité d’enregistrement financier." />
                         <Separator />
                         <MenuItem Header="_Importer">
                             <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
@@ -117,9 +129,9 @@
                         <MenuItem Header="Cacher les lignes inutiles" InputGestureText="Ctrl+H" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
                     <MenuItem Header="_Comptes">
-                        <MenuItem Header="_Nouveau fichier de comptes…" InputGestureText="Ctrl+N" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Nouveau fichier de comptes…" Command="{x:Static local:WindowCommands.New}" ToolTip="Même commande que Fichier → Nouveau dossier." />
                         <MenuItem Header="_Gestion des comptes…" InputGestureText="Ctrl+G" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="_Ajouter un compte de démonstration…" Command="{x:Static local:WindowCommands.AddDemoAccount}" />
+                        <MenuItem Header="_Ajouter un compte…" Command="{x:Static local:WindowCommands.AddAccount}" AutomationProperties.AutomationId="AddAccountCommand" />
                         <MenuItem Header="Mot de passe…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Tiers…" InputGestureText="F5" Style="{StaticResource UnavailableMenuItem}" />
@@ -176,19 +188,19 @@
             <ToolBarTray IsLocked="True" Background="{DynamicResource SurfaceBrush}" Margin="8,1">
                 <ToolBar Background="{DynamicResource SurfaceBrush}" BorderThickness="0" Padding="0" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ToolBarTray}}" AutomationProperties.Name="Accès rapides">
                     <StackPanel Margin="4,2,12,4" ToolBar.OverflowMode="Never">
-                        <TextBlock Text="Dossier de démonstration · en mémoire" Style="{StaticResource MutedText}" Margin="2,0,0,4" />
+                        <TextBlock x:Name="DocumentCaption" Text="Aucun dossier ouvert" Style="{StaticResource MutedText}" Margin="2,0,0,4" MaxWidth="218" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="DocumentCaption" />
                         <ComboBox x:Name="AccountsSelector" Width="218" ItemsSource="{Binding Accounts}" DisplayMemberPath="Name"
                                   SelectedItem="{Binding SelectedAccount, Mode=TwoWay}" IsSynchronizedWithCurrentItem="False"
                                   AutomationProperties.AutomationId="AccountsSelector" AutomationProperties.Name="Compte affiché"
-                                  ToolTip="Choisir le compte du dossier fictif. Aucun dossier sur disque n'est ouvert.">
+                                  ToolTip="Choisir un compte du dossier affiché.">
                             <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
                                 <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
                             </Style></ComboBox.ItemContainerStyle>
                         </ComboBox>
                     </StackPanel>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Comptes"><StackPanel><Path Data="{StaticResource AccountsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Comptes" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Command="{x:Static local:WindowCommands.Open}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Ouvrir"><StackPanel><Path Data="{StaticResource OpenIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Ouvrir" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Command="{x:Static local:WindowCommands.Save}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Enregistrer"><StackPanel><Path Data="{StaticResource SaveIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Enregistrer" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.AddAccount}" Style="{StaticResource ToolbarButton}" ToolTip="Ajouter un compte au dossier affiché." AutomationProperties.Name="Comptes"><StackPanel><Path Data="{StaticResource AccountsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Comptes" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.Open}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Ouvrir"><StackPanel><Path Data="{StaticResource OpenIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Ouvrir" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.Save}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Enregistrer"><StackPanel><Path Data="{StaticResource SaveIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Enregistrer" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Separator />
                     <Button Command="{x:Static local:WindowCommands.FinancialUndo}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Annuler"><StackPanel><Path Data="{StaticResource UndoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Annuler" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.FinancialRedo}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Refaire"><StackPanel><Path Data="{StaticResource RedoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Refaire" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
@@ -310,7 +322,7 @@
         </Grid>
         <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,6">
             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <TextBlock x:Name="StatusText" Text="{Binding StatusText}" Style="{StaticResource MutedText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding StatusText}" AutomationProperties.AutomationId="StatusText" />
+                <TextBlock x:Name="StatusText" Text="{Binding StatusText, FallbackValue='Fichier → Nouveau dossier ou Ouvrir pour commencer'}" Style="{StaticResource MutedText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding StatusText}" AutomationProperties.AutomationId="StatusText" />
                 <TextBlock x:Name="DevelopmentNotice" Grid.Column="1" Text="Version de développement — données fictives" Style="{StaticResource MutedText}" Margin="16,0,0,0" AutomationProperties.AutomationId="DevelopmentNotice" />
             </Grid>
         </Border>

@@ -12,7 +12,7 @@ La sélection de texte était recouverte par l'adorner historique WPF lorsque so
 
 Le thème quitte la barre supérieure pour **Affichage → Thème → Clair / Sombre** et est conservé dans le profil local. Pas de suivi Light/Dark Windows non qualifié ; le contraste élevé système reste prioritaire. Un sélecteur de monnaie compact accompagne le solde : montant natif ou état lisible **Cours indisponible**, jamais une valeur convertie supposée.
 
-Fenêtres d'ajout de comptes fictifs et de paramètres dans les mêmes ressources, avec avertissements explicites sur le stockage en mémoire et les options sans service. Aucun framework, logo ou ressource BP ajouté. Les détails et validations figurent dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) et le README ; les principes historiques ci-dessous sont maintenus.
+Fenêtres de nouveau dossier, d'ajout de compte et de paramètres dans les mêmes ressources ; l'avertissement « mémoire uniquement » n'apparaît qu'en mode démonstration, un dossier réel indiquant au contraire qu'il faut Enregistrer. Aucun framework, logo ou ressource BP ajouté. Les détails et validations figurent dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) et le README ; les principes historiques ci-dessous sont maintenus.
 
 
 ### Comparaison structurelle et direction retenue

@@ -17,6 +17,9 @@ public sealed record Account(Guid Id, string Name, Currency Currency, decimal Op
     public Currency Currency { get; } = Currency;
     public string? Type { get; init; }
     public string? Notes { get; init; }
+    public bool IsArchived { get; init; }
+    public DateTimeOffset CreatedUtc { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ModifiedUtc { get; init; } = DateTimeOffset.UtcNow;
 }
 
 public sealed record Category(string Name)

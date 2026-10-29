@@ -2,7 +2,7 @@
 
 ## Portée et règle de lecture
 
-**Mission 5 : sélection de texte corrigée, comptes fictifs dynamiques, référentiel de devises et préférences locales.** La persistance financière, les fournisseurs de cours, le lecteur `.bp`, l'édition des opérations et les mises à jour restent futurs. La publication GitHub n'est autorisée qu'en privé après audit des fichiers et de tout l'historique.
+**Mission 6 : fichiers `.moneta`, comptes persistants, enregistrement manuel et sauvegarde/restauration réelles.** Les opérations restent dans la démonstration ; les fournisseurs de cours, l'import `.bp`, l'édition financière et les mises à jour restent futurs. Le socle livré ne clôt pas les jalons de parité complets. Publication uniquement dans le dépôt privé après contrôle des fichiers et de l'historique.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
@@ -10,13 +10,29 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Livraison de persistance — mission 6
+
+| Résultat livré | Validation / limite |
+|---|---|
+| Dossier vierge, création et ouverture `.moneta` | Schéma 2, identité contrôlée, UUID et dates stables, isolation ; aucune injection des 3 200 opérations fictives |
+| Comptes multidevises persistants | Plusieurs comptes EUR/BYN/RUB et même devise, registre extensible, montant entier exact ; aucune limite produit de cardinalité ; pas encore d'édition/suppression de compte |
+| Enregistrement manuel / Enregistrer sous | Ajout en mémoire marqué modifié, commit atomique seulement sur Enregistrer ; nouvelle copie sans écrasement pour Enregistrer sous ; proposition à la fermeture |
+| Sauvegarde et restauration manuelles | API SQLite, copie autonome et manifeste final ; restauration vers nouveau chemin, réouverture/comparaison complète, dossier courant conservé |
+| Versionnement et erreurs | Migration connue du brouillon interne 1 → 2 sur copie ; refus de schémas/versions inconnus ; conflits externes et fichiers compagnons protégés |
+| Résistance observée | Verrous, rollback, checkpoint bloqué puis reprise ; processus tué après commit WAL et pendant transaction non validée, récupération exacte ; pas une coupure électrique matérielle |
+| Qualification | Résultats des tests, parcours WPF réel Light/Dark et mesures dans le README ; disque plein forcé et tous supports/moniteurs restent à qualifier |
+
+**Ordre proposé ensuite :** accepter ce cycle manuel et le format sur dossiers synthétiques ; ajouter les opérations persistantes et leurs invariants/révisions par migration ; qualifier les sauvegardes avant les automatismes ; puis change daté et transferts atomiques. En parallèle, obtenir le corpus `.bp` fictif nécessaire à B02/B03, sans remplacer l'objectif natif par CSV.
+
+S01 est réalisé pour **dossiers/devises/comptes**, pas pour tous les domaines financiers. S02 reste partiel : mécanisme manuel vérifié, cadence/rétention automatiques absentes. S03 couvre une transition interne connue, pas une compatibilité historique publiée. S04 reste une qualification ouverte malgré les preuves de processus interrompu ; S05 n'est pas commencé. U01 reste partiel tant que la saisie d'opérations manque.
+
 ### Livraison de préparation fonctionnelle — mission 5
 
 - Sélection de texte distincte de la sélection de ligne : cause WPF adorner reproduite, correction partagée et contrôles Light/Dark actifs/inactifs/readonly/désactivés observés.
 - Comptes de démonstration ajoutables/sélectionnables en mémoire, sans plafond produit, plusieurs comptes par devise ; référentiel extensible et affichage sans taux inventé.
 - Thèmes déplacés dans Affichage, préférences conservées ; cinq rubriques Options. Mise à jour et cours : choix enregistrables uniquement, aucun service actif.
 - 29 tests Debug/Release et scénarios Windows ; performances et témoin de l'ancien commit dans le README. Les tests initiaux sont conservés.
-- La suite reste : qualifier le prototype et ses raccourcis, puis autoriser la persistance/sauvegarde fiable avant toute donnée réelle ; services NBRB/CBR et mises à jour signées en lots séparés. Aucun jalon d'importation native ou durabilité n'est clos par ces préférences locales.
+- Cette livraison historique préparait la persistance/sauvegarde désormais livrée partiellement en mission 6. Services NBRB/CBR et mises à jour signées restent des lots séparés ; les préférences seules ne ferment aucun jalon d'importation native ou de durabilité.
 
 
 ### Livraison de présentation — mission 4

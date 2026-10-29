@@ -1,8 +1,8 @@
-<Window x:Class="Moneta.App.DemoAccountWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Ajouter un compte de démonstration" Width="560" Height="610" MinWidth="480" MinHeight="500" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
+<Window x:Class="Moneta.App.AccountWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Ajouter un compte" Width="560" Height="610" MinWidth="480" MinHeight="500" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
  <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
  <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
- <TextBlock Text="Nouveau compte de démonstration" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
- <TextBlock Text="En mémoire uniquement. Ce compte disparaîtra à la fermeture. Ne saisissez aucune donnée bancaire personnelle." TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,16"/>
+ <TextBlock x:Name="Heading" Text="Nouveau compte" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+ <TextBlock x:Name="ModeNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,16"/>
  <Label Content="_Nom" Target="{Binding ElementName=AccountName}"/><TextBox x:Name="AccountName" MaxLength="120" AutomationProperties.AutomationId="NewAccountName"/>
  <Label Content="_Devise native (non modifiable après création)" Target="{Binding ElementName=NativeCurrency}"/><ComboBox x:Name="NativeCurrency" ItemsSource="{Binding DisplayCurrencies}" DisplayMemberPath="Code" SelectedIndex="0" AutomationProperties.AutomationId="NewAccountCurrency"/>
  <Label Content="_Type de compte" Target="{Binding ElementName=AccountType}"/><ComboBox x:Name="AccountType" IsEditable="True" Text="Courant"><ComboBoxItem Content="Courant"/><ComboBoxItem Content="Épargne"/><ComboBoxItem Content="Espèces"/><ComboBoxItem Content="Autre"/></ComboBox>
@@ -10,6 +10,6 @@
  <Label Content="Informations complémentaires _facultatives" Target="{Binding ElementName=Notes}"/><TextBox x:Name="Notes" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" Height="65" VerticalScrollBarVisibility="Auto"/>
  <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,12,0,0" AutomationProperties.AutomationId="NewAccountError"/>
  </StackPanel></ScrollViewer>
- <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0"><Button Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"/><Button Content="Ajouter en mémoire" IsDefault="True" Click="Add_Click" AutomationProperties.AutomationId="ConfirmDemoAccount"/></StackPanel>
+ <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0"><Button Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"/><Button x:Name="ConfirmAccount" Content="Ajouter au dossier" IsDefault="True" Click="Add_Click" AutomationProperties.AutomationId="ConfirmAccount"/></StackPanel>
  </Grid>
 </Window>

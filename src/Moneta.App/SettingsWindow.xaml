@@ -95,8 +95,8 @@
             </TabItem>
             <TabItem Header="_Sauvegardes">
                 <StackPanel Margin="18">
-                    <TextBlock Text="Sauvegardes non disponibles" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-                    <TextBlock Text="Les comptes et opérations de démonstration restent en mémoire et sont réinitialisés à la fermeture. Aucune sauvegarde financière, automatique ou manuelle, n'est mise en œuvre."
+                    <TextBlock Text="Sauvegardes manuelles disponibles" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBlock Text="Utilisez Fichier → Sauvegarder le dossier pour produire une copie SQLite cohérente et son manifeste. Fichier → Restaurer une sauvegarde vérifie puis rouvre une nouvelle copie, sans remplacer le dossier affiché. La planification automatique reste à développer."
                                TextWrapping="Wrap" Margin="0,0,0,12" />
                     <TextBlock Text="L'enregistrement des préférences locales n'est pas une sauvegarde de vos comptes."
                                TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" />

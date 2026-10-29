@@ -14,12 +14,13 @@ Cartographie cible, complétée par la capture privée de mission 4 : elle n'est
 
 **Ordre principal confirmé par la capture utilisateur de mission 4 : Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?.** Inconnus restants : ordre des sous-commandes, séparateurs, accélérateurs Alt et comportements dépendant du focus. L'image ne montre pas les menus déroulés ; aucune donnée personnelle n'en est retranscrite.
 
-### Présentation Moneta de mission 4
+### Présentation Moneta de mission 6
 
-- Barre d'outils : emplacement du dossier/compte, Comptes, Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, Transfert. Le dossier est fictif/en mémoire ; seule la sélection du compte est active. Les autres outils sont explicitement désactivés, avec débordement en fenêtre étroite.
+- Barre d'outils : emplacement du dossier/compte, Comptes (ajout), Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, Transfert. Comptes/Ouvrir/Enregistrer et la sélection sont opérationnels ; les autres outils restent explicitement désactivés, avec débordement en fenêtre étroite.
 - Les sous-menus et indications de touches documentés sont conservés, sans activer des raccourcis financiers inexistants. Quitter sous Fichier et À propos sous ? restent des décisions Moneta, pas des observations de menus ouverts BankPerfect.
-- Mission 5 : **Affichage → Thème → Clair / Sombre**, sélecteur supérieur supprimé, préférence locale conservée et contraste Windows prioritaire. **Comptes → Ajouter un compte de démonstration** et **Outils → Options** opérationnels ; pas de gestion financière persistante.
-- `WindowCommands` centralise ouvrir/enregistrer/recherche/suppression/annulations futures, menus et outils communs, avec `CanExecute=false`. Aucun Ctrl+Z/Y global au détriment du texte. Ctrl+F demandé pour recherche entre en conflit avec Champs automatiques BP : indication Ctrl+F retirée de cette dernière dans le prototype, recherche elle-même désactivée ; arbitrage historique conservé dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
+- Mission 5 : **Affichage → Thème → Clair / Sombre**, sélecteur supérieur supprimé, préférence locale conservée et contraste Windows prioritaire. **Outils → Options** opérationnel ; les thèmes restent la seule préférence visuelle.
+- Mission 6 : **Fichier → Nouveau dossier / Ouvrir / Enregistrer / Enregistrer sous / Sauvegarder le dossier / Restaurer une sauvegarde / Mode démonstration**, et **Comptes → Ajouter un compte**. Dossiers `.moneta` persistants limités aux comptes/devises/métadonnées ; édition/suppression de compte et opérations persistantes non réalisées.
+- `WindowCommands` centralise ces commandes ainsi que recherche/suppression/annulations futures, menus et outils communs, avec `CanExecute=false` pour les fonctions absentes. Aucun Ctrl+Z/Y global au détriment du texte. Ctrl+F demandé pour recherche entre en conflit avec Champs automatiques BP : indication Ctrl+F retirée de cette dernière dans le prototype, recherche elle-même désactivée ; arbitrage historique conservé dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
 
 
 ## Fichier, échanges et ouverture native Moneta
@@ -28,8 +29,8 @@ Cartographie cible, complétée par la capture privée de mission 4 : elle n'est
 |---|---|---|---|---|---|---|---|
 | CMD-001 | Créer un nouveau fichier de comptes | **Comptes** > Créer un nouveau fichier de comptes, pas Fichier d'après M02 | Ctrl+N | SCREEN-004, SCREEN-003 | BP demande nom et solde initial ; Moneta crée un dossier natif `.moneta`, pas un `.bp` | P0 | M02/M18 ; adaptation MON |
 | CMD-002 | Ouvrir | Fichier > Ouvrir | Ctrl+O | SCREEN-004, SCREEN-050 | Même entrée Moneta pour `.moneta` et `.bp` ; branchement détaillé ci-dessous | P0 | M02/M18 ; décision MON |
-| CMD-003 | Enregistrer | Fichier > Enregistrer | Ctrl+S | SCREEN-001, SCREEN-004 | BP sauvegarde et produit une sauvegarde locale selon options ; durabilité Moneta à concevoir sur SQLite direct | P0 | M02/M06/M18 |
-| CMD-004 | Enregistrer sous | Groupe exact à relever ; Fichier non garanti par M18 seul | F12 | SCREEN-004 | Nouvelle destination ; ne pas écraser un original BP | P0 | M18 ; MON pour protection BP |
+| CMD-003 | Enregistrer | Fichier > Enregistrer | Ctrl+S | SCREEN-001, SCREEN-004 | **Réalisé** : commit SQLite transactionnel des comptes/devises après validation ; l'ancien « sauvegarde locale selon options » BP reste non reproduit | P0 | M02/M06/M18 ; MON |
+| CMD-004 | Enregistrer sous | Groupe exact à relever ; Fichier non garanti par M18 seul | F12 | SCREEN-004 | **Réalisé dans Fichier** : nouvelle destination exclusive, même UUID de dossier, original intact ; emplacement historique BP non prouvé | P0 | M18 ; MON pour protection BP |
 | CMD-005 | Imprimer | Menu exact inconnu | Ctrl+P | SCREEN-054 | Périmètre et dialogue natif à capturer, ne pas assimiler à l'export | P1 | M18 ; ? |
 | CMD-006 | Fermer le dossier courant | Emplacement inconnu | — | SCREEN-004 | M02 décrit proposition d'enregistrer les modifications ou option automatique ; libellé exact inconnu | P0 | M02 ; ? |
 | CMD-007 | Quitter | Emplacement inconnu | — | SCREEN-004 | Même demande de sauvegarde documentée ; politique native Moneta à préciser | P0 | M02 ; ? |

@@ -2,7 +2,7 @@
 
 ## Statut et limites de cette étude
 
-**Mission 5 : interface WPF, comptes fictifs dynamiques et préférences locales non financières.** Comptes/opérations restent exclusivement en mémoire ; aucune persistance financière, conversion effective, lecture `.bp`, actualisation de taux ou installation automatique. Les exigences de sûreté/persistance futures ci-dessous ne sont pas des garanties acquises du prototype.
+**Mission 6 : persistance SQLite réelle des dossiers, devises et comptes ; enregistrement manuel, sauvegarde cohérente et restauration vérifiée.** Les opérations restent exclusivement dans la démonstration en mémoire. Aucune édition d'opérations, conversion effective, lecture `.bp`, actualisation de taux ou installation automatique. Les sections prospectives ne constituent pas des garanties déjà acquises.
 
 La fidélité vise les usages de BankPerfect Windows, pas la reproduction de son code. Le [sommaire officiel](https://chelly.net/bankperfect/wiki/manuel.html) annonce BankPerfect 8.0.0.373 du 22 novembre 2015 ; les pages sont de dates différentes. Elles ne prouvent pas à elles seules le comportement du binaire local. Notamment, la page [Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) a été actualisée le 10 mars 2016 et décrit un changement de rétention à 200 copies le 7 mars 2016 : ce nombre ne doit pas être attribué sans preuve à une version antérieure.
 
@@ -10,12 +10,12 @@ La capture privée fournie en mission 4 confirme l'ordre principal des menus et 
 
 Documents de conception complémentaires : [format `.moneta`](FILE_FORMATS.md), [compatibilité native BankPerfect](BANKPERFECT_IMPORT_STRATEGY.md), [commandes et menus](UI_MENU_MAP.md), [écrans/captures](UI_SCREEN_INVENTORY.md), [identité visuelle](VISUAL_IDENTITY.md). L'[audit initial](BANKPERFECT_AUDIT.md) est conservé comme preuve historique, pas recommencé.
 
-### État implémenté après mission 5
+### État implémenté après mission 6
 
-- `Moneta.App` : disposition fidèle à la structure observée, sept colonnes dont Mode et cellules à deux niveaux, panneau gauche réglable/défilant, saisie compacte readonly, outils/filtres futurs désactivés. `WindowCommands` et commandes WPF pour fermeture/À propos ; code-behind limité aux gestes de présentation. `AboutWindow` remplace la boîte système pour partager le thème.
-- `Moneta.Core` : records `Account`, `Transaction`, `Currency`, `Category`, `Payee`, valorisation distincte facultative ; `MainViewModel` testable avec `INotifyPropertyChanged`, relevés préparés par compte, ordre chronologique stable et soldes `decimal` contrôlés. Les projections d'affichage françaises sont mises en cache, pas recalculées au défilement. Ce n'est pas un moteur financier complet ni un engagement sur les politiques futures d'arrondi.
-- `Moneta.Infrastructure` : uniquement `DemoData.Create()`, quatre comptes et 3 212 opérations déterministes fictives. Aucun accès fichier, SQL ou réseau, aucun adaptateur factice promettant une persistance.
-- `Moneta.Tests` : les 12 tests initiaux sont conservés ; 10 tests de comptes/devises et 7 cas de paramètres ajoutés. `SettingsStore.cs`, indépendant de WPF, est lié au projet de tests pour exercer son vrai code sans rendre le domaine dépendant de WPF. Aucun framework supplémentaire.
+- `Moneta.App` : disposition et styles conservés ; `DocumentWorkspace`, indépendant de WPF, coordonne un seul dossier, les brouillons et les changements de mode. Menus, outils et raccourcis utilisent `WindowCommands`. Les dialogues collectent les valeurs ; aucune requête SQL ni formule financière dans les vues. Les E/S tournent hors dispatcher, avec commandes désactivées pendant l'opération.
+- `Moneta.Core` : modèles existants conservés ; `FinancialDocument`, métadonnées de comptes, `ExactMoney` et erreurs typées. `MainViewModel` distingue démonstration et dossier persistant, prépare les comptes ajoutés en mémoire, expose l'état modifié et ne le remet à zéro qu'après enregistrement accepté. Une sélection seule n'est pas une modification financière.
+- `Moneta.Infrastructure.Storage` : `MonetaFile` et son schéma contrôlent création/ouverture, verrou de session, transactions et fermeture ; `MonetaBackup` utilise l'API SQLite et vérifie les copies/restaurations. `DemoData` reste indépendant de ce stockage. Aucun ORM, serveur, réseau ou adaptateur de persistance factice.
+- `Moneta.Tests` : les 29 tests de mission 5 sont conservés. Tests de présentation, transitions de dossier et intégration SQLite sur répertoires temporaires synthétiques ; `SettingsStore.cs` et `DocumentWorkspace.cs`, indépendants de WPF, sont liés aux tests pour exercer leur code réel. Résultats dans le README.
 
 Les références et modèles sont indépendants de WPF. La sélection d'un compte remplace son relevé et efface l'ancienne sélection ; les opérations de devises ou comptes incompatibles sont refusées, pas remappées. Une valorisation distincte ne modifie jamais le solde d'origine ; aucune conversion n'est calculée. Le tri du tableau est volontairement désactivé pour garder le sens des soldes chronologiques.
 
@@ -32,6 +32,18 @@ Les références et modèles sont indépendants de WPF. La sélection d'un compt
 - Cinq rubriques de paramètres : thème opérationnel ; options réseau enregistrables mais étiquetées sans service. Aucune requête, boucle, tâche permanente ou téléchargement ne découle des booléens.
 
 Voir [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) pour les contrats, limitations, sécurité des mises à jour futures et validations effectives.
+### Contrat d'enregistrement retenu en mission 6
+
+1. Démarrage sans dossier. **Nouveau** demande un nom et crée un dossier vierge en mémoire ; le premier **Enregistrer** demande un nouveau chemin. **Mode démonstration** est explicite et ne peut être enregistré comme dossier réel.
+2. **Ajouter un compte** valide nom/devise/type/solde/notes, puis marque le dossier modifié. Aucun commit implicite au clic Ajouter. Fermer ou remplacer un dossier modifié propose **enregistrer / abandonner / annuler** ; annuler le dialogue d'enregistrement conserve le dossier et son brouillon.
+3. **Enregistrer / Ctrl+S** sérialise comptes et devises dans une transaction SQLite, avec `synchronous=FULL`. Succès après commit seulement. Le snapshot vivant est comparé au dernier snapshot enregistré dans la transaction : une écriture externe est refusée plutôt qu'écrasée. La sélection du compte est capturée lors d'un enregistrement explicite.
+4. **Enregistrer sous / F12** crée un nouveau fichier, sans écrasement, conservant UUID du dossier et dates/UUID des données. Le précédent fichier n'est pas modifié par cette action. Les copies ne sont pas synchronisées.
+5. **Sauvegarder le dossier** exige d'abord l'enregistrement des modifications, puis produit un snapshot SQLite autonome et son manifeste. **Restaurer** exige ce manifeste, crée une nouvelle copie, la rouvre et compare son contenu ; le dossier affiché et ses brouillons ne sont pas remplacés.
+
+Schéma courant **2**, marqueur `Moneta`, `application_id=0x4D4E5441`, `user_version` concordant : `Document`, `Currencies`, `Accounts`, `MigrationHistory`. Solde initial en entier signé d'unités mineures ; UUID et horodatages UTC canoniques. Le drapeau archivé est préservé mais aucune action d'archivage/suppression n'est encore proposée.
+
+Une migration **1 → 2** est réellement exercée sur un brouillon interne synthétique sans drapeau archivé, jamais présenté comme une version déjà distribuée. Consentement, copie SQLite contrôlée avant transformation, transaction, comparaison avant/après et original conservé. Toutes les versions/schémas inconnus sont refusés. Le prochain domaine persistant ajoutera ses tables par migration, sans anticiper des dizaines de champs inutilisés.
+
 
 
 
@@ -42,7 +54,7 @@ Voir [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) pour les contrats,
 | C# sur **.NET 10 LTS**, dernière révision de maintenance supportée lors du démarrage | La [politique Microsoft](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), consultée pour octobre 2026, indique une publication le 11 novembre 2025 et une fin de support le **14 novembre 2028**. .NET 8 LTS arrive en fin de support le 10 novembre 2026 : ce n'est pas un bon nouveau socle à cette date. Le support exige de rester à jour des correctifs. | Revalider le cycle de vie au début du développement ; pas de préversion ni de gel perpétuel d'un numéro de correctif. |
 | **WPF**, application de bureau Windows | WPF possède commandes, liaison de données et contrôles de tableau adaptés à une saisie dense. Microsoft précise que [WPF fonctionne uniquement sous Windows](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/overview/), même si .NET est multiplateforme. Cela correspond au prédécesseur Windows, pas à une promesse Linux/macOS. | Cible initiale : Windows encore supporté par Microsoft et par la version .NET retenue ; versions minimales exactes à confirmer avant programmation. |
 | **MVVM léger** | Proposition : vues pour affichage/focus, modèles de vue pour état et commandes, domaine pour règles financières. Utiliser d'abord les mécanismes WPF/.NET ; aucun framework MVVM, conteneur d'injection ou bus d'événements n'est nécessaire à l'étude. | Ne pas faire dépendre le domaine de WPF. Une nouvelle bibliothèque devra justifier licence, maintenance et utilité. |
-| **SQLite direct dans un fichier `.moneta`**, une base par dossier de comptes | Décision utilisateur. SQLite [autorise une extension personnalisée](https://www.sqlite.org/appfileformat.html). Aucun ZIP, encapsulage propriétaire ou renommage d'un `.bp` ; schéma Moneta autonome, identité applicative et versions contrôlées. Le dossier reste multi-comptes. | [FILE_FORMATS.md](FILE_FORMATS.md) précise journaux, copie, récupération, sauvegarde et association Windows consentie. Accès SQL explicite et migrations numérotées, sans ORM par défaut ; `Microsoft.Data.Sqlite` candidat non installé. |
+| **SQLite direct dans un fichier `.moneta`**, une base par dossier | Décision utilisateur ; extension indépendante, identité et schéma contrôlés. SQL paramétré explicite, tables `STRICT`, sans ORM. | Fournisseur `Microsoft.Data.Sqlite` **10.0.12** et bundle explicite `SQLitePCLRaw.bundle_e_sqlite3` **3.0.5** ; moteur **3.53.4 réellement observé**, donc correctif WAL requis présent. [FILE_FORMATS.md](FILE_FORMATS.md) décrit journaux, copies et limites. |
 | Local-first, sans serveur obligatoire | Proposition : saisie, consultation, calculs, import et restauration indépendants d'Internet ; seule l'obtention de nouveaux cours demande un accès réseau. | Pas de compte cloud, synchronisation ou télémétrie implicite. |
 
 **Alternatives et portée.** Si Linux/macOS devient une exigence, le choix WPF doit être rouvert avant de concevoir les écrans. Une autre interface multiplateforme ou web local serait un autre arbitrage de dépendances, de raccourcis, d'accessibilité et de déploiement ; aucune n'est présumée compatible ou retenue ici. WinForms reste une autre option Windows, mais ne résout pas le multiplateforme. Éviter deux interfaces parallèles pour une exigence non exprimée. Pour le choix WPF, le domaine et la persistance resteraient isolés afin de ne pas figer les règles financières dans l'interface.
@@ -61,13 +73,13 @@ Un processus de bureau principal et un chemin de commandes d'écriture suffisent
 | Sauvegardes/restauration | Snapshot cohérent SQLite, manifeste, validation métier, restauration dans une copie et bascule protégée. | Réutilise la persistance et les invariants ; jamais simple copie à chaud du fichier principal. |
 | Rapports/exports | Sélection/agrégation partagées avec le cœur ; modèle de rapport puis rendu/export dans l'infrastructure et aperçu dans l'interface. | Même vérité comptable et filtres explicités ; aucune seconde base de soldes. |
 
-Organisation réalisée : `Moneta.App` (WPF et composition, nom retenu par la mission 3 à la place de `Moneta.Desktop`), `Moneta.Core`, `Moneta.Infrastructure` et `Moneta.Tests`. Les responsabilités futures restent des dossiers/espaces de noms dans trois projets de production. Dépendances : App → Core/Infrastructure ; Infrastructure → Core ; Tests → Core/Infrastructure ; aucune dépendance inverse. Infrastructure ne contient aujourd'hui que le jeu fictif ; pas de SQLite ou service externe factice.
+Organisation conservée : `Moneta.App` (WPF et coordination), `Moneta.Core`, `Moneta.Infrastructure`, `Moneta.Tests`. App → Core/Infrastructure ; Infrastructure → Core ; Tests → Core/Infrastructure, avec liaison de deux fichiers App sans WPF. Aucun couplage inverse. Les autres responsabilités restent des dossiers/espaces de noms à ajouter aux trois projets de production.
 
-Assemblage explicite au démarrage ; pas de conteneur DI, bus, ORM, framework de plugin ou interface générique par table. Une frontière abstraite n'est ajoutée que pour un effet externe ou contrat nécessaire. MSTest est retenu pour les tests ; le fournisseur SQLite sera choisi et justifié lors d'une mission de persistance autorisée. Aucun package de production tiers n'est nécessaire au prototype.
+Composition explicite, sans conteneur DI, bus, ORM, chargeur de plugins ni repository générique par table. Les deux références NuGet de production concernent uniquement SQLite ; le bundle explicite évite d'embarquer un moteur ancien par dépendance transitive. Fournisseur Microsoft sous MIT, SQLitePCLRaw sous Apache-2.0, moteur SQLite en domaine public ; notices de distribution à conserver lors d'un futur packaging. Aucun framework graphique ajouté.
 
 Les rapports, budgets et éventuelles représentations graphiques doivent utiliser les **mêmes données et règles de sélection** que les tableaux : aucun registre financier parallèle, aucun graphique redondant présentant les mêmes données sans besoin utilisateur validé. Une projection dérivée éventuelle doit rester recalculable et ne jamais devenir une seconde vérité comptable.
 
-## 3. Modèle métier envisagé, pas schéma réalisé
+## 3. Modèle métier : socle réalisé et extensions envisagées
 
 | Ensemble proposé | Données et invariants envisagés | Besoin de parité / inconnus |
 | --- | --- | --- |
@@ -91,7 +103,7 @@ Les rapports, budgets et éventuelles représentations graphiques doivent utilis
 
 **Faits.** C# `decimal` possède 28–29 chiffres significatifs et représente exactement certaines fractions décimales comme 0,1, contrairement à `double` ; il n'a pas une précision illimitée ([Microsoft, types numériques](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/floating-point-numeric-types)). SQLite `REAL` est du flottant binaire ; une déclaration `DECIMAL(10,2)` n'impose pas l'exactitude ni cette échelle ([SQLite, types et affinités](https://www.sqlite.org/datatype3.html)). Le fournisseur Microsoft indique que `decimal` se conserve en `TEXT`, car `REAL` serait perdant ([types Microsoft.Data.Sqlite](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/types)).
 
-**Proposition.**
+**Socle réalisé pour les soldes initiaux ; règles complémentaires pour les futurs calculs :**
 
 - Calculs financiers en `decimal`, opérations et conversions entières en contexte `checked`, sans passage intermédiaire par `double`/`float`. Les divisions peuvent néanmoins arrondir à la précision de `decimal` : conserver les opérandes source d'un taux croisé et ne pas traiter le quotient comme rationnel exact infini.
 - Pour un montant comptabilisé : `INTEGER` signé 64 bits en **unités mineures**, accompagné de la devise et de son échelle applicable. Avec sens séparé, la magnitude reste entre 0 et 9 223 372 036 854 775 807 unités mineures. À deux décimales, la borne vaut 92 233 720 368 547 758,07 unités majeures. Ne jamais utiliser `long.MinValue` comme magnitude ni supposer que la somme de plusieurs montants reste dans un `Int64`.
@@ -103,6 +115,8 @@ Les rapports, budgets et éventuelles représentations graphiques doivent utilis
 ### 4.2 Arrondis explicites
 
 Proposition initiale : arrondir **une seule fois à la comptabilisation**, à l'unité mineure cible ; `MidpointRounding.ToEven` comme politique candidate, à comparer aux résultats BankPerfect et aux montants des relevés. Le nombre de décimales, le mode et l'étape doivent être explicites et versionnés dans les cas de calcul ([API Decimal.Round](https://learn.microsoft.com/en-us/dotnet/api/system.decimal.round?view=net-10.0)). Un relevé bancaire reste la source du montant réellement transféré, pas une conversion théorique imposée par l'application.
+
+Mission 6 n'applique **aucun arrondi** au solde initial : `ExactMoney.ToMinorUnits` exige une représentation exacte à l'échelle de la devise, entre `-long.MaxValue` et `long.MaxValue`. Fraction sous l'unité et débordement refusés ; relecture par division décimale exacte. `ToEven` reste un candidat pour les conversions futures, pas une règle silencieuse de saisie.
 
 Pour une ventilation, le reliquat d'arrondi doit être affecté selon une règle déterministe visible, jamais perdu. Pour un transfert, ne pas forcer artificiellement l'égalité de deux montants exprimés en monnaies différentes. Les affichages arrondis ne modifient pas les données stockées. Toute différence avec le comportement historique exige une décision utilisateur, pas une prétendue équivalence.
 
@@ -188,21 +202,23 @@ Après un échec de commit, la commande ne devient pas « réussie » dans l'int
 
 ## 7. Persistance, panne, migrations et sauvegardes
 
-### 7.1 Contrat local de durabilité proposé
+### 7.1 Durabilité locale implémentée et limites
 
-- Une validation utilisateur n'est annoncée enregistrée **qu'après commit réussi**. Les brouillons non validés restent visiblement des brouillons. Le comportement historique de « Enregistrer / quitter sans enregistrer » doit être observé puis arbitré avant de retenir un enregistrement immédiat : local-first n'autorise pas à modifier silencieusement cette interaction.
+L'enregistrement manuel décrit ci-dessus est retenu pour cette mission : Ajouter prépare un brouillon, Enregistrer valide durablement, Sauvegarder produit une copie de sécurité. Aucun enregistrement automatique à la fermeture ; proposition enregistrer/abandonner/annuler. Un commit échoué ne remet pas l'état modifié à zéro.
 - Écritures transactionnelles, contraintes de référence actives sur chaque connexion, protection contre ouverture concurrente incompatible, pas d'écrasement sur erreur. Sur disque plein, défaut d'accès, verrouillage ou erreur d'E/S : échec visible, données déjà validées préservées et saisie non déclarée sauvée ; reprise explicite, pas de base neuve substituée.
 - **Aucune réécriture rétroactive implicite** par nouveaux cours, règles, catégories ou récurrences. Une correction volontaire d'une opération validée doit être explicite et conserver sa révision précédente, sa date de correction et sa raison dans le dossier privé ; suppression/annulation selon le cycle à valider. Pas de moteur d'event sourcing requis : un historique de révisions borné au besoin métier suffit. Les journaux de diagnostic ne doivent pas recopier cet historique financier.
-- WAL proposé sur **disque local**, avec `synchronous=FULL`, checkpoints surveillés et moteur supporté/corrigé. Les fichiers auxiliaires portent le nom complet, par exemple `Mes comptes.moneta-wal` et `Mes comptes.moneta-shm` ; le journal de rollback peut être `Mes comptes.moneta-journal`. Ni partage réseau ni synchronisation du dossier actif ; détails dans [FILE_FORMATS.md](FILE_FORMATS.md).
+- Base active sur **disque local**, WAL avec `synchronous=FULL` vérifié et moteur corrigé. Verrou `.moneta.lock` exclusif par chemin : le fichier vide peut subsister, son handle système fait foi. Checkpoint `TRUNCATE` contrôlé à la fermeture ; en cas de `BUSY`, session et verrou conservés pour permettre une nouvelle tentative. Aucun journal supprimé par Moneta. UNC/lecteurs réseau refusés ; synchronisation active non prise en charge, pas prétendue détectée exhaustivement.
 - Ne jamais effacer un journal pour « réparer » un incident ni considérer le seul `.moneta` ouvert comme une copie transportable. La copie cohérente passe par l'API de sauvegarde ; fermeture, checkpoint et publication doivent être contrôlés. Une existence de fichier n'est pas une preuve de sauvegarde valide.
 
-### 7.2 Migrations proposées
+### 7.2 Migrations contrôlées
 
 Version de format et suite de migrations ordonnées avec identifiant/empreinte ; refus d'écrire avec une application trop ancienne. Avant migration : sauvegarde cohérente validée, espace requis et version source identifiés. Chaque migration transforme explicitement les données dans une transaction quand l'opération SQLite le permet ; pour une transformation qui ne le permet pas, préparer et vérifier une copie avant bascule, sans détruire l'original. En cas d'échec : aucune annonce de réussite, original et sauvegarde conservés, reprise ou restauration documentée. Une version plus récente ne doit pas être « rétrogradée » par ouverture automatique.
 
 Après migration : contrôles de structure, références, nombre d'opérations, soldes par compte/devise, ventilation et liens de transferts ; pas seulement « le fichier s'ouvre ». Le suivi de version peut utiliser [PRAGMA user_version](https://www.sqlite.org/pragma.html#pragma_user_version), sans confondre cette convention applicative avec une migration déjà réalisée.
 
-### 7.3 Sauvegarde et restauration vérifiables proposées
+Implémentation courante limitée au brouillon interne 1 → 2, décrite dans FILE_FORMATS. L'historique vérifie version source/cible et identifiants de définition connus. La qualification de toutes les frontières de panne et la sauvegarde automatisée avant les futures migrations publiées restent des exigences supplémentaires.
+
+### 7.3 Sauvegarde et restauration : manuel réalisé, automatisation future
 
 Utiliser une **API de sauvegarde SQLite cohérente**, dont l'[Online Backup API](https://www.sqlite.org/backup.html), au travers du fournisseur retenu ; ne pas copier le seul fichier principal pendant qu'un WAL peut contenir des commits. Produire d'abord une destination temporaire distincte ; ne publier une sauvegarde comme disponible qu'après fermeture réussie et contrôles.
 
@@ -210,7 +226,7 @@ Déclenchements automatiques proposés : avant une migration ou restauration, ap
 
 Chaque sauvegarde doit avoir date UTC, version applicative/format, identifiant du dossier et empreinte de fichier ; le manifeste ne doit pas divulguer noms de tiers, numéros de compte ou soldes. Une empreinte détecte une altération accidentelle, **elle ne chiffre pas et ne prouve pas l'authenticité à elle seule**. Rétention et destination sont visibles, aucune rotation silencieuse de la dernière copie valide. Copie sur support indépendant recommandée selon choix utilisateur.
 
-Restaurer d'abord dans une destination distincte, vérifier empreinte, format lisible, `integrity_check`, **`foreign_key_check` séparé**, invariants métier et soldes ; l'intégrité structurelle ne suffit pas ([PRAGMA integrity_check](https://www.sqlite.org/pragma.html#pragma_integrity_check), [foreign_key_check](https://www.sqlite.org/pragma.html#pragma_foreign_key_check)). Présenter le résultat avant remplacement, conserver le dossier actuel et l'ancienne sauvegarde, puis effectuer une bascule contrôlée avec connexions fermées. Une sauvegarde n'est déclarée utilisable qu'après une **restauration effectivement exercée** sur copie et réconciliation réussie. Aucun tel essai n'a été effectué dans cette étude.
+La sauvegarde manuelle utilise déjà `BackupDatabase`, compare l'intégralité du snapshot des comptes/devises/métadonnées puis publie le manifeste SHA-256 en dernier. La restauration vérifie taille, hash, identité, structure, clés et empreinte complète du contenu, puis rouvre la nouvelle copie. Ces parcours sont exercés en intégration et dans WPF. Le manifeste actuel n'est ni chiffré ni signé ; la date UTC propre à chaque sauvegarde et la rétention seront nécessaires avant automatisation. Les opérations, absentes du stockage courant, ne sont pas annoncées sauvegardées.
 
 ## 8. Migration depuis BankPerfect, sans compatibilité native présumée
 
@@ -248,7 +264,7 @@ Données financières privées : journalisation minimale sans détails d'opérat
 | Sauvegarde FTP / courriel et raccourcis F9 / Maj+F9 | Le [manuel Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) décrit ces transports ; le [récapitulatif clavier](https://chelly.net/bankperfect/wiki/Recapitulatif%20des%20raccourcis%20clavier.html) les associe aux touches. Il ne démontre pas leur chiffrement. | Ne pas reproduire aveuglément FTP clair ni un envoi de comptes non chiffrés par mail. Choisir transport/protection sûrs ou indisponibilité explicitement acceptée ; décider aussi du comportement des raccourcis, sans réaffectation cachée. |
 | Inverser les monnaies | Le [manuel Outils supplémentaires](https://chelly.net/bankperfect/wiki/Outils%20supplementaires.html) décrit la conversion de toutes les lignes et l'ajout d'une opération d'ajustement d'arrondi. | Distinguer affichage secondaire et migration volontaire de devise avec sauvegarde/aperçu. Aucune réécriture provoquée par un rafraîchissement FX ; arbitrer l'action historique elle-même avant toute réalisation. |
 | Actualiser un portefeuille | Le [manuel Bourse](https://chelly.net/bankperfect/wiki/Les%20fonctions%20boursieres.html) indique une mise à jour des montants des titres depuis Yahoo Finance. | Séparer cotations de valorisation et prix d'origine ; tout écart au comportement historique doit être expliqué et accepté. Disponibilité et droits d'une source actuelle non prouvés ; pas de faux connecteur ni de substitution silencieuse. |
-| Enregistrer et quitter sans sauvegarder | La [gestion des comptes](https://chelly.net/bankperfect/wiki/La%20gestion%20des%20comptes.html) décrit la proposition de sauvegarde à la fermeture et l'option automatique. | Choisir avec l'utilisateur le cycle brouillon/commit/annulation avant de substituer une sauvegarde continue ; conserver un état non sauvegardé visible. |
+| Enregistrer et quitter sans sauvegarder | La gestion des comptes BP décrit une proposition à la fermeture et une option automatique. | Mission 6 : enregistrement **manuel** retenu, état modifié visible et proposition enregistrer/abandonner/annuler. L'option automatique historique reste non implémentée ; aucune substitution silencieuse par auto-save. |
 | Simulation d'échéances | `reference-bankperfect/Scripts/Scheduler/scheduler.py:479-531` insère des opérations même en simulation, sans avancer les définitions. | Proposer un aperçu isolé des écritures réelles ; faire valider cet écart et le parcours éventuel de réalisation, sans qualifier cette modification de stricte identité. |
 
 Pour toutes les autres divergences de libellé/menu/raccourci ou critères de masquage, les captures et scénarios de la prochaine étape trancheront. **Une amélioration de sécurité ou d'intégrité qui modifie un usage de parité doit faire l'objet d'un arbitrage utilisateur explicite et traçable**, pas d'un changement discret présenté comme fidèle.

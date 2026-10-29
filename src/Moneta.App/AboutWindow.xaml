@@ -8,8 +8,8 @@
         <StackPanel>
             <TextBlock Text="Moneta" FontSize="26" FontWeight="SemiBold" />
             <TextBlock Text="Un espace de travail local, indépendant." Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,22" />
-            <TextBlock Text="Version de développement — données fictives" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="Quatre comptes fictifs initiaux, avec ajout de comptes de démonstration en mémoire. Aucun compte ni opération n'est enregistré. Seules les préférences locales sont conservées ; aucun taux de change n'est calculé." TextWrapping="Wrap" Margin="0,10,0,12" />
+            <TextBlock Text="Version de développement — stockage local des comptes" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="Dossiers .moneta SQLite, comptes multidevises et sauvegarde/restauration vérifiées. Les opérations restent limitées au mode démonstration en mémoire ; aucune saisie financière ni conversion de change. Validez les parcours sur des données fictives avant tout usage réel." TextWrapping="Wrap" Margin="0,10,0,12" />
             <TextBlock Text="Les commandes grisées, leurs raccourcis et les filtres ne sont pas disponibles. Les soldes pointés et prévisionnels ne sont pas calculés." TextWrapping="Wrap" Margin="0,0,0,12" />
             <TextBlock Text="L'organisation suit la référence BankPerfect ; les styles et pictogrammes sont créés pour Moneta. Les sous-menus non observés restent documentaires. Le contraste élevé Windows est prioritaire sur le thème choisi." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,24" />
             <Button Content="Fermer" HorizontalAlignment="Right" MinWidth="100" IsDefault="True" IsCancel="True" Click="Close_Click" />

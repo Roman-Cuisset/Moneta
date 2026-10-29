@@ -8,12 +8,21 @@ public sealed class CurrencyRegistry
     private readonly Dictionary<string, Currency> _byCode = new(StringComparer.OrdinalIgnoreCase);
     private readonly ObservableCollection<Currency> _currencies = [];
 
-    public CurrencyRegistry()
+    public CurrencyRegistry() : this(
+    [
+        new Currency("EUR", "Euro", 2) { Symbol = "€" },
+        new Currency("BYN", "Rouble biélorusse", 2) { Symbol = "Br" },
+        new Currency("RUB", "Rouble russe", 2) { Symbol = "₽" }
+    ])
     {
+    }
+
+    public CurrencyRegistry(IEnumerable<Currency> currencies)
+    {
+        ArgumentNullException.ThrowIfNull(currencies);
         Currencies = new ReadOnlyObservableCollection<Currency>(_currencies);
-        Register(new Currency("EUR", "Euro", 2) { Symbol = "€" });
-        Register(new Currency("BYN", "Rouble biélorusse", 2) { Symbol = "Br" });
-        Register(new Currency("RUB", "Rouble russe", 2) { Symbol = "₽" });
+        foreach (var currency in currencies)
+            Register(currency);
     }
 
     public ReadOnlyObservableCollection<Currency> Currencies { get; }

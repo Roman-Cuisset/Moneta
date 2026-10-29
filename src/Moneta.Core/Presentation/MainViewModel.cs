@@ -15,6 +15,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private static readonly PropertyChangedEventArgs DisplayCurrencyChanged = new(nameof(DisplayCurrency));
     private static readonly PropertyChangedEventArgs DisplayBalanceChanged = new(nameof(DisplayBalanceText));
     private static readonly PropertyChangedEventArgs DisplayRateChanged = new(nameof(DisplayRateDescription));
+    private static readonly PropertyChangedEventArgs DirtyChanged = new(nameof(IsDirty));
+    private static readonly PropertyChangedEventArgs SelectedAccountIdChanged = new(nameof(SelectedAccountId));
     private readonly ObservableCollection<AccountSummary> _accounts = [];
     private readonly Dictionary<Guid, AccountLedger> _ledgers = [];
     private AccountSummary? _selectedAccount;
@@ -23,6 +25,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private IReadOnlyList<LedgerRow> _rows = Array.Empty<LedgerRow>();
     private string _selectedRowDetails = string.Empty;
     private string _statusText = "Aucun compte sélectionné · données fictives en mémoire uniquement";
+    private FinancialDocument? _document;
 
     public MainViewModel(DemoPortfolio portfolio, CurrencyRegistry? currencies = null)
     {
@@ -79,6 +82,61 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SelectedAccount = Accounts.FirstOrDefault();
     }
 
+    public MainViewModel(FinancialDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        _document = document;
+        CurrencyRegistry = new CurrencyRegistry(document.Currencies);
+        Accounts = new ReadOnlyObservableCollection<AccountSummary>(_accounts);
+        _statusText = EmptyAccountStatus;
+        foreach (var account in document.Accounts)
+        {
+            if (!CurrencyRegistry.TryGet(account.Currency.Code, out var currency) || currency != account.Currency)
+                throw new ArgumentException("La devise du compte diffère du référentiel du dossier.", nameof(document));
+            _ = ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency);
+            AddAccountSummary(account);
+        }
+
+        if (document.SelectedAccountId is { } selectedId)
+        {
+            if (!_ledgers.TryGetValue(selectedId, out var ledger))
+                throw new ArgumentException("Le compte sélectionné est absent du dossier.", nameof(document));
+            SelectedAccount = ledger.Summary;
+        }
+    }
+
+    public bool IsDemo => _document is null;
+    public bool IsDirty { get; private set; }
+    public string DocumentName => _document?.Name ?? "Démonstration";
+    public Guid DocumentId => _document?.Id ?? Guid.Empty;
+    public Guid? SelectedAccountId => _selectedAccount?.Account.Id;
+
+    public FinancialDocument CaptureDocument()
+    {
+        var document = _document ?? throw new InvalidOperationException("La démonstration ne peut pas être enregistrée dans un dossier.");
+        return document with
+        {
+            ModifiedUtc = IsDirty ? DateTimeOffset.UtcNow : document.ModifiedUtc,
+            Currencies = CurrencyRegistry.Currencies.ToArray(),
+            Accounts = _accounts.Select(summary => summary.Account).ToArray(),
+            SelectedAccountId = SelectedAccountId
+        };
+    }
+
+    public void AcceptSaved(FinancialDocument snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        var document = _document ?? throw new InvalidOperationException("La démonstration ne peut pas être enregistrée dans un dossier.");
+        if (snapshot.Id != document.Id)
+            throw new ArgumentException("Le dossier enregistré ne correspond pas au dossier courant.", nameof(snapshot));
+        _document = snapshot;
+        if (IsDirty)
+        {
+            IsDirty = false;
+            PropertyChanged?.Invoke(this, DirtyChanged);
+        }
+    }
+
     public ReadOnlyObservableCollection<AccountSummary> Accounts { get; }
     public CurrencyRegistry CurrencyRegistry { get; }
     public ReadOnlyObservableCollection<Currency> DisplayCurrencies => CurrencyRegistry.Currencies;
@@ -119,6 +177,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public AccountSummary AddDemoAccount(string name, Currency currency, string? type, decimal openingBalance, string? notes)
     {
+        if (!IsDemo)
+            throw new InvalidOperationException("Un compte fictif ne peut pas être ajouté à un dossier réel.");
+        return AddAccountCore(name, currency, type, openingBalance, notes);
+    }
+
+    public AccountSummary AddAccount(string name, Currency currency, string? type, decimal openingBalance, string? notes)
+    {
+        if (IsDemo)
+            throw new InvalidOperationException("Un compte réel ne peut pas être ajouté à la démonstration.");
+        return AddAccountCore(name, currency, type, openingBalance, notes);
+    }
+
+    private AccountSummary AddAccountCore(string name, Currency currency, string? type, decimal openingBalance, string? notes)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(currency);
         var accountName = name.Trim();
@@ -130,27 +202,40 @@ public sealed class MainViewModel : INotifyPropertyChanged
             throw new ArgumentException("Les notes sont limitées à 2 000 caractères.", nameof(notes));
         if (!CurrencyRegistry.TryGet(currency.Code, out var registered) || registered != currency)
             throw new ArgumentException("Choisissez une devise du référentiel.", nameof(currency));
-        if (decimal.Round(openingBalance, currency.DecimalPlaces) != openingBalance)
-            throw new ArgumentException("Le solde initial dépasse la précision de la devise ; aucun arrondi automatique.", nameof(openingBalance));
-        decimal scale = 1m;
-        for (var index = 0; index < currency.DecimalPlaces; index++)
-            scale *= 10m;
-        var limit = long.MaxValue / scale;
-        if (openingBalance < -limit || openingBalance > limit)
-            throw new ArgumentOutOfRangeException(nameof(openingBalance), "Le solde initial dépasse la limite en unités mineures.");
+        _ = ExactMoney.ToMinorUnits(openingBalance, currency);
 
+        var now = DateTimeOffset.UtcNow;
         var account = new Account(Guid.NewGuid(), accountName, currency, openingBalance)
         {
             Type = string.IsNullOrWhiteSpace(type) ? null : type.Trim(),
-            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim()
+            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+            CreatedUtc = now,
+            ModifiedUtc = now
         };
-        var summary = new AccountSummary(account, openingBalance);
-        _ledgers.Add(account.Id, new AccountLedger(summary, Array.Empty<LedgerRow>(),
-            $"0 opérations · {account.Name} ({account.Currency.Code}) · données fictives en mémoire uniquement"));
-        _accounts.Add(summary);
+        var summary = AddAccountSummary(account);
+        if (!IsDemo && !IsDirty)
+        {
+            IsDirty = true;
+            PropertyChanged?.Invoke(this, DirtyChanged);
+        }
         SelectedAccount = summary;
         return summary;
     }
+
+    private AccountSummary AddAccountSummary(Account account)
+    {
+        var summary = new AccountSummary(account, account.OpeningBalance);
+        var status = $"0 opérations · {account.Name} ({account.Currency.Code})";
+        if (IsDemo)
+            status += " · données fictives en mémoire uniquement";
+        _ledgers.Add(account.Id, new AccountLedger(summary, Array.Empty<LedgerRow>(), status));
+        _accounts.Add(summary);
+        return summary;
+    }
+
+    private string EmptyAccountStatus => IsDemo
+        ? "Aucun compte sélectionné · données fictives en mémoire uniquement"
+        : "Aucun compte sélectionné";
 
     public AccountSummary? SelectedAccount
     {
@@ -168,9 +253,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _rows = ledger?.Rows ?? Array.Empty<LedgerRow>();
             _selectedRow = null;
             _selectedRowDetails = string.Empty;
-            _statusText = ledger?.StatusText ?? "Aucun compte sélectionné · données fictives en mémoire uniquement";
+            _statusText = ledger?.StatusText ?? EmptyAccountStatus;
             _displayCurrency = value is null ? null : CurrencyRegistry.Get(value.CurrencyCode);
             PropertyChanged?.Invoke(this, AccountChanged);
+            PropertyChanged?.Invoke(this, SelectedAccountIdChanged);
             PropertyChanged?.Invoke(this, RowsChanged);
             PropertyChanged?.Invoke(this, BalanceChanged);
             PropertyChanged?.Invoke(this, RowChanged);

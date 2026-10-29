@@ -1,16 +1,16 @@
-# Devises, comptes de démonstration et paramètres — mission 5
+# Devises, comptes et paramètres — mission 6
 
 ## Capacités réelles et limites
 
-Comptes et opérations restent exclusivement en mémoire. Seuls les paramètres non financiers sont enregistrés. Aucun fichier `.moneta`, SQL, lecteur `.bp`, fournisseur de cours, cache de taux, service de mise à jour ou téléchargement n'est implémenté.
+Les comptes et leurs devises natives sont persistés dans un dossier `.moneta` SQLite, après un enregistrement explicite. Les opérations restent exclusivement dans le mode démonstration en mémoire. Les paramètres non financiers sont enregistrés séparément. Aucun lecteur `.bp`, fournisseur de cours, cache de taux, service de mise à jour ou téléchargement n'est implémenté.
 
 ## Comptes et registre de devises
 
 - `CurrencyRegistry` expose un référentiel observable en lecture seule, initialisé avec EUR, BYN et RUB. `Register` permet d'autres devises ; aucune énumération fermée ni plafond de comptes. La limite pratique reste la mémoire disponible, pas une promesse de capacité infinie.
 - Une devise porte code à trois lettres majuscules, nom, symbole, précision et `CurrencyDisplayRules` (culture, code/symbole, position du symbole). La validation contrôle la forme du code, pas son attribution dans un annuaire ISO 4217 certifié. Les montants restent en `decimal`.
 - `Account.Currency` est une propriété en lecture seule : le choix d'affichage ne peut pas changer la monnaie native. Type et notes sont facultatifs. Aucun changement de monnaie native n'est proposé ; une future migration nécessitera un parcours explicite et contrôlé.
-- **Comptes → Ajouter un compte de démonstration** : nom, devise native, type libre, solde initial français et notes. Plusieurs comptes peuvent partager une devise. Le nouveau compte est sélectionné, sans opération, avec son solde initial exact. La fermeture de Moneta le supprime de la session ; aucune sauvegarde n'est annoncée.
-- Nom 120 caractères, type 80, notes 2 000 ; pas de plafond du nombre de comptes. Solde signé borné par `long.MaxValue` unités mineures, précision excessive refusée sans arrondi silencieux. Ce choix prépare un stockage exact futur, pas une base déjà réalisée.
+- **Comptes → Ajouter un compte** : nom, devise native, type libre, solde initial français et notes. Plusieurs comptes peuvent partager une devise ; le registre provient du dossier ouvert, sans forcer EUR/BYN/RUB s'ils en sont absents. Le compte est sélectionné, sans opération. En mode démonstration il reste en mémoire ; dans un dossier réel il est marqué **non enregistré** jusqu'à `Enregistrer`.
+- Nom 120 caractères, type 80, notes 2 000 ; aucun plafond produit du nombre de comptes. Solde signé borné par `±long.MaxValue` unités mineures, fraction sous l'unité mineure refusée sans arrondi silencieux ; stockage `INTEGER` relu exactement. `Account.Currency` et la date de création sont immuables dans un dossier enregistré.
 
 ## Devise d'affichage et contrats futurs de cours
 
