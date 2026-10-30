@@ -44,6 +44,8 @@ Schéma courant **2**, marqueur `Moneta`, `application_id=0x4D4E5441`, `user_ver
 
 Une migration **1 → 2** est réellement exercée sur un brouillon interne synthétique sans drapeau archivé, jamais présenté comme une version déjà distribuée. Consentement, copie SQLite contrôlée avant transformation, transaction, comparaison avant/après et original conservé. Toutes les versions/schémas inconnus sont refusés. Le prochain domaine persistant ajoutera ses tables par migration, sans anticiper des dizaines de champs inutilisés.
 
+**Consolidation 6.1 :** les trois protections (Close après checkpoint, refus de journaux orphelins, comparaison du snapshot dans la transaction Save) sont conservées et revérifiées. Le verrou reste coopératif/par chemin ; les accès parallèles sur une session, alias filesystem et mutations concurrentes des listes ne sont pas pris en charge. La comparaison n'est ni surveillance continue ni protection contre un remplacement malveillant du fichier. Historique technique et snapshot financier ont des périmètres distincts. Les nouveaux domaines de mission 7 devront étendre explicitement baseline, digest de sauvegarde et réconciliation. [Preuves et risques détaillés](AUDIT_MISSION_6_1.md).
+
 
 
 

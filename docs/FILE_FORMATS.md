@@ -86,6 +86,8 @@ Le WAL peut contenir des transactions validées encore absentes du fichier princ
 
 Un fichier adjacent `.moneta.lock` porte le verrou exclusif de session Moneta. Son existence n'indique pas une session active : le handle système est libéré après fermeture/crash, le fichier vide reste volontairement présent. Ne pas le confondre avec un journal SQLite. Un échec de checkpoint conserve connexion et verrou pour permettre la reprise ; pas d'annonce de fermeture autonome prématurée. Une écriture externe détectée au prochain Save est refusée avant toute modification.
 
+Audit 6.1 : le verrou est coopératif et nommé par chemin, pas par identité physique du fichier ; alias/liens et clients externes non coopératifs ne sont pas exclus par ce mécanisme seul. La comparaison transactionnelle protège contre les écritures SQLite ordinaires détectables, pas contre toute altération historique ou filesystem. Voir [l'audit](AUDIT_MISSION_6_1.md).
+
 ### Réseau, synchronisation et transport
 
 **Non pris en charge pour une base active :** partage SMB/NAS, lecteur réseau, accès depuis plusieurs machines et dossier synchronisé (OneDrive, Dropbox ou analogue). Une synchronisation de fichiers n'est pas une transaction SQLite ; le WAL exige une coordination locale. L'usage local-first ne signifie pas « cloud sans conflit ».
@@ -120,6 +122,8 @@ La date UTC propre à la sauvegarde, un identifiant de génération distinct du 
 4. Le dialogue annonce uniquement une **restauration sur nouvelle copie rouverte et comparée**. Le dossier actuellement affiché, ses données et brouillons restent inchangés. Utiliser ensuite Fichier → Ouvrir pour une bascule volontaire.
 
 La restauration est effectivement exercée par les tests et le scénario WPF avec plusieurs comptes EUR/BYN/RUB, montants signés, UUID, notes et sélection retrouvés. Elle ne certifie pas des opérations absentes du schéma.
+
+Audit 6.1 : un source bloqué par partage/verrou Windows (codes 32/33) renvoie maintenant `DocumentError.Locked` avec un message explicite, sans essai de contournement. Tests supplémentaires : écriture WAL non committée, lecteur WAL épinglé, sources bloqués et readonly pour restauration/migration. Lecture seule SQLite ne garantit pas l'absence de fichiers de coordination adjacents.
 
 ## FMT-07 — Migration du schéma, sans rétrogradation
 

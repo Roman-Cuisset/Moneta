@@ -4,6 +4,8 @@ Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. 
 
 **Mission 6 : dossiers `.moneta` SQLite, comptes multidevises persistants et sauvegarde/restauration vérifiées. Version de développement à qualifier sur données fictives avant tout usage réel.** Les opérations restent limitées à un mode démonstration explicite en mémoire. Aucun lecteur `.bp`, taux inventé, édition financière complète ou sauvegarde automatique.
 
+**Consolidation 6.1 :** 97 tests Debug/Release, contrôles SQLite/sauvegardes revus et erreur de source verrouillé corrigée. Un pic CPU capturé est attribué à la compilation étagée .NET, sans boucle de layout démontrée ; aucun contournement graphique/runtime livré. [Audit, mesures et réserves avant mission 7](docs/AUDIT_MISSION_6_1.md).
+
 ## Objectifs
 
 - Retrouver les fonctions BankPerfect identifiées dans la matrice de parité, sans réduire le produit à un suivi bancaire générique.
@@ -93,7 +95,7 @@ Windows x64 10.0.26220, 12 processeurs logiques, SDK 10.0.401/runtime 10.0.12, R
 
 Ouverture d'un dossier persistant synthétique à quatre comptes depuis l'interface réelle : **1,496 s** puis **0,862 s** du choix du fichier à l'interface prête (dialogue exclu, attente pilotée par UIA). Chargement et validation seuls, sans interface : 4 comptes **6,6–9,6 ms** (médiane 8,3 ms, 10 essais alternés) ; 1 000 comptes **24,7–66,2 ms** (médiane 29,8 ms). Ces durées incluent la validation lecture seule puis écriture, pas la fermeture/checkpoint ni un démarrage à froid.
 
-**Constat non résolu, non introduit par cette mission :** en mode démonstration, une fenêtre **visible au premier plan** consomme durablement 15–100 % d'un cœur et sa mémoire résidente croît de 198 à 251 Mio sur une trentaine de secondes ; minimisée, la consommation retombe à **0,00 %**. Le même protocole appliqué à la version de mission 5 reconstruite depuis le commit `7248ad1` donne 15,6–81,3 % et la même croissance mémoire. Les mesures historiques « 0,00 % » correspondaient donc à un état sans rendu actif, pas à un repos visible comparable. La cause n'est pas établie : elle demande une enquête de rendu/layout distincte, sans modifier ici l'interface validée. Aucun processus permanent, service réseau ou minuterie applicative n'est présent dans le code.
+**Observation historique de mission 6 :** 15–100 % d'un cœur et croissance mémoire sur des fenêtres visibles de démonstration, également observés sur `7248ad1` ; minimisation suivie de 0 %. **L'interprétation causale précédente (« les anciens zéros signifiaient absence de rendu actif ») n'était pas établie.** L'audit 6.1 capture un travail de compilation étagée .NET et un retour au repos sans changement WPF ; cela explique les pics mesurés, pas nécessairement toutes les occurrences prolongées antérieures. Voir le [diagnostic étayé](docs/AUDIT_MISSION_6_1.md#3-diagnostic-cpu--faits-pas-correction-cosmétique).
 
 Les campagnes disque plein, coupure électrique matérielle, supports amovibles, plusieurs moniteurs physiques et lecteurs d'écran restent non exercées.
 
@@ -118,7 +120,7 @@ Windows x64 10.0.26220, SDK 10.0.401/runtime 10.0.12 ; Release Light, sans débo
 
 L'ancien commit est également plus lent qu'à sa mesure historique ; ces échantillons ne permettent pas d'attribuer ce ralentissement global aux ajouts M5. Pas de conclusion statistique ni garantie de performance. Premier lancement M5 observé : 3,550 s, 195,89 Mio résidents/138,30 Mio privés, CPU 0,00 %. Objectif RAM <100 Mo toujours non atteint. Pas de processus permanent de mise à jour ou de cours.
 
-**Correction de lecture apportée en mission 6 :** ces `0,00 %` ne représentent pas une fenêtre visible et active. En mesurant une fenêtre de démonstration au premier plan, la version M5 reconstruite depuis `7248ad1` consomme elle aussi 15–81 % d'un cœur et croît en mémoire ; minimisée, elle retombe à 0 %. Voir « Performances et limites de mission 6 ». Cette constatation ne réécrit pas les valeurs historiques, elle en précise la portée.
+**Portée des mesures historiques :** valeurs ponctuelles conservées, pas preuve de charge permanente ni d'absence de rendu. Le diagnostic de mission 6.1 distingue optimisations runtime de démarrage, activité UI et repos stabilisé ; les conditions des anciens zéros ne sont pas reconstituées avec certitude. Voir [l'audit 6.1](docs/AUDIT_MISSION_6_1.md).
 
 
 ## Vérifications de mission 4

@@ -57,6 +57,56 @@ public sealed class BackupRestoreTests
     }
 
     [TestMethod]
+    public void ActiveUncommittedWalWriterCannotLeakIntoCertifiedBackup()
+    {
+        var snapshot = Sample();
+        using var source = MonetaFile.Create(PathFor("source.moneta"), snapshot);
+        using (var writer = Raw(source.FilePath))
+        using (var transaction = writer.BeginTransaction())
+        {
+            using var command = writer.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "UPDATE Accounts SET notes='still uncommitted', opening_minor=123456;";
+            Assert.AreEqual(3, command.ExecuteNonQuery());
+            var backup = MonetaBackup.Create(source, PathFor("backup.moneta"));
+            using var restored = MonetaBackup.Restore(backup.FilePath, PathFor("restored.moneta"));
+            AssertSnapshot(snapshot, restored.Snapshot);
+        }
+        AssertSnapshot(snapshot, MonetaFile.Inspect(source.FilePath));
+        AssertNoTemporaryFiles();
+    }
+
+    [TestMethod]
+    public void PinnedWalReaderDoesNotPreventBackupOfLatestCommit()
+    {
+        var original = Sample();
+        using var source = MonetaFile.Create(PathFor("source.moneta"), original);
+        var saved = original with
+        {
+            Name = "Committed after reader snapshot",
+            ModifiedUtc = original.ModifiedUtc.AddMinutes(1),
+            Accounts = original.Accounts.Select(account => account with { Notes = "New committed notes" }).ToArray()
+        };
+        using (var reader = Raw(source.FilePath))
+        using (var transaction = reader.BeginTransaction(deferred: true))
+        {
+            using var command = reader.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "SELECT name FROM Document;";
+            Assert.AreEqual(original.Name, command.ExecuteScalar());
+            source.Save(saved);
+            Assert.AreEqual(original.Name, command.ExecuteScalar(), "The WAL reader must remain pinned to the old commit.");
+            var backup = MonetaBackup.Create(source, PathFor("backup.moneta"));
+            using var restored = MonetaBackup.Restore(backup.FilePath, PathFor("restored.moneta"));
+            AssertSnapshot(saved, restored.Snapshot);
+            Assert.IsFalse(File.Exists(backup.FilePath + "-wal"));
+            Assert.IsFalse(File.Exists(backup.FilePath + "-shm"));
+        }
+        AssertSnapshot(saved, MonetaFile.Inspect(source.FilePath));
+        AssertNoTemporaryFiles();
+    }
+
+    [TestMethod]
     public void ManifestContainsCertificationButNoRawFinancialContent()
     {
         var snapshot = Sample();
@@ -320,6 +370,63 @@ public sealed class BackupRestoreTests
         CollectionAssert.AreEqual(before, File.ReadAllBytes(source));
         Assert.IsFalse(File.Exists(PathFor("destination.moneta")));
         AssertNoTemporaryFiles();
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void SharingLockedSourceReportsLockedWithoutPublishingOrChangingBytes(bool migrate)
+    {
+        var sourcePath = PathFor("input.moneta");
+        if (migrate)
+            BuildLegacy(sourcePath, Sample(archived: false));
+        else
+        {
+            using var source = MonetaFile.Create(PathFor("active.moneta"), Sample());
+            MonetaBackup.Create(source, sourcePath);
+        }
+        var before = File.ReadAllBytes(sourcePath);
+        var destination = PathFor("result.moneta");
+        using (var locked = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.None))
+            ExpectError(DocumentError.Locked, () =>
+            {
+                using var result = migrate
+                    ? MonetaBackup.Migrate(sourcePath, destination)
+                    : MonetaBackup.Restore(sourcePath, destination);
+            });
+        CollectionAssert.AreEqual(before, File.ReadAllBytes(sourcePath));
+        Assert.IsFalse(File.Exists(destination));
+        AssertNoTemporaryFiles();
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ReadOnlySourceRestoresOrMigratesWithoutChangingItsBytes(bool migrate)
+    {
+        var expected = Sample(archived: !migrate);
+        var sourcePath = PathFor("input.moneta");
+        if (migrate)
+            BuildLegacy(sourcePath, expected);
+        else
+        {
+            using var source = MonetaFile.Create(PathFor("active.moneta"), expected);
+            MonetaBackup.Create(source, sourcePath);
+        }
+        var before = File.ReadAllBytes(sourcePath);
+        var attributes = File.GetAttributes(sourcePath);
+        File.SetAttributes(sourcePath, attributes | FileAttributes.ReadOnly);
+        try
+        {
+            using (var result = migrate
+                ? MonetaBackup.Migrate(sourcePath, PathFor("result.moneta"))
+                : MonetaBackup.Restore(sourcePath, PathFor("result.moneta")))
+                AssertSnapshot(expected, result.Snapshot);
+            CollectionAssert.AreEqual(before, File.ReadAllBytes(sourcePath));
+            Assert.IsTrue(File.GetAttributes(sourcePath).HasFlag(FileAttributes.ReadOnly));
+            AssertNoTemporaryFiles();
+        }
+        finally { File.SetAttributes(sourcePath, attributes); }
     }
 
     // Schema 1 is an internal draft, constructed from the actual current schema using

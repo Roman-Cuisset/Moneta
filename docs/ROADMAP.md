@@ -26,6 +26,13 @@ La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacit�
 
 S01 est réalisé pour **dossiers/devises/comptes**, pas pour tous les domaines financiers. S02 reste partiel : mécanisme manuel vérifié, cadence/rétention automatiques absentes. S03 couvre une transition interne connue, pas une compatibilité historique publiée. S04 reste une qualification ouverte malgré les preuves de processus interrompu ; S05 n'est pas commencé. U01 reste partiel tant que la saisie d'opérations manque.
 
+### Consolidation indépendante — mission 6.1
+
+97 tests Debug/Release, trois protections de session confirmées, six cas de sauvegarde/verrou/readonly ajoutés et classification d'erreur de source verrouillé corrigée. Diagnostic CPU : pic attribué au thread de compilation étagée .NET, sans preuve de boucle WPF ; toutes les occurrences prolongées précédentes ne sont pas expliquées avec certitude. Aucun commutateur de désactivation des optimisations ni refonte livré. [Rapport, mesures et réserves](AUDIT_MISSION_6_1.md).
+
+Mission 7 peut être préparée sur données synthétiques : schéma 3 et migration sur copie, identifiants de référentiels, cycle manuel cohérent, soldes exacts, corrections/suppressions contrôlées, pointage, virements atomiques et extension obligatoire des contrôles de sauvegarde à toutes les nouvelles tables. Aucun de ces développements n'est commencé ici.
+
+
 ### Livraison de préparation fonctionnelle — mission 5
 
 - Sélection de texte distincte de la sélection de ligne : cause WPF adorner reproduite, correction partagée et contrôles Light/Dark actifs/inactifs/readonly/désactivés observés.

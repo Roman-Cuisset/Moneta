@@ -308,8 +308,15 @@ public static class MonetaBackup
         }
         catch (IOException ex)
         {
-            var error = (ex.HResult & 0xffff) is 80 or 183 ? DocumentError.DestinationExists : DocumentError.WriteFailed;
-            throw new DocumentException(error, message, ex);
+            var error = (ex.HResult & 0xffff) switch
+            {
+                32 or 33 => DocumentError.Locked,
+                80 or 183 => DocumentError.DestinationExists,
+                _ => DocumentError.WriteFailed
+            };
+            throw new DocumentException(error, error == DocumentError.Locked
+                ? message + " Le fichier est verrouillé par une autre application ; libérez son accès puis réessayez."
+                : message, ex);
         }
         catch (ArgumentException ex) { throw new DocumentException(DocumentError.InvalidData, message, ex); }
     }

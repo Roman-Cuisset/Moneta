@@ -85,6 +85,9 @@ coverage/
 # Journaux, diagnostics et fichiers temporaires potentiellement sensibles.
 logs/
 *.log
+*.nettrace
+*.etl
+*.etlx
 *.dmp
 *.tmp
 *.temp
