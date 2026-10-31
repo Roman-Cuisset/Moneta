@@ -2,13 +2,29 @@
 
 ## Portée et règle de lecture
 
-**Mission 6 : fichiers `.moneta`, comptes persistants, enregistrement manuel et sauvegarde/restauration réelles.** Les opérations restent dans la démonstration ; les fournisseurs de cours, l'import `.bp`, l'édition financière et les mises à jour restent futurs. Le socle livré ne clôt pas les jalons de parité complets. Publication uniquement dans le dépôt privé après contrôle des fichiers et de l'historique.
+**Mission 7A : registre financier persistant, recettes/dépenses, modification et suppression logique confirmée, schéma 3 et sauvegarde/restauration des opérations.** Enregistrement manuel conservé. Cours, import `.bp`, pointage bancaire, virements et automatismes restent des lots distincts. Aucun jalon de parité complet n’est présumé clos.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Livraison du registre financier — mission 7A
+
+| Résultat livré | Validation / limite |
+|---|---|
+| Schéma 3 normalisé | Opérations/référentiels à UUID stables, précision entière exacte ; migration additive 2 → 3 sur copie et chaîne 1 → 2 → 3 |
+| Recettes/dépenses et corrections | Dialogue validant, brouillons conservés après erreur, même UUID et révision attendue ; Ctrl+S seul commit durable |
+| Suppression contrôlée | Confirmation, marqueur conservé dans SQLite/sauvegardes, aucune suppression financière depuis un champ texte ; pas encore de corbeille ou historique complet |
+| Registre et soldes | Pages réelles de 100, virtualisation conservée, solde initial + mouvements actifs, aucun total de page présenté comme solde du compte |
+| Référentiels | Catégories/sous-catégories, tiers et modes personnalisés réutilisables ; gestion avancée/renommage/modèles de tiers encore absents |
+| Concurrence et sauvegardes | Tous les champs d’opérations/références/tombstones inclus dans les comparaisons ; SaveAs préserve aussi les opérations non affichées |
+| Qualification | 168 tests Debug et Release, 97 cas antérieurs conservés ; parcours Windows réel Light/Dark, fermeture/réouverture, sauvegarde/restauration et comparaison complète ; mesures et limites dans le README |
+
+**Mission 7B proposée :** définir puis valider les règles de pointage/rapprochement (dates, relevé, solde initial pointé, opérations rapprochées modifiables ou non, suppression/correction contrôlée). Ensuite seulement développer leurs commandes et soldes. Les virements seront un autre lot atomique bilatéral, avec traitement explicite des corrections/suppressions liées. Ne pas transformer les trois états stockés en rapprochement prétendument contrôlé.
+
+S01/U01 sont étendus au registre simple, pas aux virements/ventilations/filtres/rapprochements. S02 reste manuel ; S03 couvre les schémas connus 1/2/3 ; S04 conserve ses limites de qualification matérielle. Le corpus `.bp` synthétique et sa spécification restent nécessaires indépendamment de ce registre.
 
 ### Livraison de persistance — mission 6
 
@@ -30,7 +46,7 @@ S01 est réalisé pour **dossiers/devises/comptes**, pas pour tous les domaines 
 
 97 tests Debug/Release, trois protections de session confirmées, six cas de sauvegarde/verrou/readonly ajoutés et classification d'erreur de source verrouillé corrigée. Diagnostic CPU : pic attribué au thread de compilation étagée .NET, sans preuve de boucle WPF ; toutes les occurrences prolongées précédentes ne sont pas expliquées avec certitude. Aucun commutateur de désactivation des optimisations ni refonte livré. [Rapport, mesures et réserves](AUDIT_MISSION_6_1.md).
 
-Mission 7 peut être préparée sur données synthétiques : schéma 3 et migration sur copie, identifiants de référentiels, cycle manuel cohérent, soldes exacts, corrections/suppressions contrôlées, pointage, virements atomiques et extension obligatoire des contrôles de sauvegarde à toutes les nouvelles tables. Aucun de ces développements n'est commencé ici.
+La mission 7A réalise maintenant le registre simple, les référentiels, le schéma 3 et les comparaisons financières complètes décrits ci-dessus. Le pointage bancaire, les virements et leurs règles liées ne sont pas implémentés.
 
 
 ### Livraison de préparation fonctionnelle — mission 5

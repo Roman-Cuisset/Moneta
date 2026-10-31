@@ -2,7 +2,7 @@
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 6 : dossiers `.moneta` SQLite, comptes multidevises persistants et sauvegarde/restauration vérifiées. Version de développement à qualifier sur données fictives avant tout usage réel.** Les opérations restent limitées à un mode démonstration explicite en mémoire. Aucun lecteur `.bp`, taux inventé, édition financière complète ou sauvegarde automatique.
+**Mission 7A : recettes et dépenses persistantes dans les dossiers `.moneta`, modification, suppression confirmée et sauvegarde/restauration du registre complet. Version de développement à qualifier sur données synthétiques avant usage réel.** Pas de lecteur `.bp`, de change effectif, de virements, d’échéancier ou de sauvegarde automatique.
 
 **Consolidation 6.1 :** 97 tests Debug/Release, contrôles SQLite/sauvegardes revus et erreur de source verrouillé corrigée. Un pic CPU capturé est attribué à la compilation étagée .NET, sans boucle de layout démontrée ; aucun contournement graphique/runtime livré. [Audit, mesures et réserves avant mission 7](docs/AUDIT_MISSION_6_1.md).
 
@@ -56,13 +56,17 @@ Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`
 
 1. **Fichier → Nouveau dossier / Ctrl+N** : saisir un nom ; dossier vierge en mémoire, sans compte ni opération fictive. Le démarrage n'ouvre aucun dossier automatiquement.
 2. **Comptes → Ajouter un compte** : nom, devise native, type libre, solde initial français exact et notes. Plusieurs comptes de même devise, aucun plafond produit. Le compte est sélectionné et le dossier marqué **non enregistré**.
-3. **Fichier → Enregistrer / Ctrl+S** : choisir un nouveau fichier `.moneta` au premier enregistrement ; les suivants commitent les modifications atomiquement. Ajouter n'enregistre pas automatiquement. Une erreur conserve le brouillon et ne produit pas l'état « enregistré ». **Enregistrer sous / F12** crée une copie neuve, sans modifier l'ancien fichier.
+3. **Fichier → Enregistrer / Ctrl+S** : choisir un nouveau fichier `.moneta` au premier enregistrement ; les suivants commitent comptes, référentiels et opérations dans une transaction atomique. Ajouter/modifier/supprimer prépare un **brouillon**, sans commit implicite. Une erreur conserve le brouillon et ne produit pas l’état « enregistré ». **Enregistrer sous / F12** copie aussi toutes les opérations existantes avant d’appliquer les brouillons à la nouvelle copie ; l’ancien fichier reste inchangé.
 4. **Fichier → Ouvrir / Ctrl+O** : identité, version, intégrité et références vérifiées avant affichage. Comptes, devises, UUID, notes, soldes exacts et dernière sélection enregistrée sont relus, sans fusion avec l'ancien dossier. Fermer/remplacer un dossier modifié propose enregistrer / abandonner / annuler. Un `.bp` reçoit une information d'importation future, jamais une écriture.
 5. **Fichier → Sauvegarder le dossier** : enregistrer d'abord les modifications, choisir un nouveau nom ; copie via API SQLite, contrôle du snapshot complet, puis publication de `Sauvegarde.moneta` et `Sauvegarde.moneta.manifest.json`. **Conserver les deux ensemble.** Copier le seul fichier actif ne constitue pas une sauvegarde.
 6. **Fichier → Restaurer une sauvegarde** : choisir une sauvegarde avec son manifeste et une destination neuve. Taille/hash, format, schéma, intégrité, clés et données sont vérifiés ; la copie est effectivement rouverte et comparée. Le dossier affiché et ses brouillons restent intacts. Ouvrir ensuite la copie restaurée pour une bascule volontaire ; ne pas travailler directement dans l'archive certifiée.
 7. **Fichier → Mode démonstration** : quatre comptes fictifs et 3 212 opérations, dont 3 200 sur le premier compte. Ajout de comptes en mémoire possible, enregistrement financier désactivé. Aucun passage silencieux de ces données dans un dossier réel.
 
-Navigation conservée : sélection de compte, registre/détails readonly, clavier, défilement et virtualisation, colonnes et panneau gauche redimensionnables. Un dossier réel n'a pas encore d'opérations persistantes ; son registre est vide, le solde actuel est son solde initial.
+**Opérations → Nouvelle opération** ou bouton **Nouvelle** sous le registre : date française, sens Recette/Dépense, montant non négatif dans la devise native, libellé obligatoire, mode/tiers/catégorie/sous-catégorie/notes facultatifs. Les valeurs personnalisées alimentent les référentiels du dossier ; les variantes de casse et d’espaces ne créent pas de doublons. Une fraction sous l’unité monétaire est refusée sans arrondi ; zéro est autorisé. Sélectionner une ligne puis **Modifier**, ou double-cliquer. **Suppr / Ctrl+Suppr** dans le registre demande confirmation ; ces touches ne suppriment aucune opération depuis un champ texte. **Ctrl+Entrée / Maj+Entrée**, uniquement dans le registre, ouvrent respectivement la création/modification. **Ctrl+S** reste nécessaire pour rendre ces changements durables.
+
+Navigation conservée : sélection de compte, détails, clavier, défilement et virtualisation, colonnes et panneau gauche redimensionnables. Registre réel paginé par **100 opérations** avec précédent/suivant ; solde total et solde progressif tiennent compte des opérations hors page. Ordre stable : date, création UTC, UUID canonique. La ligne compacte reste une prévisualisation avec boutons d’action ; la saisie s’effectue dans un dialogue validant, pas directement dans les cellules.
+
+Le solde est **solde initial + recettes − dépenses non supprimées**, sans conversion. La suppression enregistrée conserve une ligne marquée supprimée, exclue du registre et des soldes mais incluse dans les contrôles et sauvegardes. Pas encore de corbeille, de restauration individuelle ou d’historique complet des versions antérieures d’une modification. Les états non pointé/pointé/rapproché sont stockables ; l’interface crée des opérations non pointées et ne prétend pas réaliser un rapprochement bancaire.
 
 **Devise d'affichage** : native = montant réel ; autre = **Cours indisponible**, sans modifier compte/opérations. **Affichage → Thème → Clair / Sombre** conserve la préférence locale et la correction de sélection ; contraste élevé prioritaire. **Outils → Options** conserve ses cinq rubriques ; options de taux et de mises à jour enregistrables uniquement, services non développés. Voir [CURRENCIES_AND_SETTINGS](docs/CURRENCIES_AND_SETTINGS.md).
 
@@ -70,9 +74,48 @@ Navigation conservée : sélection de compte, registre/détails readonly, clavie
 
 L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et l'organisation de la principale restent fidèles à la capture privée. Elle ne prouve ni sous-menus fermés ni accélérateurs Alt. Choix Moneta explicites : Nouveau dans Fichier (également accessible sous Comptes), Enregistrer sous dans Fichier, sauvegarde/restauration manuelles et mode démonstration. F12 est documenté historiquement, pas l'emplacement exact d'Enregistrer sous. Aucun menu inconnu déclaré identique à BankPerfect.
 
-Pas encore d'édition/suppression de compte, d'opérations persistantes, filtre effectif, pointage modifiable, import/export, change, transfert, échéancier, budget ou automatisation des sauvegardes. Le drapeau archivé est conservé par le format, sans action UI. Le solde progressif fictif reste à gauche ; le tri est désactivé pour conserver sa signification.
+Pas encore d’édition/suppression de compte, de filtre effectif, de pointage modifiable/rapprochement bancaire, d’import/export, de change, de transfert, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; les comptes archivés ne reçoivent pas de modifications d’opérations. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
 
 **Erreurs et sécurité :** fichier absent/incompatible/corrompu ou version future refusé, aucune base vide substituée ; destinations existantes et journaux de récupération préservés. Une session par chemin via verrou système `.moneta.lock` ; fichier vide résiduel normal après fermeture/crash. Attente SQLite bornée, checkpoint bloqué signalé en gardant la session utilisable. Stockage actif local uniquement : réseau refusé, dossiers synchronisés non pris en charge. SQLite et sauvegardes **non chiffrés/non signés** ; protéger les droits du dossier et le support. Ne jamais supprimer WAL/SHM/journal pour débloquer.
+
+## Vérifications de mission 7A
+
+Debug et Release : **0 erreur, 0 avertissement ; 168 tests réussis, 0 échec et 0 ignoré dans chaque configuration**. Les 97 cas antérieurs sont conservés ; les anciennes hypothèses de numéro de schéma sont adaptées à de véritables fixtures historiques. Nouveaux cas : recettes/dépenses, correction/suppression, UUID/révisions, montants et échelles 0/2/3/28, agrégat dépassant Int64, références invalides, doublons légitimes, isolation, pages/ancrage, rollback, conflits externes, migration 1/2 → 3, SaveAs et restauration complète, altération conservant le même solde final. Répertoires de tests synthétiques supprimés après fermeture.
+
+Parcours Windows réel : créer un dossier vierge ; ajouter deux comptes EUR et un BYN ; refuser une fraction sous l’unité sans perdre les champs ; saisir recette/dépense ; enregistrer avec Ctrl+S ; modifier la dépense ; annuler puis confirmer sa suppression ; vérifier les soldes ; fermer le processus ; relancer et rouvrir le fichier ; sauvegarder, restaurer vers une nouvelle copie puis l’ouvrir. Les métadonnées, référentiels et empreinte du registre source/restauré sont aussi comparés hors interface, y compris la ligne supprimée. Sélection de texte et de ligne examinée en clair/sombre ; Suppr dans un champ texte ne supprime pas d’opération. Démonstration toujours non éditable et 3 200 lignes conservées.
+
+Captures synthétiques locales examinées : `screenshots-private/moneta-m7a-light.png`, `moneta-m7a-dark.png` et variantes `*-selection.png`, non suivies. Corrections issues du parcours : sélection de ligne maintenue lors du remplacement des pages et après commit, retour au compte précédent après erreur de lecture, texte réel de validation exposé à UIA. La création rend désormais son temporaire SQLite autonome avant vérification en lecture seule, pour ne pas laisser de WAL/SHM sous le nom temporaire ; aucun journal n’est supprimé manuellement.
+
+Relecture statique indépendante des frontières stockage/validation et présentation : aucun défaut supplémentaire confirmé. Ce contrôle ne remplace pas les tests ni une qualification sur tous les matériels.
+
+### Mesures de mission 7A
+
+Windows x64 10.0.26220, 12 processeurs logiques, SDK 10.0.401/runtime 10.0.12, Release sans débogueur. Deux lancements à vide, cinq secondes de stabilisation puis environ cinq secondes d’échantillon. Démarrage jusqu’à `WaitForInputIdle`, **pas au premier pixel** ; pas de comparaison statistique avec les missions précédentes.
+
+| Mesure à vide | Échantillon 1 | Échantillon 2 |
+|---|---:|---:|
+| Démarrage | 2,183 s | 2,094 s |
+| Mémoire résidente | 154,35 Mio | 154,05 Mio |
+| Mémoire privée | 101,72 Mio | 101,24 Mio |
+| CPU, équivalent un cœur | 0,00 % / 5,02 s | 0,00 % / 5,01 s |
+
+Démonstration visible : dix secondes de stabilisation puis six fenêtres de cinq secondes sans inspection UIA. Premier échantillon à **0,31 % d’un cœur**, cinq suivants à **0 %** ; mémoire résidente 211,75–211,81 Mio, privée 146,66–146,78 Mio, sans croissance progressive sur ces trente secondes. Minimisation et ses premières cinq secondes : 0,31 % ; après restauration et trois secondes de stabilisation : 0 %. Ces observations courtes ne prouvent pas l’absence de tout pic de compilation/rendu futur. L’objectif mémoire inférieur à 100 Mio n’est pas atteint.
+
+Sonde séparée, trois essais séquentiels sur **10 000 opérations synthétiques / quatre comptes**, 2 500 opérations dans le compte chargé. Seules 100 opérations complètes sont renvoyées par page. Les sauvegardes finales contiennent aussi trois suppressions logiques.
+
+| Mesure API observée | Durée |
+|---|---:|
+| Création initiale des 10 000 opérations | 5,570 s |
+| Ouverture et validation complète | 1,049–1,232 s |
+| Page de 100 parmi 2 500 | 28,58–54,73 ms |
+| Préparation d’un ajout | 36,70–54,25 ms |
+| Préparation d’une modification | 30,93–317,15 ms |
+| Préparation d’une suppression | 34,90–37,95 ms |
+| Commit et rafraîchissement après mutation | 1,230–1,337 s |
+| Sauvegarde de 10 003 lignes, tombstones compris | 1,530 s |
+| Restauration, réouverture et comparaison | 3,094 s |
+
+Le premier coût de modification est conservé, pas écarté comme « anormal ». Mesures API, hors temps de saisie/dialogues ; E/S et validation complète dominent le commit. Pas de garantie de latence sur un dossier arbitraire, de qualification disque plein/coupure matérielle ou de nouvelle campagne physique multi-DPI. Scripts de validation et sonde retirés après preuve ; aucune nouvelle dépendance.
 
 ## Vérifications de mission 6
 
@@ -204,4 +247,4 @@ Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
 ## Prochaine mission proposée
 
-Valider ce cycle de dossier et la restauration sur données synthétiques ; ajouter ensuite les opérations persistantes (saisie, règles de correction, catégories/tiers/modes et pointage) par migration, avec soldes et historique vérifiés. Qualifier les sauvegardes avant cadence/rétention automatiques. Le corpus `.bp` fictif demeure nécessaire pour le lecteur indépendant prioritaire ; aucun export n'est assimilé à une migration complète. Change daté, transferts, accessibilité multi-écran et automatisation restent des lots distincts. Voir [ROADMAP](docs/ROADMAP.md).
+Mission 7B : valider les règles de pointage et rapprochement avant de développer dates, relevés, protections des opérations rapprochées et soldes pointés. Définir séparément la récupération individuelle et l’historique de corrections ; qualifier sauvegardes avant cadence/rétention automatiques. Le corpus `.bp` fictif reste nécessaire pour le lecteur indépendant prioritaire. Change daté, virements liés, filtres et accessibilité multi-écran restent des lots distincts. Voir [ROADMAP](docs/ROADMAP.md).

@@ -2,7 +2,7 @@
 
 ## Contrat documentaire
 
-Cartographie cible, complétée par la capture privée de mission 4 : elle n'est pas une liste de fonctions implémentées. Le prototype conserve sélection, registre/détails, fermeture et ajoute les thèmes ; voir [README](../README.md). Aucun lecteur `.bp`. Les identifiants `CMD-001` à `CMD-148` restent stables : intentions et gestes, **pas 148 entrées de menus**. Les preuves documentaires restent distinctes des observations d'image et de l'exécution Moneta.
+Cartographie cible, complétée par la capture privée de mission 4 : ce n’est pas une liste de fonctions toutes implémentées. Moneta 7A réalise dossiers/comptes et registre simple persistant, saisie séparée, modification/suppression contrôlée, sauvegarde/restauration et thèmes ; voir le [README](../README.md). Aucun lecteur `.bp`. Les identifiants CMD restent stables ; preuves BankPerfect et décisions Moneta restent distinctes.
 
 ### Lecture des tables
 
@@ -21,6 +21,8 @@ Cartographie cible, complétée par la capture privée de mission 4 : elle n'est
 - Mission 5 : **Affichage → Thème → Clair / Sombre**, sélecteur supérieur supprimé, préférence locale conservée et contraste Windows prioritaire. **Outils → Options** opérationnel ; les thèmes restent la seule préférence visuelle.
 - Mission 6 : **Fichier → Nouveau dossier / Ouvrir / Enregistrer / Enregistrer sous / Sauvegarder le dossier / Restaurer une sauvegarde / Mode démonstration**, et **Comptes → Ajouter un compte**. Dossiers `.moneta` persistants limités aux comptes/devises/métadonnées ; édition/suppression de compte et opérations persistantes non réalisées.
 - `WindowCommands` centralise ces commandes ainsi que recherche/suppression/annulations futures, menus et outils communs, avec `CanExecute=false` pour les fonctions absentes. Aucun Ctrl+Z/Y global au détriment du texte. Ctrl+F demandé pour recherche entre en conflit avec Champs automatiques BP : indication Ctrl+F retirée de cette dernière dans le prototype, recherche elle-même désactivée ; arbitrage historique conservé dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
+- Mission 7A (**choix MON**, pas menu BP prétendument observé) : **Opérations → Nouvelle opération / Modifier / Supprimer**, mêmes commandes que la ligne compacte et le double-clic de modification. Ctrl+Entrée / Maj+Entrée et Suppr / Ctrl+Suppr sont limités au registre ; aucune capture des touches dans les champs texte. Le sens Recette/Dépense est explicite et indépendant du nom du mode. La saisie intégrée directe, F8, les raccourcis de calendrier et le pointage restent futurs.
+- Le dialogue prépare un brouillon ; Ctrl+S écrit durablement. La suppression demande confirmation et reste logique dans le fichier. Registre réel paginé par 100, sans filtres effectifs ; états de pointage stockés sans rapprochement bancaire validé. Les anciennes limitations ci-dessus décrivent les missions correspondantes, pas l’état actuel du registre.
 
 
 ## Fichier, échanges et ouverture native Moneta

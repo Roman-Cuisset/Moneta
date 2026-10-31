@@ -1,6 +1,6 @@
 # Formats de fichiers Moneta
 
-**État mission 6 : format natif SQLite et sauvegarde/restauration manuelles implémentés pour les dossiers, devises et comptes.** Schéma courant 2 ; opérations uniquement dans la démonstration en mémoire. Les identifiants FMT restent stables. Les exigences d'automatisation, d'association Windows et de qualification non exercées restent explicitement futures ; voir [README](../README.md), [ARCHITECTURE](ARCHITECTURE.md) et [stratégie BP](BANKPERFECT_IMPORT_STRATEGY.md).
+**État mission 7A : schéma courant 3, dossiers, devises, comptes, référentiels et opérations persistants, sauvegarde/restauration complètes.** Recettes/dépenses, modification et suppression logique utilisent le cycle manuel Enregistrer ; pas encore de virements, ventilations, pointage bancaire, automatisation ou lecture `.bp`. Voir [README](../README.md) et [ARCHITECTURE](ARCHITECTURE.md).
 
 Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. « Doit » exprime une exigence Moneta ; une propriété documentée de SQLite n'est pas une garantie d'implémentation Moneta.
 
@@ -10,8 +10,8 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 - Ce n'est **ni une archive ZIP**, ni un conteneur à décompresser, ni un `.bp` renommé, ni une encapsulation de BankPerfect. Aucune installation, API ou exécution BankPerfect n'est nécessaire au format natif Moneta.
 - Le fichier commence par les 16 octets de signature SQLite `SQLite format 3\0` (zéro terminal). Cette signature identifie SQLite, **pas Moneta**. L'extension seule n'identifie aucun format et une base SQLite quelconque renommée `.moneta` doit être refusée comme dossier Moneta.
 - L'identification doit combiner signature, `PRAGMA application_id`, métadonnées Moneta, version et schéma reconnu. `application_id` est le champ applicatif 32 bits de l'en-tête SQLite ; `user_version` est une convention de l'application. Ne pas utiliser `schema_version`, que SQLite gère pour son propre schéma, comme numéro de migration Moneta [S01, S02].
-- Contrat livré : marqueur `Moneta`, `application_id=0x4D4E5441` (`MNTA`), `user_version=2` et métadonnées concordantes ; UUID stable du dossier, nom, versions minimales lecteur/écrivain, application créatrice, horodatages UTC et compte sélectionné facultatif. Cet identifiant n'avait pas de collision dans la liste SQLite consultée ; aucune réservation officielle n'est revendiquée.
-- Quatre tables `STRICT`, sans colonnes monétaires `REAL` :
+- Contrat livré : marqueur `Moneta`, `application_id=0x4D4E5441` (`MNTA`), `user_version=3` et métadonnées concordantes ; UUID stable du dossier, nom, versions minimales lecteur/écrivain, créateur historique `Moneta-6`, horodatages UTC et compte sélectionné facultatif. L’identifiant applicatif n’a pas de réservation officielle revendiquée.
+- Huit tables `STRICT`, sans montants financiers `REAL` :
 
 | Table | Champs / relations réalisés |
 |---|---|
@@ -19,8 +19,12 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 | `Currencies` | Code unique, nom, symbole, précision, culture/règles d'affichage et ordre ; EUR/BYN/RUB proposés à la création, registre extensible |
 | `Accounts` | UUID unique, nom, type, devise native FK vers `Currencies`, `opening_minor INTEGER`, notes, archive, création/modification UTC et ordre |
 | `MigrationHistory` | Version source/cible, identifiant/définition de migration et date UTC ; seules les définitions reconnues sont acceptées |
+| `Categories` | UUID, nom, clé de correspondance, parent facultatif ; racines et un niveau de sous-catégories, unicité par parent |
+| `Payees` | UUID, nom et clé unique de correspondance |
+| `PaymentMethods` | UUID, nom et clé unique de correspondance |
+| `Transactions` | UUID, compte/devise native cohérents, date ISO, magnitude `amount_minor INTEGER` non négative, sens, libellé/notes, références facultatives, état de pointage, création/modification UTC, révision et suppression logique |
 
-Les opérations, tiers, catégories, relations de virements et ventilations viendront par migrations normalisées, pas par champs inutilisés. Leur absence du fichier actuel est intentionnelle et annoncée ; les données fictives ne sont jamais injectées dans un nouveau dossier.
+Les opérations référencent les comptes, tiers, modes et catégories par UUID. La sous-catégorie doit appartenir à la racine choisie ; pas de références orphelines ni de suppression cascade des opérations. Un index compte/date/création/UUID soutient l’ordre stable du registre ; les index et le schéma exact sont contrôlés à l’ouverture. Virements, ventilations, échéanciers et provenance BP seront des extensions normalisées versionnées, sans colonnes fictivement utilisées aujourd’hui.
 - SQLite ordinaire n'apporte pas de chiffrement implicite. Aucun mot de passe BP, clé, secret ou protection inconnue n'est transféré ou émulé. La protection future d'un dossier est un sujet explicite distinct, pas une propriété déduite de l'extension.
 
 ## FMT-02 — Reconnaître avant d'écrire ou de créer
@@ -47,7 +51,7 @@ Les opérations, tiers, catégories, relations de virements et ventilations vien
 
 ## FMT-03 — Valeurs financières et dates exactes
 
-Le solde initial et les horodatages techniques sont réalisés. Les autres représentations ci-dessous sont des contrats pour les futurs domaines persistants, pas des tables existantes.
+Le solde initial et les opérations sont réalisés ; les taux/prix/quantités ci-dessous restent des contrats futurs.
 
 | Donnée | Contrat de stockage | Validation requise |
 | --- | --- | --- |
@@ -58,6 +62,11 @@ Le solde initial et les horodatages techniques sont réalisés. Les autres repr�
 | Texte utilisateur | Unicode, valeur et provenance conservées | Aucune translittération ou normalisation destructive silencieuse ; ne pas exécuter les champs de règles historiques |
 
 SQLite `REAL` est binaire flottant ; `DECIMAL(10,2)` ne garantit ni échelle ni exactitude. `Microsoft.Data.Sqlite` **10.0.12** est utilisé avec des paramètres entiers explicites pour les soldes, pas sa conversion automatique de `decimal`. `ExactMoney` rejette toute fraction sous l'unité et tout dépassement de `±long.MaxValue` unités mineures ; **aucun arrondi à la saisie**. Les taux/prix futurs resteront distincts, exacts et sourcés. Pas de `TOTAL`, `AVG`, cast `REAL` ou somme implicite de valeurs `TEXT` pour une vérité financière.
+
+Pour une opération, la magnitude doit être entre zéro et `long.MaxValue` unités mineures ; `Direction=Debit` soustrait, `Credit` ajoute. Le solde initial reste signé. Les agrégats sont calculés en `decimal` contrôlé sans être forcés dans `Int64`. Date, énumérations, devise native, précision, UUID, hiérarchie, projections des noms et horodatages/révisions sont validés. L’interface n’accepte ni signe négatif ni arrondi silencieux ; les zéros fractionnaires supplémentaires exacts n’altèrent pas le montant.
+
+Insertion avec révision attendue 0 ; modification/suppression avec révision attendue égale à la version enregistrée. Compte, devise, UUID et création immuables. Plusieurs modifications en brouillon conservent la base de révision jusqu’au commit. La suppression marque `is_deleted` et incrémente la révision ; aucune purge physique, corbeille UI ou version précédente complète n’est revendiquée. Les trois états de pointage sont conservables, mais la saisie crée seulement non pointé et le rapprochement bancaire reste hors mission 7A.
+
 
 Contraintes de domaine, unicité, références et transactions doivent maintenir les soldes, les deux jambes des transferts et les ventilations équilibrées. Un montant ou une relation indéchiffrable à l'import ne devient pas zéro ou une relation déduite par ressemblance.
 
@@ -107,12 +116,12 @@ Après crash, conserver principal et journaux à leurs noms et emplacements coh�
 
 1. Enregistrer d'abord les modifications en attente. La sauvegarde représente les données committées, pas un brouillon.
 2. Comparer le snapshot vivant au dernier snapshot enregistré ; utiliser `SqliteConnection.BackupDatabase` vers un temporaire exclusif voisin de la destination.
-3. Vérifier identité, version, schéma exact, `integrity_check`, `foreign_key_check` et empreinte canonique de **tous** les champs du dossier, devises et comptes, ordre compris. Consolider le WAL de la copie puis passer cette copie autonome en journal `DELETE`.
-4. Fermer et calculer SHA-256/longueur. Le manifeste JSON version 1 contient version de manifeste/schéma, UUID du dossier, empreinte du fichier et du snapshot complet, nombres de comptes/devises. Aucun nom, note ou solde en clair ; pas de référence financière séparée requise puisque le rapprochement intégral utilise ce digest du même snapshot.
+3. Vérifier identité, version, schéma exact, `integrity_check`, `foreign_key_check` et empreinte canonique de tous les champs dossier/devises/comptes, des référentiels et de **chaque opération**, y compris références, dates, notes, révisions et lignes supprimées. L’empreinte du registre est calculée en streaming, pas à partir des seuls soldes finaux. Consolider le WAL de la copie puis passer la copie autonome en journal `DELETE`.
+4. Fermer et calculer SHA-256/longueur. Le manifeste JSON version 1 contient version de manifeste/schéma, UUID du dossier, empreinte du fichier et du snapshot complet, nombres de comptes/devises. Le digest de schéma 3 intègre aussi empreinte du registre et nombre d’opérations, tombstones compris. Aucun nom, note ou solde en clair dans le manifeste. L’algorithme ancien 1/2 reste inchangé pour vérifier les archives antérieures.
 5. Publier la base sous un nom neuf, puis son `<nom>.moneta.manifest.json` **en dernier**. Le couple n'est pas une transaction multifichier : sans manifeste final ou en cas de divergence, la copie n'est pas certifiée. Une publication interrompue ne supprime aucune ancienne sauvegarde.
 6. Conserver les deux fichiers ensemble, à l'écart du dossier actif, et tester une restauration. L'empreinte n'est ni chiffrement ni signature d'authenticité. Ne pas ouvrir/enregistrer directement l'archive comme dossier de travail : son hash pourrait changer ; restaurer une nouvelle copie.
 
-La date UTC propre à la sauvegarde, un identifiant de génération distinct du hash, la planification, la rétention et les copies externes automatisées restent à réaliser avant automatisation. Aucun déclenchement automatique ni rotation n'est annoncé. Les invariants d'opérations/liens feront partie du digest et du rapprochement lorsqu'ils seront persistés.
+La date UTC propre à la sauvegarde, un identifiant de génération distinct du hash, la planification, la rétention et les copies externes automatisées restent à réaliser avant automatisation. Aucun déclenchement automatique ni rotation n’est annoncé.
 
 ## FMT-06 — Restaurer réellement, pas seulement vérifier un hash
 
@@ -121,15 +130,15 @@ La date UTC propre à la sauvegarde, un identifiant de génération distinct du 
 3. Vérifier le contenu complet contre le digest certifié, puis publier sous un nouveau nom, rouvrir avec `MonetaFile.Open` et comparer à nouveau. Un hash ou `integrity_check=ok` isolé ne suffit pas.
 4. Le dialogue annonce uniquement une **restauration sur nouvelle copie rouverte et comparée**. Le dossier actuellement affiché, ses données et brouillons restent inchangés. Utiliser ensuite Fichier → Ouvrir pour une bascule volontaire.
 
-La restauration est effectivement exercée par les tests et le scénario WPF avec plusieurs comptes EUR/BYN/RUB, montants signés, UUID, notes et sélection retrouvés. Elle ne certifie pas des opérations absentes du schéma.
+Restauration exercée avec comptes EUR/BYN/RUB, recettes/dépenses, catégories/sous-catégories, tiers, modes, notes, révisions et suppressions logiques. Une différence d’opérations conservant le même solde final est détectée. Les anciennes archives certifiées sont vérifiées selon leur schéma original, puis seule la copie de travail est migrée avant publication et réouverture.
 
 Audit 6.1 : un source bloqué par partage/verrou Windows (codes 32/33) renvoie maintenant `DocumentError.Locked` avec un message explicite, sans essai de contournement. Tests supplémentaires : écriture WAL non committée, lecteur WAL épinglé, sources bloqués et readonly pour restauration/migration. Lecture seule SQLite ne garantit pas l'absence de fichiers de coordination adjacents.
 
 ## FMT-07 — Migration du schéma, sans rétrogradation
 
-Schéma courant **2**. Seule transition connue **1 → 2** : brouillon interne synthétique identique hormis l'absence de `Accounts.is_archived`, ajouté avec valeur fausse. La version 1 n'est pas présentée comme une ancienne version distribuée de Moneta.
+Schéma courant **3**. Transitions connues : **1 → 2**, brouillon interne synthétique ajoutant le drapeau archivé ; puis **2 → 3**, ajout transactionnel des référentiels, opérations et index, sans recréer les tables de comptes/devises existantes.
 
-L'ouverture normale d'une version 1 signale une migration nécessaire. L'utilisateur choisit explicitement de créer une copie et sa nouvelle destination. L'API SQLite copie d'abord le source en lecture seule ; la copie avant transformation est contrôlée et comparée intégralement. Reconstruction transactionnelle de la table, historique/version mis à jour ensemble, comparaison après transformation puis réouverture de la copie publiée. Le hash du principal source est contrôlé inchangé ; aucun fichier original ni journal n'est supprimé.
+L’ouverture normale d’une version 1 ou 2 demande une migration. L’utilisateur consent à créer une copie à un nouveau chemin. Copie SQLite du source en lecture seule, comparaison de son contenu original, transition(s) connue(s), contrôle des comptes/devises/soldes initiaux/notes/UUID/dates/sélection, historique/version transactionnels puis réouverture comparée. Le hash du principal source reste inchangé ; aucun original ni journal n’est supprimé. Un ancien dossier ne reçoit aucune opération ou référence inventée.
 
 Version future, définition inconnue ou schéma altéré : refus, jamais de downgrade. Pour les futures versions publiées, étendre ce catalogue et les essais d'interruption à chaque frontière, avec sauvegarde cohérente/restauration préalable qualifiée. Aucun mécanisme générique de « réparation » ou migration automatique sur l'unique original.
 

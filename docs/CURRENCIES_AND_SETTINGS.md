@@ -51,8 +51,9 @@ Avant activation : définir la distribution d'un dépôt privé, l'autorisation 
 | Ouvrir / Enregistrer | Ctrl+O / Ctrl+S | **Actifs** : ouverture/commit d'un dossier `.moneta` ; Enregistrer sous = F12. Aucune réécriture d'un `.bp` |
 | Annuler / Refaire une écriture | Ctrl+Z / Ctrl+Y envisagés | Désactivés et aucune liaison globale de ces touches ; l'éditeur de texte garde ses propres commandes natives |
 | Rechercher | Ctrl+F | Souhait mission 5, recherche désactivée. Conflit avec **Champs automatiques** BP : le Ctrl+F affiché sur cette ancienne commande a été retiré, pas conservé simultanément ; affectation historique future à arbitrer avant son développement |
-| Supprimer une opération | Suppr et Ctrl+Suppr préparés | Suppr souhait mission 5, Ctrl+Suppr historique ; commande désactivée. Aucun effacement financier |
+| Supprimer une opération | Suppr / Ctrl+Suppr dans le registre seulement | Mission 7A : confirmation puis suppression logique en brouillon ; Ctrl+S committe. Aucune suppression financière depuis un champ texte |
 | Annuler / fermer un dialogue | Échap | Boutons WPF IsCancel, sans interception globale des champs |
+| Nouvelle / modifier opération | Ctrl+Entrée / Maj+Entrée dans le registre | Mission 7A : même commande que menu/bouton, dialogue validant ; pas de raccourci global au détriment des champs |
 
 Le catalogue historique [UI_MENU_MAP](UI_MENU_MAP.md) reste une preuve BankPerfect, pas la liste des raccourcis financiers actifs dans ce prototype.
 
