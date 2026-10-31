@@ -26,6 +26,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _selectedRowDetails = string.Empty;
     private string _statusText = "Aucun compte sélectionné · données fictives en mémoire uniquement";
     private FinancialDocument? _document;
+    private const int PageSize = 100;
+    private ILedgerSource? _source;
+    private Dictionary<Guid, TransactionChange> _pending = [];
+    private int _pageOffset;
+    private long _totalCount;
+    private string _ledgerErrorText = string.Empty;
 
     public MainViewModel(DemoPortfolio portfolio, CurrencyRegistry? currencies = null)
     {
@@ -82,10 +88,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SelectedAccount = Accounts.FirstOrDefault();
     }
 
-    public MainViewModel(FinancialDocument document)
+    public MainViewModel(FinancialDocument document, ILedgerSource? source = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         _document = document;
+        FinancialRules.ValidateCatalog(document);
+        _source = source;
         CurrencyRegistry = new CurrencyRegistry(document.Currencies);
         Accounts = new ReadOnlyObservableCollection<AccountSummary>(_accounts);
         _statusText = EmptyAccountStatus;
@@ -95,6 +103,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 throw new ArgumentException("La devise du compte diffère du référentiel du dossier.", nameof(document));
             _ = ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency);
             AddAccountSummary(account);
+            if (document.AccountBalances?.TryGetValue(account.Id, out var balance) == true)
+                _ledgers[account.Id].Summary.UpdateBalance(balance);
         }
 
         if (document.SelectedAccountId is { } selectedId)
@@ -110,6 +120,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string DocumentName => _document?.Name ?? "Démonstration";
     public Guid DocumentId => _document?.Id ?? Guid.Empty;
     public Guid? SelectedAccountId => _selectedAccount?.Account.Id;
+    public IReadOnlyCollection<TransactionChange> PendingChanges => Array.AsReadOnly(_pending.Values.ToArray());
+    public IReadOnlyList<LedgerCategory> Categories => _document?.Categories ?? Array.Empty<LedgerCategory>();
+    public IReadOnlyList<LedgerPayee> Payees => _document?.Payees ?? Array.Empty<LedgerPayee>();
+    public IReadOnlyList<PaymentMethod> PaymentMethods => _document?.PaymentMethods ?? Array.Empty<PaymentMethod>();
+    public bool CanPreviousPage => !IsDemo && _pageOffset > 0;
+    public bool CanNextPage => !IsDemo && _pageOffset + (long)_rows.Count < _totalCount;
+    public string PageStatusText => IsDemo ? string.Empty : _totalCount == 0
+        ? "Aucune opération"
+        : $"{_pageOffset + 1:N0}–{_pageOffset + _rows.Count:N0} / {_totalCount:N0}";
+    public string LedgerErrorText => _ledgerErrorText;
 
     public FinancialDocument CaptureDocument()
     {
@@ -129,12 +149,196 @@ public sealed class MainViewModel : INotifyPropertyChanged
         var document = _document ?? throw new InvalidOperationException("La démonstration ne peut pas être enregistrée dans un dossier.");
         if (snapshot.Id != document.Id)
             throw new ArgumentException("Le dossier enregistré ne correspond pas au dossier courant.", nameof(snapshot));
+        FinancialRules.ValidateCatalog(snapshot);
+        // SQL has already committed. A refresh error must not resurrect committed drafts.
         _document = snapshot;
+        _pending.Clear();
+        foreach (var summary in _accounts)
+            if (snapshot.AccountBalances?.TryGetValue(summary.Account.Id, out var balance) == true)
+                summary.UpdateBalance(balance);
+        try
+        {
+            if (_selectedAccount is not null)
+            {
+                var page = ReadPage(_selectedAccount.Account, _pageOffset, Array.Empty<TransactionChange>());
+                ApplyPage(page, BuildRows(page), _selectedRow?.Transaction.Id);
+            }
+            SetLedgerError(string.Empty);
+        }
+        catch (Exception exception)
+        {
+            SetLedgerError($"Enregistrement effectué ; lecture du registre impossible : {exception.Message}");
+        }
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingChanges)));
         if (IsDirty)
         {
             IsDirty = false;
             PropertyChanged?.Invoke(this, DirtyChanged);
         }
+    }
+
+    public void SetLedgerSource(ILedgerSource? source)
+    {
+        if (IsDemo && source is not null)
+            throw new InvalidOperationException("La démonstration ne peut pas être reliée à un registre réel.");
+        // The workspace calls this after committing and before AcceptSaved; do not read
+        // the newly committed source with the old pending insert revisions here.
+        _source = source;
+    }
+
+    public Transaction AddTransaction(TransactionDraft draft)
+    {
+        var account = EditableAccount();
+        var catalog = new DraftCatalog(CaptureDocument());
+        var value = catalog.Build(account, draft);
+        Stage(catalog.Capture(), new TransactionChange(value, 0), value.Id);
+        return value;
+    }
+
+    public Transaction EditTransaction(Guid id, long expectedRevision, TransactionDraft draft)
+    {
+        var account = EditableAccount();
+        var previous = FindEditable(id, expectedRevision, account);
+        var catalog = new DraftCatalog(CaptureDocument());
+        var originalRevision = _pending.TryGetValue(id, out var pending) ? pending.ExpectedRevision : previous.Revision;
+        var value = catalog.Build(account, draft, previous) with
+        {
+            Revision = originalRevision == 0 ? 1 : checked(originalRevision + 1)
+        };
+        Stage(catalog.Capture(), new TransactionChange(value, originalRevision), id);
+        return value;
+    }
+
+    public void DeleteTransaction(Guid id, long expectedRevision)
+    {
+        var account = EditableAccount();
+        var previous = FindEditable(id, expectedRevision, account);
+        if (_pending.TryGetValue(id, out var pending) && pending.ExpectedRevision == 0)
+        {
+            Stage(CaptureDocument(), null, null, id);
+            return;
+        }
+        var originalRevision = pending?.ExpectedRevision ?? previous.Revision;
+        var now = DateTimeOffset.UtcNow;
+        if (now < previous.ModifiedUtc) now = previous.ModifiedUtc;
+        Stage(CaptureDocument(), new TransactionChange(previous with
+        {
+            IsDeleted = true, ModifiedUtc = now, Revision = checked(originalRevision + 1)
+        }, originalRevision), null);
+    }
+
+    public void NextPage()
+    {
+        if (CanNextPage) ChangePage(checked(_pageOffset + PageSize));
+    }
+
+    public void PreviousPage()
+    {
+        if (CanPreviousPage) ChangePage(Math.Max(0, _pageOffset - PageSize));
+    }
+
+    private Account EditableAccount()
+    {
+        if (IsDemo) throw new InvalidOperationException("Les opérations de démonstration ne sont pas modifiables.");
+        var account = _selectedAccount?.Account ?? throw new InvalidOperationException("Choisissez un compte.");
+        if (account.IsArchived) throw new InvalidOperationException("Les opérations d'un compte archivé ne sont pas modifiables.");
+        return account;
+    }
+
+    private Transaction FindEditable(Guid id, long revision, Account account)
+    {
+        var value = _pending.TryGetValue(id, out var change) ? change.Value
+            : _rows.FirstOrDefault(row => row.Transaction.Id == id)?.Transaction;
+        if (value is null || value.AccountId != account.Id || value.IsDeleted)
+            throw new InvalidOperationException("L'opération n'appartient pas au registre courant.");
+        if (value.Revision != revision)
+            throw new InvalidOperationException("Cette opération a changé ; ouvrez à nouveau sa version actuelle.");
+        return value;
+    }
+
+    private void Stage(FinancialDocument metadata, TransactionChange? change, Guid? anchorId, Guid? removeId = null)
+    {
+        FinancialRules.ValidateCatalog(metadata);
+        if (change is not null) FinancialRules.ValidateTransaction(change.Value, metadata);
+        var proposed = new Dictionary<Guid, TransactionChange>(_pending);
+        if (removeId is { } removed) proposed.Remove(removed);
+        if (change is not null) proposed[change.Value.Id] = change;
+        var page = ReadPage(_selectedAccount!.Account, _pageOffset, proposed.Values.ToArray(), anchorId);
+        var rows = BuildRows(page);
+        // Publish only after validation, source reads and exact progressive balances succeeded.
+        _document = metadata;
+        _pending = proposed;
+        ApplyPage(page, rows, anchorId);
+        SetLedgerError(string.Empty);
+        MarkDirty();
+        foreach (var property in new[] { nameof(PendingChanges), nameof(Categories), nameof(Payees), nameof(PaymentMethods) })
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+    }
+
+    private LedgerPage ReadPage(Account account, int offset, IReadOnlyCollection<TransactionChange> pending, Guid? anchorId = null)
+    {
+        if (_source is not null) return _source.ReadPage(account, offset, PageSize, pending, anchorId);
+        if (_document?.OperationCount > 0)
+            throw new InvalidOperationException("Le registre persistant du dossier n'est pas connecté.");
+        return LedgerProjection.ReadPending(account, offset, PageSize, pending, anchorId);
+    }
+
+    private static IReadOnlyList<LedgerRow> BuildRows(LedgerPage page)
+    {
+        var balance = page.BalanceBeforePage;
+        var rows = new LedgerRow[page.Transactions.Count];
+        for (var index = 0; index < rows.Length; index++)
+        {
+            var transaction = page.Transactions[index];
+            balance = checked(balance + FinancialRules.SignedAmount(transaction));
+            rows[index] = new LedgerRow(transaction, balance);
+        }
+        return Array.AsReadOnly(rows);
+    }
+
+    private void ChangePage(int offset)
+    {
+        var page = ReadPage(_selectedAccount!.Account, offset, PendingChanges);
+        var rows = BuildRows(page);
+        ApplyPage(page, rows);
+        SetLedgerError(string.Empty);
+    }
+
+    private void ApplyPage(LedgerPage page, IReadOnlyList<LedgerRow> rows, Guid? anchorId = null)
+    {
+        _rows = rows;
+        _pageOffset = page.Offset;
+        _totalCount = page.TotalCount;
+        _selectedAccount!.UpdateBalance(page.AccountBalance);
+        _selectedRow = anchorId is { } anchor ? rows.FirstOrDefault(row => row.Transaction.Id == anchor) : null;
+        _selectedRowDetails = _selectedRow is null ? string.Empty : FormatDetails(_selectedRow);
+        _statusText = RealStatus(_selectedAccount.Account, page.TotalCount);
+        foreach (var args in new[] { RowsChanged, BalanceChanged, RowChanged, DetailsChanged, StatusChanged })
+            PropertyChanged?.Invoke(this, args);
+        NotifyDisplayCurrencyChanged();
+        NotifyPagingChanged();
+    }
+
+    private static string RealStatus(Account account, long count) =>
+        $"{count.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"))} opérations · {account.Name} ({account.Currency.Code})";
+
+    private void NotifyPagingChanged()
+    {
+        foreach (var property in new[] { nameof(CanNextPage), nameof(CanPreviousPage), nameof(PageStatusText) })
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+    }
+
+    private void SetLedgerError(string message)
+    {
+        _ledgerErrorText = message;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LedgerErrorText)));
+    }
+
+    private void MarkDirty()
+    {
+        if (IsDirty) return;
+        IsDirty = true;
+        PropertyChanged?.Invoke(this, DirtyChanged);
     }
 
     public ReadOnlyObservableCollection<AccountSummary> Accounts { get; }
@@ -212,13 +416,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             CreatedUtc = now,
             ModifiedUtc = now
         };
+        var page = IsDemo ? null : ReadPage(account, 0, PendingChanges);
+        var rows = page is null ? null : BuildRows(page);
         var summary = AddAccountSummary(account);
-        if (!IsDemo && !IsDirty)
-        {
-            IsDirty = true;
-            PropertyChanged?.Invoke(this, DirtyChanged);
-        }
-        SelectedAccount = summary;
+        SelectAccount(summary, page, rows);
+        if (!IsDemo) MarkDirty();
         return summary;
     }
 
@@ -240,30 +442,40 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public AccountSummary? SelectedAccount
     {
         get => _selectedAccount;
-        set
-        {
-            if (ReferenceEquals(value, _selectedAccount))
-                return;
-            if (value is not null &&
-                (!_ledgers.TryGetValue(value.Account.Id, out var candidate) || !ReferenceEquals(candidate.Summary, value)))
-                throw new ArgumentException("Le compte sélectionné ne fait pas partie de ce portefeuille.", nameof(value));
+        set => SelectAccount(value);
+    }
 
-            _selectedAccount = value;
-            var ledger = value is null ? null : _ledgers[value.Account.Id];
-            _rows = ledger?.Rows ?? Array.Empty<LedgerRow>();
-            _selectedRow = null;
-            _selectedRowDetails = string.Empty;
-            _statusText = ledger?.StatusText ?? EmptyAccountStatus;
-            _displayCurrency = value is null ? null : CurrencyRegistry.Get(value.CurrencyCode);
-            PropertyChanged?.Invoke(this, AccountChanged);
-            PropertyChanged?.Invoke(this, SelectedAccountIdChanged);
-            PropertyChanged?.Invoke(this, RowsChanged);
-            PropertyChanged?.Invoke(this, BalanceChanged);
-            PropertyChanged?.Invoke(this, RowChanged);
-            PropertyChanged?.Invoke(this, DetailsChanged);
-            PropertyChanged?.Invoke(this, StatusChanged);
-            NotifyDisplayCurrencyChanged();
-        }
+    private void SelectAccount(AccountSummary? value, LedgerPage? preparedPage = null, IReadOnlyList<LedgerRow>? preparedRows = null)
+    {
+        if (ReferenceEquals(value, _selectedAccount))
+            return;
+        if (value is not null &&
+            (!_ledgers.TryGetValue(value.Account.Id, out var candidate) || !ReferenceEquals(candidate.Summary, value)))
+            throw new ArgumentException("Le compte sélectionné ne fait pas partie de ce portefeuille.", nameof(value));
+
+        var page = preparedPage ?? (!IsDemo && value is not null
+            ? ReadPage(value.Account, 0, PendingChanges) : null);
+        var rows = preparedRows ?? (page is null ? null : BuildRows(page));
+        _selectedAccount = value;
+        var ledger = value is null ? null : _ledgers[value.Account.Id];
+        _rows = rows ?? ledger?.Rows ?? Array.Empty<LedgerRow>();
+        _pageOffset = page?.Offset ?? 0;
+        _totalCount = page?.TotalCount ?? 0;
+        if (page is not null) value!.UpdateBalance(page.AccountBalance);
+        _selectedRow = null;
+        _selectedRowDetails = string.Empty;
+        _statusText = page is null ? ledger?.StatusText ?? EmptyAccountStatus : RealStatus(value!.Account, page.TotalCount);
+        _displayCurrency = value is null ? null : CurrencyRegistry.Get(value.CurrencyCode);
+        SetLedgerError(string.Empty);
+        PropertyChanged?.Invoke(this, AccountChanged);
+        PropertyChanged?.Invoke(this, SelectedAccountIdChanged);
+        PropertyChanged?.Invoke(this, RowsChanged);
+        PropertyChanged?.Invoke(this, BalanceChanged);
+        PropertyChanged?.Invoke(this, RowChanged);
+        PropertyChanged?.Invoke(this, DetailsChanged);
+        PropertyChanged?.Invoke(this, StatusChanged);
+        NotifyDisplayCurrencyChanged();
+        NotifyPagingChanged();
     }
 
     public IReadOnlyList<LedgerRow> Rows => _rows;

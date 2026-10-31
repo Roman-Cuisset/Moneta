@@ -40,7 +40,8 @@ public partial class MainWindow : Window
         AccountsSelector.ToolTip = "Choisir un compte du dossier affiché.";
         DevelopmentNotice.Text = model is null ? "Version de développement — ouvrez ou créez un dossier"
             : model.IsDemo ? "Version de développement — données fictives"
-            : "Développement — stockage local · opérations indisponibles";
+            : _workspace.HasUnsavedChanges ? "Brouillon — Ctrl+S pour enregistrer durablement"
+            : "Développement — dossier local enregistré";
         IsEnabled = !_busy;
         CommandManager.InvalidateRequerySuggested();
     }
@@ -49,6 +50,34 @@ public partial class MainWindow : Window
     private void Save_CanExecute(object sender, CanExecuteRoutedEventArgs e) { e.CanExecute = !_busy && _workspace.CanSave; e.Handled = true; }
     private void AddAccount_CanExecute(object sender, CanExecuteRoutedEventArgs e) { e.CanExecute = !_busy && _workspace.Model is not null; e.Handled = true; }
     private void Backup_CanExecute(object sender, CanExecuteRoutedEventArgs e) { e.CanExecute = !_busy && _workspace.CanSave; e.Handled = true; }
+
+    private bool CanEditLedger => !_busy && _workspace.Model is
+        { IsDemo: false, SelectedAccount.Account.IsArchived: false };
+    private void NewTransaction_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = CanEditLedger;
+        e.Handled = true;
+    }
+    private void SelectedTransaction_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = CanEditLedger && _workspace.Model?.SelectedRow is not null;
+        e.Handled = true;
+    }
+
+    private void AccountSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_busy || _workspace.Model is not { } model ||
+            AccountsSelector.SelectedItem is not AccountSummary selected ||
+            ReferenceEquals(selected, model.SelectedAccount)) return;
+        try { model.SelectedAccount = selected; }
+        catch (Exception error) when (error is DocumentException or ArgumentException or InvalidOperationException or OverflowException)
+        {
+            // A failed binding setter must never leave one account's caption over another account's rows.
+            AccountsSelector.GetBindingExpression(ComboBox.SelectedItemProperty)?.UpdateTarget();
+            MessageBox.Show(this, error.Message, "Moneta — changement de compte interrompu", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        CommandManager.InvalidateRequerySuggested();
+    }
 
     private async Task<bool> RunIo(Action action, string operation)
     {
@@ -184,6 +213,58 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainViewModel model) new AccountWindow(model) { Owner = this }.ShowDialog();
     }
+    private void NewTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (CanEditLedger && _workspace.Model is { } model)
+            new TransactionWindow(model) { Owner = this }.ShowDialog();
+        CommandManager.InvalidateRequerySuggested();
+    }
+    private void EditTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (CanEditLedger && _workspace.Model is { SelectedRow: { } row } model)
+            new TransactionWindow(model, row.Transaction) { Owner = this }.ShowDialog();
+        CommandManager.InvalidateRequerySuggested();
+    }
+    private void DeleteTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (!CanEditLedger || _workspace.Model is not { SelectedRow: { } row } model) return;
+        var value = row.Transaction;
+        if (MessageBox.Show(this,
+            $"Retirer l’opération « {value.Label} » du {row.DateText} ?\n\nLa suppression sera enregistrée avec Ctrl+S. Une trace sera conservée dans le dossier ; aucune commande de récupération n’est encore disponible.",
+            "Moneta — confirmer la suppression", MessageBoxButton.YesNo, MessageBoxImage.Question,
+            MessageBoxResult.No) != MessageBoxResult.Yes) return;
+        try { model.DeleteTransaction(value.Id, value.Revision); }
+        catch (Exception error) when (error is DocumentException or ArgumentException or InvalidOperationException or OverflowException)
+        {
+            MessageBox.Show(this, error.Message, "Moneta — suppression interrompue", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        CommandManager.InvalidateRequerySuggested();
+    }
+    private void Transaction_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject element &&
+            ItemsControl.ContainerFromElement(TransactionsGrid, element) is DataGridRow &&
+            WindowCommands.EditTransaction.CanExecute(null, TransactionsGrid))
+        {
+            WindowCommands.EditTransaction.Execute(null, TransactionsGrid);
+            e.Handled = true;
+        }
+    }
+    private void PreviousPage_Click(object sender, RoutedEventArgs e) => ChangePage(next: false);
+    private void NextPage_Click(object sender, RoutedEventArgs e) => ChangePage(next: true);
+    private void ChangePage(bool next)
+    {
+        if (_busy || _workspace.Model is not { } model) return;
+        try
+        {
+            if (next) model.NextPage(); else model.PreviousPage();
+            if (TransactionsGrid.Items.Count > 0) TransactionsGrid.ScrollIntoView(TransactionsGrid.Items[0]);
+        }
+        catch (Exception error) when (error is DocumentException or InvalidOperationException or OverflowException)
+        {
+            MessageBox.Show(this, error.Message, "Moneta — registre indisponible", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
     private void Theme_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (e.Parameter is string mode) App.ChangeTheme(mode);
@@ -196,5 +277,17 @@ public partial class MainWindow : Window
         DarkThemeItem.IsChecked = App.ThemeController.CurrentMode == "Dark";
     }
     private void Unavailable_CanExecute(object sender, CanExecuteRoutedEventArgs e) { e.CanExecute = false; e.Handled = true; }
-    private void TransactionSelectionChanged(object sender, SelectionChangedEventArgs e) => DetailsText?.ScrollToHome();
+    private void TransactionSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_busy && e.Source == TransactionsGrid && _workspace.Model is { } model)
+        {
+            if (TransactionsGrid.SelectedItem is LedgerRow row && model.Rows.Contains(row))
+                model.SelectedRow = row;
+            else if (e.RemovedItems.Count == 1 && ReferenceEquals(e.RemovedItems[0], model.SelectedRow))
+                model.SelectedRow = null;
+            // ItemsSource replacement removes old row objects. It must not clear the newly anchored selection.
+        }
+        DetailsText?.ScrollToHome();
+        CommandManager.InvalidateRequerySuggested();
+    }
 }

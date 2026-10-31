@@ -69,6 +69,14 @@ public sealed record Transaction(
 {
     public MoneyValuation? Valuation { get; init; }
     public string? PaymentMode { get; init; }
+    public Guid? PayeeId { get; init; }
+    public Guid? CategoryId { get; init; }
+    public Guid? SubcategoryId { get; init; }
+    public Guid? PaymentMethodId { get; init; }
+    public DateTimeOffset CreatedUtc { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ModifiedUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long Revision { get; init; } = 1;
+    public bool IsDeleted { get; init; }
 }
 
 public sealed record DemoPortfolio(

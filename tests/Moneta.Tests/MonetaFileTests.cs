@@ -221,11 +221,11 @@ public sealed class MonetaFileTests
     public void FutureVersionAndMetadataDisagreementAreRefusedWithoutDowngrade()
     {
         using (MonetaFile.Create(FileName, Synthetic())) { }
-        using (var connection = Raw(FileName)) Execute(connection, "PRAGMA user_version=99;");
+        using (var connection = Raw(FileName)) Execute(connection, $"PRAGMA user_version={MonetaFile.CurrentSchemaVersion + 1};");
         var future = File.ReadAllBytes(FileName);
         AssertError(DocumentError.UnsupportedVersion, () => MonetaFile.Open(FileName));
         CollectionAssert.AreEqual(future, File.ReadAllBytes(FileName));
-        using (var connection = Raw(FileName)) Execute(connection, "PRAGMA user_version=2; UPDATE Document SET schema_version=1;");
+        using (var connection = Raw(FileName)) Execute(connection, $"PRAGMA user_version={MonetaFile.CurrentSchemaVersion}; UPDATE Document SET schema_version=1;");
         AssertError(DocumentError.InvalidFormat, () => MonetaFile.Open(FileName));
     }
 
@@ -369,7 +369,7 @@ public sealed class MonetaFileTests
         command.CommandText = "PRAGMA application_id;";
         Assert.AreEqual((long)MonetaFile.ApplicationId, command.ExecuteScalar());
         command.CommandText = "PRAGMA user_version;";
-        Assert.AreEqual(2L, command.ExecuteScalar());
+        Assert.AreEqual((long)MonetaFile.CurrentSchemaVersion, command.ExecuteScalar());
     }
 
     private static FinancialDocument Synthetic()

@@ -1,8 +1,9 @@
+using System.ComponentModel;
 using System.Globalization;
 
 namespace Moneta.Core.Presentation;
 
-public sealed class AccountSummary
+public sealed class AccountSummary : INotifyPropertyChanged
 {
     internal AccountSummary(Account account, decimal balance)
     {
@@ -14,8 +15,19 @@ public sealed class AccountSummary
     public Account Account { get; }
     public string Name => Account.Name;
     public string CurrencyCode => Account.Currency.Code;
-    public decimal Balance { get; }
-    public string BalanceText { get; }
+    public decimal Balance { get; private set; }
+    public string BalanceText { get; private set; }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    internal void UpdateBalance(decimal balance)
+    {
+        if (Balance == balance) return;
+        Balance = balance;
+        BalanceText = MoneyFormatter.Format(balance, Account.Currency);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Balance)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BalanceText)));
+    }
 }
 
 public sealed class LedgerRow

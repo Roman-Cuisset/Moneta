@@ -62,6 +62,7 @@ public static class MonetaBackup
         var target = NewDestination(destination, requireManifest: false);
         var sourcePath = ExistingPath(backup);
         var manifest = ReadManifest(sourcePath + ".manifest.json");
+        string expected;
         string? temporary = null;
         try
         {
@@ -70,14 +71,15 @@ public static class MonetaBackup
             using (var source = MonetaFile.OpenConnection(sourcePath, readOnly: true))
             {
                 VerifyFile(sourceBytes, manifest);
-                var snapshot = MonetaFile.ReadValidated(source);
+                var snapshot = MonetaFile.ReadValidated(source, allowVersion1: true);
                 VerifySnapshot(snapshot, manifest);
                 temporary = ReserveTemporary(target);
-                var copied = CopyDatabase(source, temporary);
+                var copied = CopyDatabase(source, temporary, allowLegacy: true);
                 VerifySnapshot(copied, manifest);
                 VerifyFile(sourceBytes, manifest);
+                expected = Digest(UpgradeCopy(temporary, copied));
             }
-            return PublishAndOpen(ref temporary, target, manifest.SnapshotDigest);
+            return PublishAndOpen(ref temporary, target, expected);
         }
         finally { DeleteTemporary(temporary); }
     }, "Restauration de la sauvegarde impossible.");
@@ -95,18 +97,12 @@ public static class MonetaBackup
             {
                 var originalHash = Hash(sourceBytes);
                 var original = MonetaFile.ReadValidated(connection, allowVersion1: true);
-                if (original.SchemaVersion != 1)
-                    throw new DocumentException(DocumentError.InvalidData, "Seul le brouillon interne de schéma 1 nécessite cette migration par copie.");
-                expected = Digest(original with { SchemaVersion = MonetaFile.CurrentSchemaVersion });
+                if (original.SchemaVersion is not (1 or 2))
+                    throw new DocumentException(DocumentError.InvalidData, "Seuls les schémas 1 et 2 nécessitent cette migration par copie.");
                 temporary = ReserveTemporary(target);
-                using (var copy = MonetaFile.OpenConnection(temporary, readOnly: false))
-                {
-                    connection.BackupDatabase(copy);
-                    RequireEqual(Digest(original), Digest(MonetaFile.ReadValidated(copy, allowVersion1: true)), "La copie avant migration diffère du dossier source.");
-                    MonetaFile.UpgradeV1(copy);
-                    RequireEqual(expected, Digest(MonetaFile.ReadValidated(copy)), "La migration a modifié les données du dossier.");
-                    MakeStandalone(copy);
-                }
+                var copied = CopyDatabase(connection, temporary, allowLegacy: true);
+                RequireEqual(Digest(original), Digest(copied), "La copie avant migration diffère du dossier source.");
+                expected = Digest(UpgradeCopy(temporary, copied));
                 RequireEqual(originalHash, Hash(sourceBytes), "Le dossier source a changé pendant la migration.");
             }
             return PublishAndOpen(ref temporary, target, expected);
@@ -114,11 +110,60 @@ public static class MonetaBackup
         finally { DeleteTemporary(temporary); }
     }, "Migration par copie impossible.");
 
-    private static FinancialDocument CopyDatabase(SqliteConnection source, string temporary)
+    public static MonetaFile SaveAs(MonetaFile source, string destination, FinancialDocument metadata,
+        IReadOnlyCollection<TransactionChange> changes) => Execute(() =>
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(metadata);
+        ArgumentNullException.ThrowIfNull(changes);
+        var target = NewDestination(destination, requireManifest: false);
+        string? temporary = null;
+        try
+        {
+            var baseline = Digest(source.Snapshot);
+            RequireEqual(baseline, Digest(MonetaFile.ReadValidated(source.Connection)),
+                "Le dossier actif a changé depuis son ouverture ou sa dernière sauvegarde.");
+            temporary = ReserveTemporary(target);
+            var copied = CopyDatabase(source.Connection, temporary);
+            RequireEqual(baseline, Digest(copied), "La copie SQLite ne correspond pas au dossier actif.");
+            string expected;
+            // Only the owned work copy is writable; failure leaves the source and drafts untouched.
+            using (var candidate = MonetaFile.Open(temporary))
+            {
+                candidate.Save(metadata, changes);
+                expected = Digest(candidate.Snapshot);
+            }
+            File.Delete(temporary + ".lock");
+            using (var connection = MonetaFile.OpenConnection(temporary, readOnly: false))
+                MakeStandalone(connection);
+            return PublishAndOpen(ref temporary, target, expected);
+        }
+        finally { DeleteTemporary(temporary); }
+    }, "Enregistrement sous un nouveau nom impossible.");
+
+    private static FinancialDocument UpgradeCopy(string path, FinancialDocument original)
+    {
+        if (original.SchemaVersion == MonetaFile.CurrentSchemaVersion) return original;
+        using var connection = MonetaFile.OpenConnection(path, readOnly: false);
+        if (original.SchemaVersion == 1) MonetaFile.UpgradeV1(connection);
+        MonetaFile.UpgradeV2(connection);
+        var upgraded = MonetaFile.ReadValidated(connection);
+        // Legacy files have no ledger or catalogues. Compare their original canonical
+        // representation rather than mistaking newly generated empty-ledger fields for edits.
+        RequireEqual(Digest(original), Digest(upgraded with { SchemaVersion = original.SchemaVersion }),
+            "La migration a modifié les données du dossier.");
+        if (upgraded.OperationCount != 0 || upgraded.Categories.Count != 0 ||
+            upgraded.Payees.Count != 0 || upgraded.PaymentMethods.Count != 0)
+            throw new DocumentException(DocumentError.VerificationFailed, "La migration a ajouté des données financières.");
+        MakeStandalone(connection);
+        return upgraded;
+    }
+
+    private static FinancialDocument CopyDatabase(SqliteConnection source, string temporary, bool allowLegacy = false)
     {
         using var copy = MonetaFile.OpenConnection(temporary, readOnly: false);
         source.BackupDatabase(copy);
-        var snapshot = MonetaFile.ReadValidated(copy);
+        var snapshot = MonetaFile.ReadValidated(copy, allowVersion1: allowLegacy);
         MakeStandalone(copy);
         return snapshot;
     }
@@ -170,7 +215,7 @@ public static class MonetaBackup
         Certification? manifest;
         try { manifest = JsonSerializer.Deserialize<Certification>(stream, ManifestJson); }
         catch (JsonException ex) { throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde illisible.", ex); }
-        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion != MonetaFile.CurrentSchemaVersion ||
+        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion is not (1 or 2 or 3) ||
             manifest.DocumentId == Guid.Empty || manifest.Length <= 0 || manifest.CurrencyCount < 0 || manifest.AccountCount < 0 ||
             !ValidHash(manifest.Sha256) || !ValidHash(manifest.SnapshotDigest))
             throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde invalide ou non pris en charge.");
@@ -195,7 +240,7 @@ public static class MonetaBackup
     }
 
     // Canonical, culture-independent full snapshot, retaining the document's list order.
-    private static string Digest(FinancialDocument snapshot)
+    internal static string Digest(FinancialDocument snapshot)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -238,6 +283,40 @@ public static class MonetaBackup
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
+            if (snapshot.SchemaVersion >= 3)
+            {
+                writer.WriteStartArray("categories");
+                foreach (var category in snapshot.Categories.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("id", category.Id);
+                    writer.WriteString("name", category.Name);
+                    if (category.ParentId is { } parent) writer.WriteString("parent", parent);
+                    else writer.WriteNull("parent");
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+                writer.WriteStartArray("payees");
+                foreach (var payee in snapshot.Payees.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("id", payee.Id);
+                    writer.WriteString("name", payee.Name);
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+                writer.WriteStartArray("paymentMethods");
+                foreach (var method in snapshot.PaymentMethods.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("id", method.Id);
+                    writer.WriteString("name", method.Name);
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+                writer.WriteString("ledgerDigest", snapshot.LedgerDigest);
+                writer.WriteNumber("operationCount", snapshot.OperationCount);
+            }
             writer.WriteEndObject();
         }
         return Convert.ToHexString(SHA256.HashData(buffer.GetBuffer().AsSpan(0, checked((int)buffer.Length))));
@@ -283,9 +362,14 @@ public static class MonetaBackup
     private static void DeleteTemporary(string? path)
     {
         if (path is null) return;
-        try { File.Delete(path); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        // Only our reserved principal and its ownership lock are disposable.
+        // SQLite alone manages recovery journals, including those of a work copy.
+        for (var index = 0; index < 2; index++)
+        {
+            try { File.Delete(index == 0 ? path : path + ".lock"); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
     }
 
     private static T Execute<T>(Func<T> action, string message)

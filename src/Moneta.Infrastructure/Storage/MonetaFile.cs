@@ -6,13 +6,14 @@ using Moneta.Core;
 namespace Moneta.Infrastructure.Storage;
 
 /// <summary>A local, exclusively opened Moneta document. Financial changes are committed only by Save.</summary>
-public sealed partial class MonetaFile : IDisposable
+public sealed partial class MonetaFile : IDisposable, ILedgerSource
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
     public const int ApplicationId = 0x4D4E5441;
     private const int TimeoutSeconds = 3;
     private readonly FileStream ownership;
     private bool closed;
+    private LedgerLookup ledgerLookup;
     internal SqliteConnection Connection { get; }
     public string FilePath { get; }
     public FinancialDocument Snapshot { get; private set; }
@@ -22,14 +23,16 @@ public sealed partial class MonetaFile : IDisposable
         FilePath = path;
         Connection = connection;
         this.ownership = ownership;
-        Snapshot = Freeze(snapshot);
+        Snapshot = snapshot;
+        ledgerLookup = new(snapshot);
     }
 
-    public static MonetaFile Create(string path, FinancialDocument snapshot)
+    public static MonetaFile Create(string path, FinancialDocument snapshot, IReadOnlyCollection<TransactionChange>? changes = null)
     {
         path = ValidatePath(path, false);
         ValidateSnapshot(snapshot);
         snapshot = Freeze(snapshot);
+        changes = changes?.ToArray() ?? Array.Empty<TransactionChange>();
         var temporary = Path.Combine(Path.GetDirectoryName(path)!, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
         FileStream? gate = null;
         try
@@ -43,10 +46,15 @@ public sealed partial class MonetaFile : IDisposable
                 Execute(connection, SchemaSql(CurrentSchemaVersion), transaction);
                 Execute(connection, $"PRAGMA application_id={ApplicationId}; PRAGMA user_version={CurrentSchemaVersion};", transaction);
                 WriteSnapshot(connection, snapshot, transaction);
-                InsertHistory(connection, transaction, 2, 0, "create-v2", "native-accounts-v2");
+                WriteCatalog(connection, snapshot, transaction);
+                ApplyChanges(connection, snapshot, changes, transaction, creating: true);
+                InsertHistory(connection, transaction, 3, 0, "create-v3", "native-accounts-v3");
+                snapshot = ReadWithinTransaction(connection, false, transaction);
                 transaction.Commit();
-                VerifySnapshot(snapshot, ReadValidated(connection));
                 Checkpoint(connection);
+                // Read-only verification must not recreate WAL companions under the unpublished name.
+                if (!string.Equals(Scalar(connection, "PRAGMA journal_mode=DELETE;")?.ToString(), "delete", StringComparison.OrdinalIgnoreCase))
+                    throw Error(DocumentError.VerificationFailed, "Le dossier temporaire ne peut pas être rendu autonome.");
             }
             using (var validation = OpenConnection(temporary, true)) VerifySnapshot(snapshot, ReadValidated(validation));
             EnsureNewDestination(path);
@@ -106,10 +114,12 @@ public sealed partial class MonetaFile : IDisposable
         catch (Exception exception) when (exception is not DocumentException) { throw Translate(exception); }
     }
 
-    public void Save(FinancialDocument snapshot)
+    public void Save(FinancialDocument snapshot, IReadOnlyCollection<TransactionChange>? changes = null)
     {
         ObjectDisposedException.ThrowIf(closed, this);
         ValidateSnapshot(snapshot);
+        snapshot = Freeze(snapshot);
+        changes = changes?.ToArray() ?? Array.Empty<TransactionChange>();
         if (snapshot.Id != Snapshot.Id || snapshot.CreatedUtc != Snapshot.CreatedUtc)
             throw Error(DocumentError.InvalidData, "L’identité et la date de création du dossier sont immuables.");
         if (snapshot.ModifiedUtc < Snapshot.ModifiedUtc)
@@ -126,6 +136,12 @@ public sealed partial class MonetaFile : IDisposable
         foreach (var previous in Snapshot.Currencies)
             if (!currencies.TryGetValue(previous.Code, out var current) || current.DecimalPlaces != previous.DecimalPlaces)
                 throw Error(DocumentError.InvalidData, "Une devise enregistrée ne peut être supprimée ou changer d’échelle.");
+        var categories = snapshot.Categories.ToDictionary(value => value.Id);
+        var payees = snapshot.Payees.Select(value => value.Id).ToHashSet();
+        var methods = snapshot.PaymentMethods.Select(value => value.Id).ToHashSet();
+        if (Snapshot.Categories.Any(value => !categories.TryGetValue(value.Id, out var current) || current.ParentId != value.ParentId) ||
+            Snapshot.Payees.Any(value => !payees.Contains(value.Id)) || Snapshot.PaymentMethods.Any(value => !methods.Contains(value.Id)))
+            throw Error(DocumentError.InvalidData, "Les références enregistrées ne peuvent être supprimées ou changer de parent.");
         try
         {
             using var transaction = Connection.BeginTransaction();
@@ -133,8 +149,13 @@ public sealed partial class MonetaFile : IDisposable
             if (!SameSnapshot(Snapshot, persisted))
                 throw Error(DocumentError.InvalidData, "Le dossier a été modifié par un autre client SQLite. Fermez et rouvrez-le avant toute sauvegarde.");
             WriteSnapshot(Connection, snapshot, transaction);
+            WriteCatalog(Connection, snapshot, transaction);
+            ApplyChanges(Connection, snapshot, changes, transaction, creating: false);
+            var saved = ReadWithinTransaction(Connection, false, transaction);
+            var savedLookup = new LedgerLookup(saved);
             transaction.Commit();
-            Snapshot = Freeze(snapshot);
+            Snapshot = saved;
+            ledgerLookup = savedLookup;
         }
         catch (Exception exception) when (exception is not DocumentException) { throw Translate(exception, DocumentError.WriteFailed); }
     }
@@ -162,7 +183,11 @@ public sealed partial class MonetaFile : IDisposable
         expected.Id == actual.Id && expected.Name == actual.Name &&
         expected.CreatedUtc == actual.CreatedUtc && expected.ModifiedUtc == actual.ModifiedUtc &&
         expected.SchemaVersion == actual.SchemaVersion && expected.SelectedAccountId == actual.SelectedAccountId &&
-        expected.Currencies.SequenceEqual(actual.Currencies) && expected.Accounts.SequenceEqual(actual.Accounts);
+        expected.Currencies.SequenceEqual(actual.Currencies) && expected.Accounts.SequenceEqual(actual.Accounts) &&
+        expected.Categories.OrderBy(value => value.Id).SequenceEqual(actual.Categories.OrderBy(value => value.Id)) &&
+        expected.Payees.OrderBy(value => value.Id).SequenceEqual(actual.Payees.OrderBy(value => value.Id)) &&
+        expected.PaymentMethods.OrderBy(value => value.Id).SequenceEqual(actual.PaymentMethods.OrderBy(value => value.Id)) &&
+        expected.LedgerDigest == actual.LedgerDigest && expected.OperationCount == actual.OperationCount;
 
     private static void VerifySnapshot(FinancialDocument expected, FinancialDocument actual)
     {
@@ -252,7 +277,12 @@ public sealed partial class MonetaFile : IDisposable
     private static FinancialDocument Freeze(FinancialDocument snapshot) => snapshot with
     {
         Currencies = Array.AsReadOnly(snapshot.Currencies.ToArray()),
-        Accounts = Array.AsReadOnly(snapshot.Accounts.ToArray())
+        Accounts = Array.AsReadOnly(snapshot.Accounts.ToArray()),
+        Categories = Array.AsReadOnly(snapshot.Categories.ToArray()),
+        Payees = Array.AsReadOnly(snapshot.Payees.ToArray()),
+        PaymentMethods = Array.AsReadOnly(snapshot.PaymentMethods.ToArray()),
+        AccountBalances = snapshot.AccountBalances is null ? null :
+            new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(snapshot.AccountBalances.ToDictionary(pair => pair.Key, pair => pair.Value))
     };
 
     private static DocumentException Error(DocumentError error, string message) => new(error, message);

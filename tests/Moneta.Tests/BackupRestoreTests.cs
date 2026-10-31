@@ -429,24 +429,82 @@ public sealed class BackupRestoreTests
         finally { File.SetAttributes(sourcePath, attributes); }
     }
 
-    // Schema 1 is an internal draft, constructed from the actual current schema using
-    // the inverse of its sole known migration, not a claimed historical release fixture.
-    private static void BuildLegacy(string path, FinancialDocument snapshot)
+    // Execute the actual old DDL; a current ledger schema with an old version tag
+    // is not a legacy fixture and must be rejected by exact-schema validation.
+    internal static void BuildLegacy(string path, FinancialDocument snapshot, int version = 1)
     {
-        using (MonetaFile.Create(path, snapshot)) { }
-        using var connection = Raw(path);
+        var schema = typeof(MonetaFile).GetMethod("SchemaSql",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = path, Mode = SqliteOpenMode.ReadWriteCreate, Pooling = false
+        }.ToString());
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
         using var command = connection.CreateCommand();
-        command.CommandText = """
-            ALTER TABLE Accounts DROP COLUMN is_archived;
-            UPDATE Document SET schema_version=1,min_reader=1,min_writer=1;
-            PRAGMA user_version=1;
-            DELETE FROM MigrationHistory;
-            INSERT INTO MigrationHistory(version,from_version,migration_id,definition,applied_utc)
-            VALUES(1,0,'create-v1','native-accounts-v1',$created);
-            """;
-        command.Parameters.AddWithValue("$created", snapshot.CreatedUtc.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+        command.Transaction = transaction;
+        command.CommandText = (string)schema.Invoke(null, [version])!;
         command.ExecuteNonQuery();
+        command.CommandText = $"PRAGMA application_id={MonetaFile.ApplicationId}; PRAGMA user_version={version};";
+        command.ExecuteNonQuery();
+        command.CommandText = """
+            INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id)
+            VALUES(1,'Moneta',$id,$name,$version,$version,$version,'Moneta-6',$created,$modified,$selected);
+            INSERT INTO MigrationHistory(version,from_version,migration_id,definition,applied_utc)
+            VALUES($version,0,$migration,$definition,$created);
+            """;
+        command.Parameters.AddWithValue("$id", snapshot.Id.ToString("D"));
+        command.Parameters.AddWithValue("$name", snapshot.Name);
+        command.Parameters.AddWithValue("$version", version);
+        command.Parameters.AddWithValue("$created", Stamp(snapshot.CreatedUtc));
+        command.Parameters.AddWithValue("$modified", Stamp(snapshot.ModifiedUtc));
+        command.Parameters.AddWithValue("$selected", (object?)snapshot.SelectedAccountId?.ToString("D") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$migration", $"create-v{version}");
+        command.Parameters.AddWithValue("$definition", $"native-accounts-v{version}");
+        command.ExecuteNonQuery();
+        command.Parameters.Clear();
+        for (var index = 0; index < snapshot.Currencies.Count; index++)
+        {
+            var currency = snapshot.Currencies[index];
+            command.CommandText = """
+                INSERT INTO Currencies(code,name,decimal_places,symbol,culture_name,use_symbol,symbol_before_amount,ordinal)
+                VALUES($code,$name,$places,$symbol,$culture,$use,$before,$ordinal);
+                """;
+            command.Parameters.AddWithValue("$code", currency.Code);
+            command.Parameters.AddWithValue("$name", currency.Name);
+            command.Parameters.AddWithValue("$places", currency.DecimalPlaces);
+            command.Parameters.AddWithValue("$symbol", currency.Symbol);
+            command.Parameters.AddWithValue("$culture", currency.DisplayRules.CultureName);
+            command.Parameters.AddWithValue("$use", currency.DisplayRules.UseSymbol ? 1 : 0);
+            command.Parameters.AddWithValue("$before", currency.DisplayRules.SymbolBeforeAmount ? 1 : 0);
+            command.Parameters.AddWithValue("$ordinal", index);
+            command.ExecuteNonQuery();
+            command.Parameters.Clear();
+        }
+        for (var index = 0; index < snapshot.Accounts.Count; index++)
+        {
+            var account = snapshot.Accounts[index];
+            command.CommandText = version == 1
+                ? "INSERT INTO Accounts(account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal) VALUES($id,$name,$type,$currency,$minor,$notes,$created,$modified,$ordinal);"
+                : "INSERT INTO Accounts(account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal,is_archived) VALUES($id,$name,$type,$currency,$minor,$notes,$created,$modified,$ordinal,$archived);";
+            command.Parameters.AddWithValue("$id", account.Id.ToString("D"));
+            command.Parameters.AddWithValue("$name", account.Name);
+            command.Parameters.AddWithValue("$type", (object?)account.Type ?? DBNull.Value);
+            command.Parameters.AddWithValue("$currency", account.Currency.Code);
+            command.Parameters.AddWithValue("$minor", ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency));
+            command.Parameters.AddWithValue("$notes", (object?)account.Notes ?? DBNull.Value);
+            command.Parameters.AddWithValue("$created", Stamp(account.CreatedUtc));
+            command.Parameters.AddWithValue("$modified", Stamp(account.ModifiedUtc));
+            command.Parameters.AddWithValue("$ordinal", index);
+            if (version == 2) command.Parameters.AddWithValue("$archived", account.IsArchived ? 1 : 0);
+            command.ExecuteNonQuery();
+            command.Parameters.Clear();
+        }
+        transaction.Commit();
     }
+
+    private static string Stamp(DateTimeOffset value) =>
+        value.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 
     private static SqliteConnection Raw(string path, bool readOnly = false)
     {

@@ -23,7 +23,9 @@
         <CommandBinding Command="{x:Static local:WindowCommands.Search}" CanExecute="Unavailable_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.FinancialUndo}" CanExecute="Unavailable_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.FinancialRedo}" CanExecute="Unavailable_CanExecute" />
-        <CommandBinding Command="{x:Static local:WindowCommands.DeleteTransaction}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.NewTransaction}" Executed="NewTransaction_Executed" CanExecute="NewTransaction_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.EditTransaction}" Executed="EditTransaction_Executed" CanExecute="SelectedTransaction_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.DeleteTransaction}" Executed="DeleteTransaction_Executed" CanExecute="SelectedTransaction_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.RefreshRates}" CanExecute="Unavailable_CanExecute" />
     </Window.CommandBindings>
     <Window.Resources>
@@ -87,13 +89,13 @@
                     <MenuItem Header="_Fichier">
                         <MenuItem Header="_Nouveau dossier…" Command="{x:Static local:WindowCommands.New}" AutomationProperties.AutomationId="NewDocumentCommand" />
                         <MenuItem Header="_Ouvrir…" Command="{x:Static local:WindowCommands.Open}" AutomationProperties.AutomationId="OpenDocumentCommand" />
-                        <MenuItem Header="_Enregistrer" Command="{x:Static local:WindowCommands.Save}" />
-                        <MenuItem Header="Enregistrer _sous…" Command="{x:Static local:WindowCommands.SaveAs}" />
+                        <MenuItem Header="_Enregistrer" Command="{x:Static local:WindowCommands.Save}" AutomationProperties.AutomationId="SaveDocumentCommand" />
+                        <MenuItem Header="Enregistrer _sous…" Command="{x:Static local:WindowCommands.SaveAs}" AutomationProperties.AutomationId="SaveAsDocumentCommand" />
                         <Separator />
-                        <MenuItem Header="_Sauvegarder le dossier…" Command="{x:Static local:WindowCommands.Backup}" />
-                        <MenuItem Header="_Restaurer une sauvegarde…" Command="{x:Static local:WindowCommands.Restore}" />
+                        <MenuItem Header="_Sauvegarder le dossier…" Command="{x:Static local:WindowCommands.Backup}" AutomationProperties.AutomationId="BackupDocumentCommand" />
+                        <MenuItem Header="_Restaurer une sauvegarde…" Command="{x:Static local:WindowCommands.Restore}" AutomationProperties.AutomationId="RestoreDocumentCommand" />
                         <Separator />
-                        <MenuItem Header="Mode _démonstration" Command="{x:Static local:WindowCommands.Demo}" ToolTip="Données fictives en mémoire, sans possibilité d’enregistrement financier." />
+                        <MenuItem Header="Mode _démonstration" Command="{x:Static local:WindowCommands.Demo}" ToolTip="Données fictives en mémoire, sans possibilité d’enregistrement financier." AutomationProperties.AutomationId="DemoDocumentCommand" />
                         <Separator />
                         <MenuItem Header="_Importer">
                             <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
@@ -142,7 +144,10 @@
                         <MenuItem Header="Sauvegardes…" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
                     <MenuItem Header="_Opérations">
-                        <MenuItem Header="_Supprimer" Command="{x:Static local:WindowCommands.DeleteTransaction}" InputGestureText="Suppr / Ctrl+Suppr" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Nouvelle opération…" Command="{x:Static local:WindowCommands.NewTransaction}" InputGestureText="Ctrl+Entrée (registre)" AutomationProperties.AutomationId="NewTransactionCommand" />
+                        <MenuItem Header="_Modifier…" Command="{x:Static local:WindowCommands.EditTransaction}" InputGestureText="Maj+Entrée (registre)" AutomationProperties.AutomationId="EditTransactionCommand" />
+                        <MenuItem Header="_Supprimer…" Command="{x:Static local:WindowCommands.DeleteTransaction}" InputGestureText="Suppr / Ctrl+Suppr (registre)" AutomationProperties.AutomationId="DeleteTransactionCommand" />
+                        <Separator />
                         <MenuItem Header="Charger un tiers…" InputGestureText="F10" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Date de pointage…" InputGestureText="Ctrl+Maj+P" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="Saisie multiple…" InputGestureText="F2" Style="{StaticResource UnavailableMenuItem}" />
@@ -190,7 +195,7 @@
                     <StackPanel Margin="4,2,12,4" ToolBar.OverflowMode="Never">
                         <TextBlock x:Name="DocumentCaption" Text="Aucun dossier ouvert" Style="{StaticResource MutedText}" Margin="2,0,0,4" MaxWidth="218" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="DocumentCaption" />
                         <ComboBox x:Name="AccountsSelector" Width="218" ItemsSource="{Binding Accounts}" DisplayMemberPath="Name"
-                                  SelectedItem="{Binding SelectedAccount, Mode=TwoWay}" IsSynchronizedWithCurrentItem="False"
+                                  SelectedItem="{Binding SelectedAccount, Mode=OneWay}" SelectionChanged="AccountSelectionChanged" IsSynchronizedWithCurrentItem="False"
                                   AutomationProperties.AutomationId="AccountsSelector" AutomationProperties.Name="Compte affiché"
                                   ToolTip="Choisir un compte du dossier affiché.">
                             <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
@@ -268,20 +273,31 @@
             </GridSplitter>
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                <DockPanel Margin="3,0,3,10">
-                    <TextBlock Text="Registre des opérations" FontSize="17" FontWeight="SemiBold" />
-                    <TextBlock Text="Lecture seule · filtres indisponibles" Style="{StaticResource MutedText}" TextAlignment="Right" VerticalAlignment="Center" />
-                </DockPanel>
-                <DataGrid x:Name="TransactionsGrid" Grid.Row="1" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
-                          SelectionChanged="TransactionSelectionChanged" AutoGenerateColumns="False" IsReadOnly="True"
+                <StackPanel Margin="3,0,3,10">
+                    <DockPanel>
+                        <TextBlock Text="Registre des opérations" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="Saisie via Nouvelle / Modifier · filtres indisponibles" Style="{StaticResource MutedText}" TextAlignment="Right" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding LedgerErrorText}" Foreground="{DynamicResource NegativeBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="LedgerErrorText">
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Margin" Value="0,6,0,0" /><Style.Triggers><DataTrigger Binding="{Binding LedgerErrorText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger><DataTrigger Binding="{Binding LedgerErrorText}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+                <DataGrid x:Name="TransactionsGrid" Grid.Row="1" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=OneWay}"
+                          SelectionChanged="TransactionSelectionChanged" MouseDoubleClick="Transaction_DoubleClick" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False" CanUserResizeColumns="True" CanUserReorderColumns="False"
                           SelectionMode="Single" SelectionUnit="FullRow" IsSynchronizedWithCurrentItem="False" ClipboardCopyMode="None"
                           EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                           HeadersVisibility="Column" RowHeight="42" ColumnHeaderHeight="64" GridLinesVisibility="Horizontal"
-                          AutomationProperties.AutomationId="TransactionsGrid" AutomationProperties.Name="Opérations fictives du compte sélectionné"
-                          AutomationProperties.HelpText="Lecture seule. Flèches et pages pour naviguer. Ordre chronologique conservé. Filtres non implémentés.">
+                          AutomationProperties.AutomationId="TransactionsGrid" AutomationProperties.Name="Registre du compte sélectionné"
+                          AutomationProperties.HelpText="Flèches pour naviguer. Ctrl+Entrée : nouvelle opération ; Maj+Entrée : modifier ; Suppr : demander la suppression. Enregistrer avec Ctrl+S.">
+                    <DataGrid.InputBindings>
+                        <KeyBinding Key="Enter" Modifiers="Control" Command="{x:Static local:WindowCommands.NewTransaction}" />
+                        <KeyBinding Key="Enter" Modifiers="Shift" Command="{x:Static local:WindowCommands.EditTransaction}" />
+                        <KeyBinding Key="Delete" Command="{x:Static local:WindowCommands.DeleteTransaction}" />
+                        <KeyBinding Key="Delete" Modifiers="Control" Command="{x:Static local:WindowCommands.DeleteTransaction}" />
+                    </DataGrid.InputBindings>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Date" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
                         <DataGridTextColumn Header="Mode" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
@@ -302,10 +318,25 @@
                         <DataGridTextColumn Header="Pointage" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding MarkText}" Width="100" MinWidth="90" ElementStyle="{StaticResource CellText}" />
                     </DataGrid.Columns>
                 </DataGrid>
+                <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" Padding="12,8" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                    <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><MultiDataTrigger><MultiDataTrigger.Conditions><Condition Binding="{Binding Rows.Count}" Value="0" /><Condition Binding="{Binding LedgerErrorText}" Value="" /></MultiDataTrigger.Conditions><Setter Property="Visibility" Value="Visible" /></MultiDataTrigger></Style.Triggers></Style></Border.Style>
+                    <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap">
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="Aucune opération sur ce compte. Utilisez Nouvelle pour commencer." /><Style.Triggers><DataTrigger Binding="{Binding IsDemo}" Value="True"><Setter Property="Text" Value="Aucune opération fictive sur ce compte." /></DataTrigger><DataTrigger Binding="{Binding SelectedAccount}" Value="{x:Null}"><Setter Property="Text" Value="Ajoutez d’abord un compte depuis le menu Comptes." /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                    </TextBlock>
+                </Border>
                 <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="6" Margin="0,8,0,0" Padding="10,7">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                        <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Content="‹" Width="30" Click="PreviousPage_Click" IsEnabled="{Binding CanPreviousPage}" AutomationProperties.AutomationId="PreviousLedgerPage" AutomationProperties.Name="Page précédente" />
+                                <TextBlock Text="{Binding PageStatusText}" VerticalAlignment="Center" Margin="8,0" Foreground="{DynamicResource MutedBrush}" />
+                                <Button Content="›" Width="30" Click="NextPage_Click" IsEnabled="{Binding CanNextPage}" AutomationProperties.AutomationId="NextLedgerPage" AutomationProperties.Name="Page suivante" />
+                            </StackPanel>
+                            <TextBlock Text="Brouillon → Enregistrer (Ctrl+S)" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                        </DockPanel>
                         <Grid MinWidth="715">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="92" /><ColumnDefinition Width="100" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="125" /><ColumnDefinition Width="108" /></Grid.ColumnDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="92" /><ColumnDefinition Width="100" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="125" /><ColumnDefinition Width="175" /></Grid.ColumnDefinitions>
                             <Grid.Resources><Style TargetType="StackPanel"><Setter Property="Margin" Value="0,0,8,0" /></Style></Grid.Resources>
                             <StackPanel><TextBlock Text="Date" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.DateText, Mode=OneWay}" AutomationProperties.Name="Date de l'opération" /></StackPanel>
                             <StackPanel Grid.Column="1"><TextBlock Text="Mode" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.PaymentModeName, Mode=OneWay}" AutomationProperties.Name="Mode de paiement" /></StackPanel>
@@ -314,8 +345,12 @@
                             <StackPanel Grid.Column="4"><TextBlock Text="Montant d'origine" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" TextAlignment="Right" AutomationProperties.Name="Montant d'origine">
                                 <TextBox.Text><MultiBinding StringFormat="{}{0}{1}" Mode="OneWay"><Binding Path="SelectedRow.DebitText" /><Binding Path="SelectedRow.CreditText" /></MultiBinding></TextBox.Text>
                             </TextBox></StackPanel>
-                            <StackPanel Grid.Column="5" Margin="0"><TextBlock Text="Lecture seule" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><Button Content="Modifier" IsEnabled="False" MinHeight="30" ToolTip="Édition financière non implémentée ; aucune modification ne sera enregistrée." ToolTipService.ShowOnDisabled="True" /></StackPanel>
+                            <StackPanel Grid.Column="5" Margin="0"><TextBlock Text="Opération" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><StackPanel Orientation="Horizontal">
+                                <Button Content="Nouvelle" Command="{x:Static local:WindowCommands.NewTransaction}" MinHeight="30" Padding="8,4" Margin="0,0,5,0" AutomationProperties.AutomationId="NewTransactionButton" />
+                                <Button Content="Modifier" Command="{x:Static local:WindowCommands.EditTransaction}" MinHeight="30" Padding="8,4" AutomationProperties.AutomationId="EditTransactionButton" />
+                            </StackPanel></StackPanel>
                         </Grid>
+                        </StackPanel>
                     </ScrollViewer>
                 </Border>
             </Grid>

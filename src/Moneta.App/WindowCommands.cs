@@ -19,6 +19,9 @@ public static class WindowCommands
     public static RoutedUICommand FinancialUndo { get; } = new("Annuler une écriture", nameof(FinancialUndo), typeof(WindowCommands));
     public static RoutedUICommand FinancialRedo { get; } = new("Refaire une écriture", nameof(FinancialRedo), typeof(WindowCommands));
     public static RoutedUICommand Search { get; } = new("Rechercher", nameof(Search), typeof(WindowCommands), [new KeyGesture(Key.F, ModifierKeys.Control)]);
-    public static RoutedUICommand DeleteTransaction { get; } = new("Supprimer une opération", nameof(DeleteTransaction), typeof(WindowCommands), [new KeyGesture(Key.Delete), new KeyGesture(Key.Delete, ModifierKeys.Control)]);
+    // Register-only key bindings live on the DataGrid, never on a text editor or dialog.
+    public static RoutedUICommand NewTransaction { get; } = new("Nouvelle opération", nameof(NewTransaction), typeof(WindowCommands));
+    public static RoutedUICommand EditTransaction { get; } = new("Modifier une opération", nameof(EditTransaction), typeof(WindowCommands));
+    public static RoutedUICommand DeleteTransaction { get; } = new("Supprimer une opération", nameof(DeleteTransaction), typeof(WindowCommands));
     public static RoutedUICommand RefreshRates { get; } = new("Actualiser les cours", nameof(RefreshRates), typeof(WindowCommands));
 }

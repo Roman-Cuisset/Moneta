@@ -25,14 +25,14 @@ public sealed class DocumentWorkspace : IDisposable
     {
         if (_file is not null && string.Equals(Path.GetFullPath(path), _file.FilePath, StringComparison.OrdinalIgnoreCase)) return;
         var candidate = MonetaFile.Open(path);
-        try { Replace(CreateModel(candidate.Snapshot), candidate); }
+        try { Replace(CreateModel(candidate), candidate); }
         catch { candidate.Dispose(); throw; }
     }
 
     public void OpenMigratedCopy(string source, string destination)
     {
         var candidate = MonetaBackup.Migrate(source, destination);
-        try { Replace(CreateModel(candidate.Snapshot), candidate); }
+        try { Replace(CreateModel(candidate), candidate); }
         catch { candidate.Dispose(); throw; }
     }
 
@@ -44,12 +44,15 @@ public sealed class DocumentWorkspace : IDisposable
         if (_file is null || newPath is not null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(newPath);
-            var candidate = MonetaFile.Create(newPath, snapshot);
+            var candidate = _file is null
+                ? MonetaFile.Create(newPath, snapshot, model.PendingChanges)
+                : MonetaBackup.SaveAs(_file, newPath, snapshot, model.PendingChanges);
             try { _file?.Close(); }
             catch { candidate.Dispose(); throw; }
             _file = candidate;
         }
-        else _file.Save(snapshot);
+        else _file.Save(snapshot, model.PendingChanges);
+        model.SetLedgerSource(_file);
         model.AcceptSaved(_file.Snapshot);
         Changed?.Invoke(this, EventArgs.Empty);
     }
@@ -67,9 +70,9 @@ public sealed class DocumentWorkspace : IDisposable
         using var restored = MonetaBackup.Restore(source, destination);
     }
 
-    private static MainViewModel CreateModel(FinancialDocument document)
+    private static MainViewModel CreateModel(MonetaFile file)
     {
-        var model = new MainViewModel(document);
+        var model = new MainViewModel(file.Snapshot, file);
         model.SelectedAccount ??= model.Accounts.FirstOrDefault();
         return model;
     }
