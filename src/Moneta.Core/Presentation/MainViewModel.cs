@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Moneta.Core.Presentation;
 
-public sealed class MainViewModel : INotifyPropertyChanged
+public sealed partial class MainViewModel : INotifyPropertyChanged
 {
     private static readonly PropertyChangedEventArgs AccountChanged = new(nameof(SelectedAccount));
     private static readonly PropertyChangedEventArgs RowsChanged = new(nameof(Rows));
@@ -153,6 +153,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         // SQL has already committed. A refresh error must not resurrect committed drafts.
         _document = snapshot;
         _pending.Clear();
+        _pendingReconciliations = ReconciliationBatch.Empty;
         foreach (var summary in _accounts)
             if (snapshot.AccountBalances?.TryGetValue(summary.Account.Id, out var balance) == true)
                 summary.UpdateBalance(balance);
@@ -175,6 +176,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             IsDirty = false;
             PropertyChanged?.Invoke(this, DirtyChanged);
         }
+        NotifyReconciliationChanged();
     }
 
     public void SetLedgerSource(ILedgerSource? source)
@@ -184,6 +186,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         // The workspace calls this after committing and before AcceptSaved; do not read
         // the newly committed source with the old pending insert revisions here.
         _source = source;
+        NotifyReconciliationChanged();
     }
 
     public Transaction AddTransaction(TransactionDraft draft)
@@ -199,6 +202,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var account = EditableAccount();
         var previous = FindEditable(id, expectedRevision, account);
+        EnsureNotReconciled(previous);
         var catalog = new DraftCatalog(CaptureDocument());
         var originalRevision = _pending.TryGetValue(id, out var pending) ? pending.ExpectedRevision : previous.Revision;
         var value = catalog.Build(account, draft, previous) with
@@ -213,6 +217,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var account = EditableAccount();
         var previous = FindEditable(id, expectedRevision, account);
+        EnsureNotReconciled(previous);
         if (_pending.TryGetValue(id, out var pending) && pending.ExpectedRevision == 0)
         {
             Stage(CaptureDocument(), null, null, id);
@@ -240,6 +245,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private Account EditableAccount()
     {
         if (IsDemo) throw new InvalidOperationException("Les opérations de démonstration ne sont pas modifiables.");
+        if (!_pendingReconciliations.IsEmpty)
+            throw new InvalidOperationException("Enregistrez d’abord le brouillon de rapprochement avec Ctrl+S avant de modifier les opérations.");
         var account = _selectedAccount?.Account ?? throw new InvalidOperationException("Choisissez un compte.");
         if (account.IsArchived) throw new InvalidOperationException("Les opérations d'un compte archivé ne sont pas modifiables.");
         return account;
@@ -283,7 +290,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         return LedgerProjection.ReadPending(account, offset, PageSize, pending, anchorId);
     }
 
-    private static IReadOnlyList<LedgerRow> BuildRows(LedgerPage page)
+    private IReadOnlyList<LedgerRow> BuildRows(LedgerPage page)
     {
         var balance = page.BalanceBeforePage;
         var rows = new LedgerRow[page.Transactions.Count];
@@ -291,7 +298,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             var transaction = page.Transactions[index];
             balance = checked(balance + FinancialRules.SignedAmount(transaction));
-            rows[index] = new LedgerRow(transaction, balance);
+            rows[index] = new LedgerRow(transaction, balance, _showMarkingDates);
         }
         return Array.AsReadOnly(rows);
     }
@@ -310,6 +317,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _pageOffset = page.Offset;
         _totalCount = page.TotalCount;
         _selectedAccount!.UpdateBalance(page.AccountBalance);
+        _totals = page.Totals;
+        NotifyReconciliationChanged();
         _selectedRow = anchorId is { } anchor ? rows.FirstOrDefault(row => row.Transaction.Id == anchor) : null;
         _selectedRowDetails = _selectedRow is null ? string.Empty : FormatDetails(_selectedRow);
         _statusText = RealStatus(_selectedAccount.Account, page.TotalCount);
@@ -339,6 +348,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (IsDirty) return;
         IsDirty = true;
         PropertyChanged?.Invoke(this, DirtyChanged);
+        NotifyReconciliationChanged();
     }
 
     public ReadOnlyObservableCollection<AccountSummary> Accounts { get; }
@@ -459,9 +469,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _selectedAccount = value;
         var ledger = value is null ? null : _ledgers[value.Account.Id];
         _rows = rows ?? ledger?.Rows ?? Array.Empty<LedgerRow>();
+        if (rows is null && _showMarkingDates)
+            _rows = Array.AsReadOnly(_rows.Select(row => new LedgerRow(row.Transaction, row.Balance, true)).ToArray());
         _pageOffset = page?.Offset ?? 0;
         _totalCount = page?.TotalCount ?? 0;
         if (page is not null) value!.UpdateBalance(page.AccountBalance);
+        _totals = page?.Totals ?? (IsDemo && value is not null ? DemoTotals(value.Account, _rows) : null);
+        NotifyReconciliationChanged();
         _selectedRow = null;
         _selectedRowDetails = string.Empty;
         _statusText = page is null ? ledger?.StatusText ?? EmptyAccountStatus : RealStatus(value!.Account, page.TotalCount);

@@ -15,7 +15,10 @@ public sealed record TransactionChange(Transaction Value, long ExpectedRevision)
 
 public sealed record LedgerPage(
     IReadOnlyList<Transaction> Transactions, decimal BalanceBeforePage,
-    decimal AccountBalance, long TotalCount, int Offset);
+    decimal AccountBalance, long TotalCount, int Offset)
+{
+    public AccountLedgerTotals? Totals { get; init; }
+}
 
 // Storage supplies only the requested page; pending edits remain private to the workspace until Save.
 public interface ILedgerSource

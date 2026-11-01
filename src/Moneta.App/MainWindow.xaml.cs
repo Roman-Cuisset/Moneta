@@ -40,8 +40,10 @@ public partial class MainWindow : Window
         AccountsSelector.ToolTip = "Choisir un compte du dossier affiché.";
         DevelopmentNotice.Text = model is null ? "Version de développement — ouvrez ou créez un dossier"
             : model.IsDemo ? "Version de développement — données fictives"
+            : !model.PendingReconciliations.IsEmpty ? "Rapprochement en brouillon — Ctrl+S avant de modifier les opérations"
             : _workspace.HasUnsavedChanges ? "Brouillon — Ctrl+S pour enregistrer durablement"
             : "Développement — dossier local enregistré";
+        RegisterDateColumn.Header = model?.DateColumnHeader ?? "Date";
         IsEnabled = !_busy;
         CommandManager.InvalidateRequerySuggested();
     }
@@ -52,7 +54,7 @@ public partial class MainWindow : Window
     private void Backup_CanExecute(object sender, CanExecuteRoutedEventArgs e) { e.CanExecute = !_busy && _workspace.CanSave; e.Handled = true; }
 
     private bool CanEditLedger => !_busy && _workspace.Model is
-        { IsDemo: false, SelectedAccount.Account.IsArchived: false };
+        { IsDemo: false, SelectedAccount.Account.IsArchived: false, PendingReconciliations.IsEmpty: true };
     private void NewTransaction_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         e.CanExecute = CanEditLedger;
@@ -60,7 +62,7 @@ public partial class MainWindow : Window
     }
     private void SelectedTransaction_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        e.CanExecute = CanEditLedger && _workspace.Model?.SelectedRow is not null;
+        e.CanExecute = CanEditLedger && SingleSelectedRow is { Transaction.Status: not ReconciliationStatus.Reconciled };
         e.Handled = true;
     }
 
@@ -221,16 +223,18 @@ public partial class MainWindow : Window
     }
     private void EditTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (CanEditLedger && _workspace.Model is { SelectedRow: { } row } model)
+        if (CanEditLedger && _workspace.Model is { } model &&
+            SingleSelectedRow is { Transaction.Status: not ReconciliationStatus.Reconciled } row)
             new TransactionWindow(model, row.Transaction) { Owner = this }.ShowDialog();
         CommandManager.InvalidateRequerySuggested();
     }
     private void DeleteTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (!CanEditLedger || _workspace.Model is not { SelectedRow: { } row } model) return;
+        if (!CanEditLedger || _workspace.Model is not { } model ||
+            SingleSelectedRow is not { Transaction.Status: not ReconciliationStatus.Reconciled } row) return;
         var value = row.Transaction;
         if (MessageBox.Show(this,
-            $"Retirer l’opération « {value.Label} » du {row.DateText} ?\n\nLa suppression sera enregistrée avec Ctrl+S. Une trace sera conservée dans le dossier ; aucune commande de récupération n’est encore disponible.",
+            $"Retirer l’opération « {value.Label} » du {row.DateText} ?\n\n{(value.Status == ReconciliationStatus.Marked ? "Cette opération est pointée : le solde pointé sera recalculé.\n\n" : "")}La suppression sera enregistrée avec Ctrl+S. Une trace sera conservée dans le dossier ; aucune commande de récupération n’est encore disponible.",
             "Moneta — confirmer la suppression", MessageBoxButton.YesNo, MessageBoxImage.Question,
             MessageBoxResult.No) != MessageBoxResult.Yes) return;
         try { model.DeleteTransaction(value.Id, value.Revision); }
@@ -242,6 +246,13 @@ public partial class MainWindow : Window
     }
     private void Transaction_DoubleClick(object sender, MouseButtonEventArgs e)
     {
+        var origin = e.OriginalSource as DependencyObject;
+        while (origin is not null && origin is not DataGridRow)
+        {
+            if (origin is Button) return;
+            origin = origin is System.Windows.Media.Visual
+                ? System.Windows.Media.VisualTreeHelper.GetParent(origin) : LogicalTreeHelper.GetParent(origin);
+        }
         if (e.OriginalSource is DependencyObject element &&
             ItemsControl.ContainerFromElement(TransactionsGrid, element) is DataGridRow &&
             WindowCommands.EditTransaction.CanExecute(null, TransactionsGrid))
@@ -281,9 +292,13 @@ public partial class MainWindow : Window
     {
         if (!_busy && e.Source == TransactionsGrid && _workspace.Model is { } model)
         {
-            if (TransactionsGrid.SelectedItem is LedgerRow row && model.Rows.Contains(row))
+            if (TransactionsGrid.SelectedItems.Count == 1 &&
+                TransactionsGrid.CurrentItem is LedgerRow current && model.Rows.Contains(current) &&
+                TransactionsGrid.SelectedItems.Contains(current))
+                model.SelectedRow = current;
+            else if (TransactionsGrid.SelectedItem is LedgerRow row && model.Rows.Contains(row))
                 model.SelectedRow = row;
-            else if (e.RemovedItems.Count == 1 && ReferenceEquals(e.RemovedItems[0], model.SelectedRow))
+            else if (model.SelectedRow is { } removed && e.RemovedItems.Contains(removed))
                 model.SelectedRow = null;
             // ItemsSource replacement removes old row objects. It must not clear the newly anchored selection.
         }

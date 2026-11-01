@@ -97,8 +97,8 @@ public static class MonetaBackup
             {
                 var originalHash = Hash(sourceBytes);
                 var original = MonetaFile.ReadValidated(connection, allowVersion1: true);
-                if (original.SchemaVersion is not (1 or 2))
-                    throw new DocumentException(DocumentError.InvalidData, "Seuls les schémas 1 et 2 nécessitent cette migration par copie.");
+                if (original.SchemaVersion is not (1 or 2 or 3))
+                    throw new DocumentException(DocumentError.InvalidData, "Seuls les schémas 1, 2 et 3 nécessitent cette migration par copie.");
                 temporary = ReserveTemporary(target);
                 var copied = CopyDatabase(connection, temporary, allowLegacy: true);
                 RequireEqual(Digest(original), Digest(copied), "La copie avant migration diffère du dossier source.");
@@ -111,7 +111,7 @@ public static class MonetaBackup
     }, "Migration par copie impossible.");
 
     public static MonetaFile SaveAs(MonetaFile source, string destination, FinancialDocument metadata,
-        IReadOnlyCollection<TransactionChange> changes) => Execute(() =>
+        IReadOnlyCollection<TransactionChange> changes, ReconciliationBatch? reconciliation = null) => Execute(() =>
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(metadata);
@@ -130,7 +130,7 @@ public static class MonetaBackup
             // Only the owned work copy is writable; failure leaves the source and drafts untouched.
             using (var candidate = MonetaFile.Open(temporary))
             {
-                candidate.Save(metadata, changes);
+                candidate.Save(metadata, changes, reconciliation);
                 expected = Digest(candidate.Snapshot);
             }
             File.Delete(temporary + ".lock");
@@ -146,14 +146,18 @@ public static class MonetaBackup
         if (original.SchemaVersion == MonetaFile.CurrentSchemaVersion) return original;
         using var connection = MonetaFile.OpenConnection(path, readOnly: false);
         if (original.SchemaVersion == 1) MonetaFile.UpgradeV1(connection);
-        MonetaFile.UpgradeV2(connection);
+        if (original.SchemaVersion <= 2) MonetaFile.UpgradeV2(connection);
+        MonetaFile.UpgradeV3(connection);
         var upgraded = MonetaFile.ReadValidated(connection);
-        // Legacy files have no ledger or catalogues. Compare their original canonical
-        // representation rather than mistaking newly generated empty-ledger fields for edits.
-        RequireEqual(Digest(original), Digest(upgraded with { SchemaVersion = original.SchemaVersion }),
+        // A v3 ledger must be compared through its original projection: the v4
+        // digest also certifies the newly introduced pointing and audit content.
+        var originalRepresentation = original.SchemaVersion == 3
+            ? MonetaFile.ReadLegacyV3Representation(connection)
+            : upgraded with { SchemaVersion = original.SchemaVersion };
+        RequireEqual(Digest(original), Digest(originalRepresentation),
             "La migration a modifié les données du dossier.");
-        if (upgraded.OperationCount != 0 || upgraded.Categories.Count != 0 ||
-            upgraded.Payees.Count != 0 || upgraded.PaymentMethods.Count != 0)
+        if (original.SchemaVersion <= 2 && (upgraded.OperationCount != 0 || upgraded.Categories.Count != 0 ||
+            upgraded.Payees.Count != 0 || upgraded.PaymentMethods.Count != 0))
             throw new DocumentException(DocumentError.VerificationFailed, "La migration a ajouté des données financières.");
         MakeStandalone(connection);
         return upgraded;
@@ -215,7 +219,7 @@ public static class MonetaBackup
         Certification? manifest;
         try { manifest = JsonSerializer.Deserialize<Certification>(stream, ManifestJson); }
         catch (JsonException ex) { throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde illisible.", ex); }
-        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion is not (1 or 2 or 3) ||
+        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion is not (1 or 2 or 3 or 4) ||
             manifest.DocumentId == Guid.Empty || manifest.Length <= 0 || manifest.CurrencyCount < 0 || manifest.AccountCount < 0 ||
             !ValidHash(manifest.Sha256) || !ValidHash(manifest.SnapshotDigest))
             throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde invalide ou non pris en charge.");
@@ -314,8 +318,16 @@ public static class MonetaBackup
                     writer.WriteEndObject();
                 }
                 writer.WriteEndArray();
-                writer.WriteString("ledgerDigest", snapshot.LedgerDigest);
+                if (snapshot.SchemaVersion == 3) writer.WriteString("ledgerDigest", snapshot.LedgerDigest);
                 writer.WriteNumber("operationCount", snapshot.OperationCount);
+            }
+            if (snapshot.SchemaVersion >= 4)
+            {
+                // LedgerDigest is the storage-validated v4 stream over every
+                // transaction, immutable entry, session and audit event.
+                writer.WriteString("v4LedgerDigest", snapshot.LedgerDigest);
+                writer.WriteNumber("reconciliationCount", snapshot.ReconciliationCount);
+                writer.WriteNumber("reconciliationEventCount", snapshot.ReconciliationEventCount);
             }
             writer.WriteEndObject();
         }

@@ -60,6 +60,10 @@ public static class FinancialRules
         _ = ExactMoney.ToMinorUnits(value.Amount, value.Currency);
         if (value.Date == default || !Enum.IsDefined(value.Direction) || !Enum.IsDefined(value.Status))
             throw new ArgumentException("Date, sens ou état de l'opération invalide.", nameof(value));
+        if ((value.Status == ReconciliationStatus.Unmarked && value.MarkedOn is not null) ||
+            value.MarkedOn == default(DateOnly) || value.ReconciliationId == Guid.Empty ||
+            (value.ReconciliationId is not null && (value.Status != ReconciliationStatus.Reconciled || value.IsDeleted)))
+            throw new ArgumentException("Date de pointage ou référence de rapprochement incohérente.", nameof(value));
         if (value.CreatedUtc == default || value.ModifiedUtc == default ||
             value.CreatedUtc.Offset != TimeSpan.Zero || value.ModifiedUtc.Offset != TimeSpan.Zero ||
             value.ModifiedUtc < value.CreatedUtc || value.Revision < 1)

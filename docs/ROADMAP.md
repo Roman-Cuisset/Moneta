@@ -2,13 +2,27 @@
 
 ## Portée et règle de lecture
 
-**Mission 7A : registre financier persistant, recettes/dépenses, modification et suppression logique confirmée, schéma 3 et sauvegarde/restauration des opérations.** Enregistrement manuel conservé. Cours, import `.bp`, pointage bancaire, virements et automatismes restent des lots distincts. Aucun jalon de parité complet n’est présumé clos.
+**Mission 7B : pointage, solde pointé, rapprochement bancaire, réouverture motivée et historique persistant, schéma 4.** Registre 7A et cycle manuel Ctrl+S conservés. Cours, import `.bp`, virements et automatismes restent des lots distincts. Aucun jalon de parité complet n’est présumé clos.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Livraison du pointage et rapprochement — mission 7B
+
+| Résultat livré | Validation / limite |
+|---|---|
+| Pointage individuel/multiple | NP/P via colonne, P/Espace, commandes partagées ; lot atomique, dates séparées, futurs refusés pour nouveau pointage ; sélection souris/clavier et garde des champs texte exercées |
+| Soldes exacts | Actuel = ouverture + actifs ; pointé = ouverture + actifs P/R ; non pointé = actifs NP ; devise native, aucune prévision ni valorisation fictive |
+| Relevé bancaire | Ouverture du compte puis clôture précédente, fin cohérente, candidats et écart nul plus invariants de chaque référence/révision |
+| Correction traçable | Dernier relevé actif rouvrable avec motif/confirmation ; états antérieurs restaurés, instantanés/événements conservés ; R héritées traitées explicitement sans relevé inventé |
+| Frontière de sauvegarde | Lot de validation/réouverture/libération à enregistrer avant toute autre mutation du registre ; échec conserve le brouillon, navigation autorisée |
+| Schéma 4 et archives | Migration additive 3 → 4 sur copie, représentation v3 conservée ; concurrence/empreintes et restauration incluent opérations, sessions, snapshots et événements |
+| Qualification | 261 tests Debug/Release ; parcours WPF réel et comparaison des restaurations ; inspection des arbres visuels clair/sombre, réserve sur capture composée native et mesures détaillées dans le README |
+
+**Porte avant mission 7C :** validation utilisateur des conventions NP/P/R et de la fenêtre composée ; coût des candidats sur gros dossier à surveiller. Puis, après autorisation, définir des virements simples liés et atomiques, protection/correction/suppression des deux jambes et interaction avec les relevés de deux comptes. Le multidevise, les cours et l’import `.bp` ne sont pas commencés ici.
 
 ### Livraison du registre financier — mission 7A
 
@@ -22,9 +36,9 @@ La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacit�
 | Concurrence et sauvegardes | Tous les champs d’opérations/références/tombstones inclus dans les comparaisons ; SaveAs préserve aussi les opérations non affichées |
 | Qualification | 168 tests Debug et Release, 97 cas antérieurs conservés ; parcours Windows réel Light/Dark, fermeture/réouverture, sauvegarde/restauration et comparaison complète ; mesures et limites dans le README |
 
-**Mission 7B proposée :** définir puis valider les règles de pointage/rapprochement (dates, relevé, solde initial pointé, opérations rapprochées modifiables ou non, suppression/correction contrôlée). Ensuite seulement développer leurs commandes et soldes. Les virements seront un autre lot atomique bilatéral, avec traitement explicite des corrections/suppressions liées. Ne pas transformer les trois états stockés en rapprochement prétendument contrôlé.
+La mission 7B ci-dessus prolonge ce registre sans remplacer ses invariants. « Rapproché » n’est plus une simple bascule manuelle ; un relevé formel est exigé pour les nouveaux R. Cette convention Moneta réversible reste à valider contre les habitudes utilisateur BankPerfect.
 
-S01/U01 sont étendus au registre simple, pas aux virements/ventilations/filtres/rapprochements. S02 reste manuel ; S03 couvre les schémas connus 1/2/3 ; S04 conserve ses limites de qualification matérielle. Le corpus `.bp` synthétique et sa spécification restent nécessaires indépendamment de ce registre.
+S01/U01 couvrent maintenant registre et rapprochements simples, pas virements/ventilations/filtres. S02 reste manuel ; S03 couvre les schémas connus 1/2/3/4 ; S04 conserve ses limites matérielles. Le corpus `.bp` synthétique et sa spécification restent nécessaires indépendamment du registre.
 
 ### Livraison de persistance — mission 6
 
@@ -46,7 +60,7 @@ S01 est réalisé pour **dossiers/devises/comptes**, pas pour tous les domaines 
 
 97 tests Debug/Release, trois protections de session confirmées, six cas de sauvegarde/verrou/readonly ajoutés et classification d'erreur de source verrouillé corrigée. Diagnostic CPU : pic attribué au thread de compilation étagée .NET, sans preuve de boucle WPF ; toutes les occurrences prolongées précédentes ne sont pas expliquées avec certitude. Aucun commutateur de désactivation des optimisations ni refonte livré. [Rapport, mesures et réserves](AUDIT_MISSION_6_1.md).
 
-La mission 7A réalise maintenant le registre simple, les référentiels, le schéma 3 et les comparaisons financières complètes décrits ci-dessus. Le pointage bancaire, les virements et leurs règles liées ne sont pas implémentés.
+La mission 7A avait réalisé le registre simple et le schéma 3 ; 7B y ajoute pointage et rapprochements contrôlés. Les virements et leurs règles liées ne sont pas implémentés.
 
 
 ### Livraison de préparation fonctionnelle — mission 5

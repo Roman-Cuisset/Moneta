@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.Globalization;
+using System.Text;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -69,6 +72,8 @@ public sealed class LedgerBackupTests
     public void SaveAsCopiesUnchangedRowsAndAppliesAllPendingKindsOnlyToDestination()
     {
         var (metadata, rows) = Sample();
+        // This test exercises an ordinary pending deletion, not a legacy-R release.
+        rows[1] = rows[1] with { Status = ReconciliationStatus.Marked };
         using var source = MonetaFile.Create(PathFor("source.moneta"), metadata, Inserts(rows));
         source.Save(source.Snapshot);
         var baseline = source.Snapshot;
@@ -79,7 +84,8 @@ public sealed class LedgerBackupTests
         var deleted = rows[1] with { IsDeleted = true, Revision = 2, ModifiedUtc = rows[1].ModifiedUtc.AddDays(1) };
         var newPayee = new LedgerPayee(Guid.NewGuid(), "Destination-only payee");
         var added = rows[0] with { Id = Guid.NewGuid(), Label = "Pending new row", Amount = 8m,
-            PayeeId = newPayee.Id, Payee = new Payee(newPayee.Name) };
+            PayeeId = newPayee.Id, Payee = new Payee(newPayee.Name),
+            MarkedOn = DateOnly.FromDateTime(DateTime.Today) };
         var pending = new[] { new TransactionChange(edit, 1), new TransactionChange(deleted, 1), new TransactionChange(added, 0) };
         var renamed = baseline with { Name = "Destination metadata", ModifiedUtc = baseline.ModifiedUtc.AddDays(2),
             Payees = baseline.Payees.Append(newPayee).ToArray() };
@@ -248,6 +254,83 @@ public sealed class LedgerBackupTests
         Assert.AreEqual(DocumentError.MigrationRequired, error.Error);
         AssertNoTemporaryFiles();
     }
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ActualV3LedgerAndCertifiedArchivePreserveEveryOldRowWhileOnlyCopyUpgrades(bool restore)
+    {
+        var (metadata, rows) = Sample();
+        metadata = metadata with { SchemaVersion = 3 };
+        rows[2] = rows[2] with { IsDeleted = true, Revision = 2, ModifiedUtc = rows[2].ModifiedUtc.AddDays(1) };
+        var input = PathFor("real-v3.moneta");
+        BackupRestoreTests.BuildLegacy(input, metadata, 3, rows);
+        var expected = metadata with { LedgerDigest = FrozenV3LedgerDigest(input, metadata), OperationCount = rows.Length };
+        if (restore)
+            File.WriteAllText(input + ".manifest.json", JsonSerializer.Serialize(new
+            {
+                ManifestVersion = 1, Sha256 = Sha(input), Length = new FileInfo(input).Length,
+                SchemaVersion = 3, DocumentId = metadata.Id, SnapshotDigest = LegacyDigest(expected),
+                CurrencyCount = metadata.Currencies.Count, AccountCount = metadata.Accounts.Count
+            }));
+        var original = File.ReadAllBytes(input);
+        var attributes = File.GetAttributes(input);
+        File.SetAttributes(input, attributes | FileAttributes.ReadOnly);
+        try
+        {
+            using var migrated = restore
+                ? MonetaBackup.Restore(input, PathFor("upgraded.moneta"))
+                : MonetaBackup.Migrate(input, PathFor("upgraded.moneta"));
+            Assert.AreEqual(4, migrated.Snapshot.SchemaVersion);
+            Assert.AreEqual(rows.LongLength, migrated.Snapshot.OperationCount);
+            Assert.AreEqual(0L, migrated.Snapshot.ReconciliationCount);
+            Assert.AreEqual(0L, migrated.Snapshot.ReconciliationEventCount);
+            foreach (var row in rows)
+            {
+                Assert.AreEqual(row, migrated.GetTransaction(row.Id, includeDeleted: true));
+                Assert.IsNull(migrated.GetTransaction(row.Id, includeDeleted: true)!.MarkedOn);
+                Assert.IsNull(migrated.GetTransaction(row.Id, includeDeleted: true)!.ReconciliationId);
+            }
+            CollectionAssert.AreEquivalent(metadata.Categories.ToArray(), migrated.Snapshot.Categories.ToArray());
+            CollectionAssert.AreEqual(original, File.ReadAllBytes(input));
+            Assert.IsTrue(File.GetAttributes(input).HasFlag(FileAttributes.ReadOnly));
+            var error = Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(input));
+            Assert.AreEqual(DocumentError.MigrationRequired, error.Error);
+        }
+        finally { File.SetAttributes(input, attributes); }
+        AssertNoTemporaryFiles();
+    }
+
+    [TestMethod]
+    public void V3CertificateRejectsEqualBalanceTamperBeforeUpgradingArchive()
+    {
+        var (metadata, rows) = Sample();
+        metadata = metadata with { SchemaVersion = 3 };
+        var input = PathFor("certified-v3.moneta");
+        BackupRestoreTests.BuildLegacy(input, metadata, 3, rows);
+        var expected = metadata with { LedgerDigest = FrozenV3LedgerDigest(input, metadata), OperationCount = rows.Length };
+        File.WriteAllText(input + ".manifest.json", JsonSerializer.Serialize(new
+        {
+            ManifestVersion = 1, Sha256 = Sha(input), Length = new FileInfo(input).Length,
+            SchemaVersion = 3, DocumentId = metadata.Id, SnapshotDigest = LegacyDigest(expected),
+            CurrencyCount = metadata.Currencies.Count, AccountCount = metadata.Accounts.Count
+        }));
+        using (var connection = Raw(input))
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE Transactions SET amount_minor=amount_minor+100 WHERE transaction_id IN ($debit,$credit);";
+            command.Parameters.AddWithValue("$debit", rows[0].Id.ToString("D"));
+            command.Parameters.AddWithValue("$credit", rows[1].Id.ToString("D"));
+            Assert.AreEqual(2, command.ExecuteNonQuery());
+        }
+        RefreshFileCertificate(input);
+        var original = File.ReadAllBytes(input);
+        var error = Assert.ThrowsException<DocumentException>(() => MonetaBackup.Restore(input, PathFor("rejected.moneta")));
+        Assert.AreEqual(DocumentError.VerificationFailed, error.Error);
+        Assert.IsFalse(File.Exists(PathFor("rejected.moneta")));
+        CollectionAssert.AreEqual(original, File.ReadAllBytes(input));
+        AssertNoTemporaryFiles();
+    }
+
 
     [TestMethod]
     public void CertifiedFinancialBackupRecoversAfterOriginalIsLostOrCorrupt()
@@ -338,8 +421,8 @@ public sealed class LedgerBackupTests
         foreach (var account in expected.Accounts) Assert.AreEqual(account.OpeningBalance, actual.AccountBalances![account.Id]);
     }
 
-    // Frozen schema-1/2 certificate algorithm, independent of the implementation under test.
-    private static string LegacyDigest(FinancialDocument snapshot)
+    // Frozen schema-1/2/3 certificate algorithm, independent of production backup code.
+    internal static string LegacyDigest(FinancialDocument snapshot)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -382,10 +465,85 @@ public sealed class LedgerBackupTests
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
+            if (snapshot.SchemaVersion >= 3)
+            {
+                writer.WriteStartArray("categories");
+                foreach (var value in snapshot.Categories.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("id", value.Id);
+                    writer.WriteString("name", value.Name);
+                    if (value.ParentId is { } parent) writer.WriteString("parent", parent);
+                    else writer.WriteNull("parent");
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+                writer.WriteStartArray("payees");
+                foreach (var value in snapshot.Payees.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("id", value.Id);
+                    writer.WriteString("name", value.Name);
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+                writer.WriteStartArray("paymentMethods");
+                foreach (var value in snapshot.PaymentMethods.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("id", value.Id);
+                    writer.WriteString("name", value.Name);
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+                writer.WriteString("ledgerDigest", snapshot.LedgerDigest);
+                writer.WriteNumber("operationCount", snapshot.OperationCount);
+            }
             writer.WriteEndObject();
         }
         return Convert.ToHexString(SHA256.HashData(buffer.ToArray()));
     }
+    internal static string FrozenV3LedgerDigest(string path, FinancialDocument metadata)
+    {
+        using var digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        void Field(string? value)
+        {
+            Span<byte> length = stackalloc byte[4];
+            BinaryPrimitives.WriteInt32LittleEndian(length, value is null ? -1 : Encoding.UTF8.GetByteCount(value));
+            digest.AppendData(length);
+            if (value is not null) digest.AppendData(Encoding.UTF8.GetBytes(value));
+        }
+        Field("Moneta-normalized-ledger-v3");
+        foreach (var value in metadata.Categories.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+        {
+            Field("category"); Field(value.Id.ToString("D")); Field(value.Name);
+            Field(FinancialRules.NameKey(value.Name)); Field(value.ParentId?.ToString("D"));
+        }
+        foreach (var value in metadata.Payees.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+        {
+            Field("payee"); Field(value.Id.ToString("D")); Field(value.Name); Field(FinancialRules.NameKey(value.Name));
+        }
+        foreach (var value in metadata.PaymentMethods.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
+        {
+            Field("method"); Field(value.Id.ToString("D")); Field(value.Name); Field(FinancialRules.NameKey(value.Name));
+        }
+        using var connection = Raw(path);
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT transaction_id,account_id,date,label,amount_minor,native_code,direction,status,notes,payee_id,
+                category_id,subcategory_id,payment_method_id,is_deleted,created_utc,modified_utc,revision
+            FROM Transactions ORDER BY transaction_id COLLATE BINARY;
+            """;
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            Field("transaction");
+            for (var index = 0; index < reader.FieldCount; index++)
+                Field(reader.IsDBNull(index) ? null : Convert.ToString(reader.GetValue(index), CultureInfo.InvariantCulture));
+        }
+        return Convert.ToHexString(digest.GetHashAndReset());
+    }
+
 
     private static SqliteConnection Raw(string path)
     {

@@ -372,6 +372,23 @@ public sealed class MonetaFileTests
         Assert.AreEqual((long)MonetaFile.CurrentSchemaVersion, command.ExecuteScalar());
     }
 
+    [TestMethod]
+    public void SchemaFourCreatesStrictHistoryAndNullablePointingFieldsWithoutInventedRecords()
+    {
+        using var file = MonetaFile.Create(FileName, Synthetic());
+        Assert.AreEqual(4, file.Snapshot.SchemaVersion);
+        Assert.AreEqual(0L, file.Snapshot.ReconciliationCount);
+        Assert.AreEqual(0L, file.Snapshot.ReconciliationEventCount);
+        using var raw = Raw(FileName);
+        using var command = raw.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM pragma_table_list WHERE name IN ('Reconciliations','ReconciliationEntries','ReconciliationHistory') AND strict=1;";
+        Assert.AreEqual(3L, command.ExecuteScalar());
+        command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Transactions') WHERE name IN ('marked_on','reconciliation_id') AND [notnull]=0;";
+        Assert.AreEqual(2L, command.ExecuteScalar());
+        foreach (var account in file.Snapshot.Accounts)
+            Assert.AreEqual(account.OpeningBalance, file.Snapshot.AccountPointedBalances![account.Id]);
+    }
+
     private static FinancialDocument Synthetic()
     {
         var created = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);

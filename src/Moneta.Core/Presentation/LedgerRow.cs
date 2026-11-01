@@ -32,11 +32,13 @@ public sealed class AccountSummary : INotifyPropertyChanged
 
 public sealed class LedgerRow
 {
-    internal LedgerRow(Transaction transaction, decimal balance)
+    internal LedgerRow(Transaction transaction, decimal balance, bool showMarkingDates = false)
     {
         Transaction = transaction;
         Balance = balance;
         DateText = transaction.Date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+        MarkedOnText = transaction.MarkedOn?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
+        DisplayDateText = showMarkingDates ? MarkedOnText : DateText;
         Debit = transaction.Direction == TransactionDirection.Debit ? transaction.Amount : null;
         Credit = transaction.Direction == TransactionDirection.Credit ? transaction.Amount : null;
         DebitText = Debit is decimal debit ? MoneyFormatter.Format(debit, transaction.Currency) : string.Empty;
@@ -46,13 +48,16 @@ public sealed class LedgerRow
         {
             ReconciliationStatus.Unmarked => "non pointé",
             ReconciliationStatus.Marked => "pointé",
-            ReconciliationStatus.Reconciled => "rapproché",
+            ReconciliationStatus.Reconciled => transaction.ReconciliationId is null
+                ? "rapproché hérité – relevé inconnu" : "rapproché",
             _ => throw new ArgumentOutOfRangeException(nameof(transaction), "État de rapprochement inconnu.")
         };
     }
 
     public Transaction Transaction { get; }
     public string DateText { get; }
+    public string MarkedOnText { get; }
+    public string DisplayDateText { get; }
     public string Label => Transaction.Label;
     public string PayeeName => Transaction.Payee.Name;
     public string CategoryName => Transaction.Category.Name;

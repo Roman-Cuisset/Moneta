@@ -1,0 +1,20 @@
+<Window x:Class="Moneta.App.MarkingDateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Date de pointage" Width="520" Height="300" MinWidth="440" MinHeight="290"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Style="{StaticResource {x:Type Window}}" AutomationProperties.AutomationId="MarkingDateWindow">
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <TextBlock Text="La date de vérification ne peut pas être future. Modification au brouillon uniquement : Ctrl+S pour enregistrer. Une opération rapprochée doit d’abord être rouverte."
+                   TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" AutomationProperties.AutomationId="MarkingDateNotice" />
+        <Label Grid.Row="1" Content="_Date de pointage (jj/mm/aaaa)" Target="{Binding ElementName=MarkingDate}" Margin="0,12,0,0" />
+        <TextBox Grid.Row="2" x:Name="MarkingDate" MaxLength="10" AutomationProperties.AutomationId="MarkingDate" AutomationProperties.Name="Date de pointage au format jour mois année" />
+        <TextBlock Grid.Row="3" x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,10,0,0"
+                   AutomationProperties.AutomationId="MarkingDateError" AutomationProperties.LiveSetting="Assertive" />
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0" AutomationProperties.AutomationId="CancelMarkingDate" />
+            <Button x:Name="ConfirmMarkingDate" Content="Valider au brouillon" IsDefault="True" Click="Confirm_Click" AutomationProperties.AutomationId="ConfirmMarkingDate" />
+        </StackPanel>
+    </Grid>
+</Window>

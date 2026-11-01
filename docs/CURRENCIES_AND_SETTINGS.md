@@ -1,8 +1,8 @@
-# Devises, comptes et paramètres — mission 6
+# Devises, comptes et paramètres — état mission 7B
 
 ## Capacités réelles et limites
 
-Les comptes et leurs devises natives sont persistés dans un dossier `.moneta` SQLite, après un enregistrement explicite. Les opérations restent exclusivement dans le mode démonstration en mémoire. Les paramètres non financiers sont enregistrés séparément. Aucun lecteur `.bp`, fournisseur de cours, cache de taux, service de mise à jour ou téléchargement n'est implémenté.
+Comptes et opérations sont persistés dans un `.moneta` SQLite après Ctrl+S. La mission 7B ajoute pointage, relevés et historique, sauvegardés avec le registre ; démonstration toujours séparée et non enregistrable. Les paramètres non financiers restent locaux. Aucun lecteur `.bp`, fournisseur de cours, cache de taux, service de mise à jour ou téléchargement n’est implémenté.
 
 ## Comptes et registre de devises
 
@@ -54,6 +54,10 @@ Avant activation : définir la distribution d'un dépôt privé, l'autorisation 
 | Supprimer une opération | Suppr / Ctrl+Suppr dans le registre seulement | Mission 7A : confirmation puis suppression logique en brouillon ; Ctrl+S committe. Aucune suppression financière depuis un champ texte |
 | Annuler / fermer un dialogue | Échap | Boutons WPF IsCancel, sans interception globale des champs |
 | Nouvelle / modifier opération | Ctrl+Entrée / Maj+Entrée dans le registre | Mission 7A : même commande que menu/bouton, dialogue validant ; pas de raccourci global au détriment des champs |
+| Pointer / basculer NP/P | P / Espace dans le registre | Colonne/contextes/menus partagent les commandes ; sélection multiple atomique, R protégées |
+| Dépointer | Maj+P dans le registre | Choix Moneta explicite ; ne change aucun montant |
+| Date / affichage de pointage | Ctrl+Maj+P / F11 dans le registre | Gestes historiques documentés ; date distincte de la date d’opération |
+| Rapprochement bancaire | Ctrl+Maj+R dans le registre | Choix Moneta, pas raccourci BP attesté ; dossier enregistré/propre requis |
 
 Le catalogue historique [UI_MENU_MAP](UI_MENU_MAP.md) reste une preuve BankPerfect, pas la liste des raccourcis financiers actifs dans ce prototype.
 

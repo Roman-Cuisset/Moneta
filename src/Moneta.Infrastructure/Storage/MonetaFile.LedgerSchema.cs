@@ -80,7 +80,7 @@ public sealed partial class MonetaFile
         using var transaction = connection.BeginTransaction();
         Execute(connection, LedgerSchemaSql + "UPDATE Document SET schema_version=3,min_reader=3,min_writer=3; PRAGMA user_version=3;", transaction);
         InsertHistory(connection, transaction, 3, 2, "v2-to-v3-ledger", "normalized-ledger-v3");
-        var migrated = ReadWithinTransaction(connection, false, transaction);
+        var migrated = ReadWithinTransaction(connection, true, transaction);
         if (migrated.Id != original.Id || migrated.CreatedUtc != original.CreatedUtc || migrated.ModifiedUtc != original.ModifiedUtc ||
             migrated.Name != original.Name || migrated.SelectedAccountId != original.SelectedAccountId ||
             !migrated.Accounts.SequenceEqual(original.Accounts) || !migrated.Currencies.SequenceEqual(original.Currencies) || migrated.OperationCount != 0)

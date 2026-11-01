@@ -10,7 +10,8 @@ namespace Moneta.Infrastructure.Storage;
 
 public sealed partial class MonetaFile
 {
-    private const string TransactionColumns = "transaction_id,account_id,date,label,amount_minor,native_code,direction,status,notes,payee_id,category_id,subcategory_id,payment_method_id,is_deleted,created_utc,modified_utc,revision";
+    private const string LegacyTransactionColumns = "transaction_id,account_id,date,label,amount_minor,native_code,direction,status,notes,payee_id,category_id,subcategory_id,payment_method_id,is_deleted,created_utc,modified_utc,revision";
+    private const string TransactionColumns = LegacyTransactionColumns + ",marked_on,reconciliation_id";
 
     private sealed class LedgerLookup(FinancialDocument metadata)
     {
@@ -88,8 +89,9 @@ public sealed partial class MonetaFile
         {
             var lookup = new LedgerLookup(metadata);
             var balances = metadata.Accounts.ToDictionary(value => value.Id, value => value.OpeningBalance);
+            var pointed = metadata.Accounts.ToDictionary(value => value.Id, value => value.OpeningBalance);
             using var digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            HashValue(digest, "Moneta-normalized-ledger-v3");
+            HashValue(digest, metadata.SchemaVersion >= 4 ? "Moneta-normalized-ledger-v4" : "Moneta-normalized-ledger-v3");
             foreach (var value in metadata.Categories.OrderBy(value => value.Id.ToString("D"), StringComparer.Ordinal))
             {
                 HashValue(digest, "category"); HashValue(digest, value.Id.ToString("D")); HashValue(digest, value.Name);
@@ -106,7 +108,7 @@ public sealed partial class MonetaFile
             long count = 0;
             using var command = connection.CreateCommand();
             command.Transaction = transaction;
-            command.CommandText = $"SELECT {TransactionColumns} FROM Transactions ORDER BY transaction_id COLLATE BINARY;";
+            command.CommandText = $"SELECT {(metadata.SchemaVersion >= 4 ? TransactionColumns : LegacyTransactionColumns)} FROM Transactions ORDER BY transaction_id COLLATE BINARY;";
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -115,13 +117,21 @@ public sealed partial class MonetaFile
                 HashValue(digest, "transaction");
                 for (var index = 0; index < reader.FieldCount; index++)
                     HashValue(digest, reader.IsDBNull(index) ? null : Convert.ToString(reader.GetValue(index), CultureInfo.InvariantCulture));
-                if (!value.IsDeleted) balances[value.AccountId] = checked(balances[value.AccountId] + FinancialRules.SignedAmount(value));
+                if (!value.IsDeleted)
+                {
+                    balances[value.AccountId] = checked(balances[value.AccountId] + FinancialRules.SignedAmount(value));
+                    if (value.Status != ReconciliationStatus.Unmarked) pointed[value.AccountId] = checked(pointed[value.AccountId] + FinancialRules.SignedAmount(value));
+                }
                 count = checked(count + 1);
             }
+            reader.Close();
+            var historyCounts = metadata.SchemaVersion >= 4 ? ValidateAndHashReconciliations(connection, metadata, lookup, digest, transaction) : (Sessions: 0L, Events: 0L);
             return metadata with
             {
                 LedgerDigest = Convert.ToHexString(digest.GetHashAndReset()), OperationCount = count,
-                AccountBalances = new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(balances)
+                AccountBalances = new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(balances),
+                AccountPointedBalances = metadata.SchemaVersion >= 4 ? new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(pointed) : null,
+                ReconciliationCount = historyCounts.Sessions, ReconciliationEventCount = historyCounts.Events
             };
         }
         catch (Exception exception) when (exception is ArgumentException or OverflowException or KeyNotFoundException)
@@ -167,7 +177,9 @@ public sealed partial class MonetaFile
             PayeeId = payee, CategoryId = category, SubcategoryId = subcategory, PaymentMethodId = method,
             PaymentMode = method.HasValue ? lookup.Methods[method.Value].Name : null,
             IsDeleted = ReadBoolean(reader, 13), CreatedUtc = ReadTimestamp(reader.GetString(14)),
-            ModifiedUtc = ReadTimestamp(reader.GetString(15)), Revision = reader.GetInt64(16)
+            ModifiedUtc = ReadTimestamp(reader.GetString(15)), Revision = reader.GetInt64(16),
+            MarkedOn = reader.FieldCount > 17 && !reader.IsDBNull(17) ? ReadDate(reader.GetString(17)) : null,
+            ReconciliationId = reader.FieldCount > 18 ? OptionalId(18) : null
         };
     }
 
@@ -230,7 +242,7 @@ public sealed partial class MonetaFile
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "INSERT INTO Transactions(" + TransactionColumns + ") VALUES($id,$account,$date,$label,$minor,$currency,$direction,$status,$notes,$payee,$category,$subcategory,$method,$deleted,$created,$modified,$revision) ON CONFLICT(transaction_id) DO UPDATE SET date=excluded.date,label=excluded.label,amount_minor=excluded.amount_minor,direction=excluded.direction,status=excluded.status,notes=excluded.notes,payee_id=excluded.payee_id,category_id=excluded.category_id,subcategory_id=excluded.subcategory_id,payment_method_id=excluded.payment_method_id,is_deleted=excluded.is_deleted,modified_utc=excluded.modified_utc,revision=excluded.revision;";
+        command.CommandText = "INSERT INTO Transactions(" + TransactionColumns + ") VALUES($id,$account,$date,$label,$minor,$currency,$direction,$status,$notes,$payee,$category,$subcategory,$method,$deleted,$created,$modified,$revision,$marked,$reconciliation) ON CONFLICT(transaction_id) DO UPDATE SET date=excluded.date,label=excluded.label,amount_minor=excluded.amount_minor,direction=excluded.direction,status=excluded.status,notes=excluded.notes,payee_id=excluded.payee_id,category_id=excluded.category_id,subcategory_id=excluded.subcategory_id,payment_method_id=excluded.payment_method_id,is_deleted=excluded.is_deleted,modified_utc=excluded.modified_utc,revision=excluded.revision,marked_on=excluded.marked_on,reconciliation_id=excluded.reconciliation_id;";
         command.Parameters.AddWithValue("$id", value.Id.ToString("D")); command.Parameters.AddWithValue("$account", value.AccountId.ToString("D"));
         command.Parameters.AddWithValue("$date", value.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)); command.Parameters.AddWithValue("$label", value.Label);
         command.Parameters.AddWithValue("$minor", ExactMoney.ToMinorUnits(value.Amount, value.Currency)); command.Parameters.AddWithValue("$currency", value.Currency.Code);
@@ -239,6 +251,8 @@ public sealed partial class MonetaFile
         command.Parameters.AddWithValue("$subcategory", (object?)value.SubcategoryId?.ToString("D") ?? DBNull.Value); command.Parameters.AddWithValue("$method", (object?)value.PaymentMethodId?.ToString("D") ?? DBNull.Value);
         command.Parameters.AddWithValue("$deleted", value.IsDeleted ? 1 : 0); command.Parameters.AddWithValue("$created", value.CreatedUtc.ToString("O", CultureInfo.InvariantCulture));
         command.Parameters.AddWithValue("$modified", value.ModifiedUtc.ToString("O", CultureInfo.InvariantCulture)); command.Parameters.AddWithValue("$revision", value.Revision);
+        command.Parameters.AddWithValue("$marked", (object?)value.MarkedOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? DBNull.Value);
+        command.Parameters.AddWithValue("$reconciliation", (object?)value.ReconciliationId?.ToString("D") ?? DBNull.Value);
         command.ExecuteNonQuery();
     }
 }

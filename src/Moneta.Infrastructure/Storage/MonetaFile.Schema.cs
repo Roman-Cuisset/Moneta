@@ -59,9 +59,9 @@ public sealed partial class MonetaFile
 
     internal static string SchemaSql(int version)
     {
-        if (version is not (1 or 2 or 3)) throw Error(DocumentError.UnsupportedVersion, "Schéma inconnu.");
+        if (version is not (1 or 2 or 3 or 4)) throw Error(DocumentError.UnsupportedVersion, "Schéma inconnu.");
         return string.Join(";\n", DocumentSql, CurrenciesSql, AccountsSql(version), HistorySql) + ";" +
-            (version == 3 ? LedgerSchemaSql : "");
+            (version == 4 ? LedgerSchemaSql4 : version == 3 ? LedgerSchemaSql : "");
     }
 
     internal static FinancialDocument ReadValidated(SqliteConnection connection, bool allowVersion1 = false)
@@ -82,7 +82,7 @@ public sealed partial class MonetaFile
         if (Integer(connection, "PRAGMA application_id;", transaction) != ApplicationId)
             throw Error(DocumentError.InvalidFormat, "Cette base SQLite n’appartient pas à Moneta.");
         var version = Integer(connection, "PRAGMA user_version;", transaction);
-        if (version is not (1 or 2 or 3)) throw Error(DocumentError.UnsupportedVersion, "Version du dossier inconnue ou plus récente.");
+        if (version is not (1 or 2 or 3 or 4)) throw Error(DocumentError.UnsupportedVersion, "Version du dossier inconnue ou plus récente.");
         ValidateSchema(connection, (int)version, transaction);
         using (var integrity = connection.CreateCommand())
         {
@@ -156,13 +156,13 @@ public sealed partial class MonetaFile
             }
         }
         var document = new FinancialDocument(id, name, created, modified, currencies.AsReadOnly(), accounts.AsReadOnly()) { SchemaVersion = (int)version, SelectedAccountId = selected };
-        if (version == 3) document = ReadCatalog(connection, document, transaction);
+        if (version >= 3) document = ReadCatalog(connection, document, transaction);
         try { ValidateSnapshot(document, allowLegacy: true); }
         catch (DocumentException exception) when (exception.Error == DocumentError.InvalidData)
         {
             throw new DocumentException(DocumentError.Corrupt, "Les données enregistrées violent les invariants du dossier.", exception);
         }
-        if (version == 3) document = ReadLedgerMetadata(connection, document, transaction);
+        if (version >= 3) document = ReadLedgerMetadata(connection, document, transaction);
         if (version < CurrentSchemaVersion && !allowVersion1) throw Error(DocumentError.MigrationRequired, "Ce dossier doit être migré sur une nouvelle copie avec consentement.");
         return Freeze(document);
     }
@@ -176,8 +176,10 @@ public sealed partial class MonetaFile
             ["Accounts"] = AccountsSql(version),
             ["MigrationHistory"] = HistorySql
         };
-        if (version == 3)
-            foreach (var entry in LedgerTables) expected.Add(entry.Key, entry.Value);
+        if (version >= 3)
+            foreach (var entry in LedgerTables) expected.Add(entry.Key, version == 4 && entry.Key == "Transactions" ? TransactionsSql4 : entry.Value);
+        if (version == 4)
+            foreach (var entry in ReconciliationTables) expected.Add(entry.Key, entry.Value);
         var indexes = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["sqlite_autoindex_Document_1"] = "Document",
@@ -186,14 +188,18 @@ public sealed partial class MonetaFile
             ["sqlite_autoindex_Accounts_1"] = "Accounts",
             ["sqlite_autoindex_Accounts_2"] = "Accounts"
         };
-        if (version == 3)
+        if (version >= 3)
             foreach (var table in new[] { "Categories", "Payees", "PaymentMethods", "Transactions" })
             {
                 indexes.Add($"sqlite_autoindex_{table}_1", table);
                 if (table != "Transactions") indexes.Add($"sqlite_autoindex_{table}_2", table);
                 if (table == "Categories") indexes.Add("sqlite_autoindex_Categories_3", table);
             }
-        var declaredIndexes = version == 3 ? LedgerIndexes : new Dictionary<string, (string Table, string Sql)>();
+        if (version == 4)
+            foreach (var table in ReconciliationTables.Keys) indexes.Add($"sqlite_autoindex_{table}_1", table);
+        var declaredIndexes = version >= 3 ? new Dictionary<string, (string Table, string Sql)>(LedgerIndexes, StringComparer.Ordinal) : new Dictionary<string, (string Table, string Sql)>();
+        if (version == 4)
+            foreach (var entry in ReconciliationIndexes) declaredIndexes.Add(entry.Key, entry.Value);
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = "SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY name;";
@@ -234,7 +240,7 @@ public sealed partial class MonetaFile
         try
         {
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is 1 or 2)) throw new ArgumentException("Version du snapshot invalide.");
+            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is 1 or 2 or 3)) throw new ArgumentException("Version du snapshot invalide.");
             if (snapshot.Id == Guid.Empty) throw new ArgumentException("Identifiant du dossier vide.");
             ValidateText(snapshot.Name, true);
             ValidateTimes(snapshot.CreatedUtc, snapshot.ModifiedUtc);
@@ -307,7 +313,7 @@ public sealed partial class MonetaFile
         using var reader = command.ExecuteReader();
         if (!reader.Read()) throw Error(DocumentError.Corrupt, "Historique de schéma absent.");
         var first = reader.GetInt64(0);
-        if (reader.GetInt64(1) != 0 || first is not (1 or 2 or 3) || first > version || reader.GetString(2) != $"create-v{first}" || reader.GetString(3) != $"native-accounts-v{first}")
+        if (reader.GetInt64(1) != 0 || first is not (1 or 2 or 3 or 4) || first > version || reader.GetString(2) != $"create-v{first}" || reader.GetString(3) != $"native-accounts-v{first}")
             throw Error(DocumentError.Corrupt, "Origine du schéma inconnue.");
         _ = ReadTimestamp(reader.GetString(4));
         if (first == 1 && version >= 2)
@@ -316,10 +322,16 @@ public sealed partial class MonetaFile
                 throw Error(DocumentError.Corrupt, "Historique de migration incomplet.");
             _ = ReadTimestamp(reader.GetString(4));
         }
-        if (first <= 2 && version == 3)
+        if (first <= 2 && version >= 3)
         {
             if (!reader.Read() || reader.GetInt64(0) != 3 || reader.GetInt64(1) != 2 || reader.GetString(2) != "v2-to-v3-ledger" || reader.GetString(3) != "normalized-ledger-v3")
                 throw Error(DocumentError.Corrupt, "Historique de migration du registre incomplet.");
+            _ = ReadTimestamp(reader.GetString(4));
+        }
+        if (first <= 3 && version >= 4)
+        {
+            if (!reader.Read() || reader.GetInt64(0) != 4 || reader.GetInt64(1) != 3 || reader.GetString(2) != "v3-to-v4-reconciliation" || reader.GetString(3) != "pointing-and-statement-history-v4")
+                throw Error(DocumentError.Corrupt, "Historique du rapprochement incomplet.");
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (reader.Read()) throw Error(DocumentError.Corrupt, "Migration inconnue.");
@@ -354,7 +366,7 @@ public sealed partial class MonetaFile
         using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
-            command.CommandText = "INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id) VALUES(1,'Moneta',$id,$name,3,3,3,'Moneta-6',$created,$modified,$selected) ON CONFLICT(singleton) DO UPDATE SET name=excluded.name,modified_utc=excluded.modified_utc,selected_account_id=excluded.selected_account_id;";
+            command.CommandText = "INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id) VALUES(1,'Moneta',$id,$name,4,4,4,'Moneta-6',$created,$modified,$selected) ON CONFLICT(singleton) DO UPDATE SET name=excluded.name,modified_utc=excluded.modified_utc,selected_account_id=excluded.selected_account_id;";
             command.Parameters.AddWithValue("$id", snapshot.Id.ToString("D"));
             command.Parameters.AddWithValue("$name", snapshot.Name);
             command.Parameters.AddWithValue("$created", snapshot.CreatedUtc.ToString("O", CultureInfo.InvariantCulture));

@@ -2,7 +2,7 @@
 
 ## Contrat documentaire
 
-Cartographie cible, complétée par la capture privée de mission 4 : ce n’est pas une liste de fonctions toutes implémentées. Moneta 7A réalise dossiers/comptes et registre simple persistant, saisie séparée, modification/suppression contrôlée, sauvegarde/restauration et thèmes ; voir le [README](../README.md). Aucun lecteur `.bp`. Les identifiants CMD restent stables ; preuves BankPerfect et décisions Moneta restent distinctes.
+Cartographie cible, complétée par la capture privée de mission 4 : ce n’est pas une liste de fonctions toutes implémentées. Moneta 7B ajoute pointage, dates, soldes pointés et rapprochement/historique au registre persistant 7A ; voir le [README](../README.md). Aucun lecteur `.bp`. Les identifiants CMD restent stables ; preuves BankPerfect et décisions Moneta restent distinctes.
 
 ### Lecture des tables
 
@@ -23,6 +23,10 @@ Cartographie cible, complétée par la capture privée de mission 4 : ce n’est
 - `WindowCommands` centralise ces commandes ainsi que recherche/suppression/annulations futures, menus et outils communs, avec `CanExecute=false` pour les fonctions absentes. Aucun Ctrl+Z/Y global au détriment du texte. Ctrl+F demandé pour recherche entre en conflit avec Champs automatiques BP : indication Ctrl+F retirée de cette dernière dans le prototype, recherche elle-même désactivée ; arbitrage historique conservé dans [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md).
 - Mission 7A (**choix MON**, pas menu BP prétendument observé) : **Opérations → Nouvelle opération / Modifier / Supprimer**, mêmes commandes que la ligne compacte et le double-clic de modification. Ctrl+Entrée / Maj+Entrée et Suppr / Ctrl+Suppr sont limités au registre ; aucune capture des touches dans les champs texte. Le sens Recette/Dépense est explicite et indépendant du nom du mode. La saisie intégrée directe, F8, les raccourcis de calendrier et le pointage restent futurs.
 - Le dialogue prépare un brouillon ; Ctrl+S écrit durablement. La suppression demande confirmation et reste logique dans le fichier. Registre réel paginé par 100, sans filtres effectifs ; états de pointage stockés sans rapprochement bancaire validé. Les anciennes limitations ci-dessus décrivent les missions correspondantes, pas l’état actuel du registre.
+- Mission 7B : **Opérations → Pointer / Dépointer / Rapprochement bancaire… / Libérer un rapprochement hérité… / Date de pointage…**, contexte Pointer/Dépointer/Rapprochement, clic colonne de pointage. P/Espace basculent NP/P ; Ctrl+Maj+P date et F11 affichage des dates sont documentés BP. **Maj+P** (dépointer) et **Ctrl+Maj+R** (rapprochement) sont des choix Moneta, limités au registre. Aucune interception des champs texte.
+- Le manuel BP décrit NP → P → R → NP et l’option deux états. Moneta distingue NP/P de R formel : pas de bascule manuelle vers R, ni de dépointage silencieux d’une R. Historique et réouverture du dernier relevé avec motif dans le dialogue ; libération héritée explicite dans Opérations. Tout lot doit être enregistré avant autre mutation du registre.
+- La [page publique Rapprocher](https://chelly.net/bankperfect/wiki/Rapprocher.html) documente une extension dans Opérations/barre d’outils, numéro/date/solde final, sélection par double-clic/Espace et validation à écart nul. **Installation locale non attestée** ; Magic et pause non implémentés. Les règles d’ouverture de relevé/réouverture Moneta sont explicites dans ARCHITECTURE, pas attribuées à BP.
+
 
 
 ## Fichier, échanges et ouverture native Moneta

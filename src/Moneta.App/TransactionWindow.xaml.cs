@@ -114,7 +114,16 @@ public partial class TransactionWindow : Window
             if (_model.SelectedAccountId != _accountId)
                 throw new InvalidOperationException("Le compte sélectionné a changé. Fermez cette fenêtre puis recommencez sur le compte voulu.");
             if (_editingId is { } id)
+            {
+                var previous = _model.Rows.FirstOrDefault(row => row.Transaction.Id == id)?.Transaction;
+                if (previous is { Status: ReconciliationStatus.Marked } &&
+                    (previous.Date != draft.Date || previous.Amount != draft.Amount || previous.Direction != draft.Direction) &&
+                    MessageBox.Show(this,
+                        "Cette opération est pointée. Sa date, son montant ou son sens va changer. Le pointage sera conservé et le solde pointé sera recalculé. Confirmer la correction ?",
+                        "Moneta — corriger une opération pointée", MessageBoxButton.YesNo,
+                        MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
                 _model.EditTransaction(id, _editingRevision, draft);
+            }
             else
                 _model.AddTransaction(draft);
             staged = true;
@@ -147,7 +156,7 @@ public partial class TransactionWindow : Window
         decimal amount;
         try
         {
-            amount = ParseMagnitude(EntryAmount.Text, _currency);
+            amount = MoneyInput.ParseFrench(EntryAmount.Text, _currency);
         }
         catch (ArgumentException error)
         {
@@ -190,58 +199,4 @@ public partial class TransactionWindow : Window
 
     private static string? OptionalName(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private static decimal ParseMagnitude(string text, Currency currency)
-    {
-        // Parse minor units directly: decimal.TryParse can silently round long fractional input.
-        var input = text.AsSpan().Trim();
-        const string invalidFormat = "Montant invalide : saisissez un nombre sans signe, avec une virgule décimale (exemple : 1 234,56).";
-        if (input.IsEmpty)
-            throw new ArgumentException(invalidFormat);
-        var comma = input.IndexOf(',');
-        var whole = comma < 0 ? input : input[..comma];
-        var fraction = comma < 0 ? ReadOnlySpan<char>.Empty : input[(comma + 1)..];
-        if (whole.IsEmpty || (comma >= 0 && fraction.IsEmpty))
-            throw new ArgumentException(invalidFormat);
-
-        long minor = 0;
-        var digitsInGroup = 0;
-        var grouped = false;
-        try
-        {
-            foreach (var character in whole)
-            {
-                if (character is ' ' or '\u00a0' or '\u202f')
-                {
-                    if (digitsInGroup == 0 || (!grouped && digitsInGroup > 3) || (grouped && digitsInGroup != 3))
-                        throw new ArgumentException(invalidFormat);
-                    grouped = true;
-                    digitsInGroup = 0;
-                    continue;
-                }
-                if (character is < '0' or > '9')
-                    throw new ArgumentException(invalidFormat);
-                digitsInGroup++;
-                minor = checked(minor * 10 + (character - '0'));
-            }
-            if (digitsInGroup == 0 || (grouped && digitsInGroup != 3))
-                throw new ArgumentException(invalidFormat);
-            for (var index = 0; index < fraction.Length; index++)
-            {
-                var character = fraction[index];
-                if (character is < '0' or > '9')
-                    throw new ArgumentException(invalidFormat);
-                if (index < currency.DecimalPlaces)
-                    minor = checked(minor * 10 + (character - '0'));
-                else if (character != '0')
-                    throw new ArgumentException($"Ce montant dépasse la précision de {currency.DecimalPlaces} décimale(s) de {currency.Code}. Aucun arrondi n’est effectué.");
-            }
-            for (var index = fraction.Length; index < currency.DecimalPlaces; index++)
-                minor = checked(minor * 10);
-        }
-        catch (OverflowException)
-        {
-            throw new ArgumentException($"Montant hors limites pour {currency.Code} : le nombre d’unités mineures ne doit pas dépasser {long.MaxValue}.");
-        }
-        return ExactMoney.FromMinorUnits(minor, currency);
-    }
 }

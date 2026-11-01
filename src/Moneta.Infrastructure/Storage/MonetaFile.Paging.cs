@@ -6,7 +6,7 @@ namespace Moneta.Infrastructure.Storage;
 
 public sealed partial class MonetaFile
 {
-    private readonly record struct LedgerLight(Guid Id, string CanonicalId, DateOnly Date, DateTimeOffset CreatedUtc, decimal SignedAmount);
+    private readonly record struct LedgerLight(Guid Id, string CanonicalId, DateOnly Date, DateTimeOffset CreatedUtc, decimal SignedAmount, ReconciliationStatus Status);
 
     public LedgerPage ReadPage(Account account, int offset, int pageSize, IReadOnlyCollection<TransactionChange> pending, Guid? anchorId = null)
     {
@@ -15,6 +15,7 @@ public sealed partial class MonetaFile
         ArgumentNullException.ThrowIfNull(pending);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(pageSize, 100);
         try
         {
             var overlay = new Dictionary<Guid, Transaction>();
@@ -23,20 +24,24 @@ public sealed partial class MonetaFile
                 if (change?.Value is not { } value || !overlay.TryAdd(value.Id, value))
                     throw new ArgumentException("Opération de brouillon absente ou dupliquée.");
                 if (value.AccountId == account.Id && (value.Currency != account.Currency || value.Amount < 0 ||
-                    !Enum.IsDefined(value.Direction) || value.Date == default || value.CreatedUtc.Offset != TimeSpan.Zero))
+                    !Enum.IsDefined(value.Direction) || !Enum.IsDefined(value.Status) || value.Date == default || value.CreatedUtc.Offset != TimeSpan.Zero))
                     throw new ArgumentException("Valeurs du brouillon incohérentes avec le compte.");
                 if (value.AccountId == account.Id) _ = ExactMoney.ToMinorUnits(value.Amount, account.Currency);
             }
             var pendingRows = overlay.Values.Where(value => value.AccountId == account.Id && !value.IsDeleted)
-                .Select(value => new LedgerLight(value.Id, value.Id.ToString("D"), value.Date, value.CreatedUtc, FinancialRules.SignedAmount(value)))
+                .Select(value => new LedgerLight(value.Id, value.Id.ToString("D"), value.Date, value.CreatedUtc, FinancialRules.SignedAmount(value), value.Status))
                 .OrderBy(value => value.Date).ThenBy(value => value.CreatedUtc).ThenBy(value => value.CanonicalId, StringComparer.Ordinal).ToArray();
             using var transaction = Connection.BeginTransaction(deferred: true);
             long count = 0, anchorIndex = -1;
             var balance = account.OpeningBalance;
+            var pointedBalance = account.OpeningBalance;
+            decimal unmarkedAmount = 0;
             foreach (var value in StreamEffectiveRows(account, overlay, pendingRows, transaction))
             {
                 if (value.Id == anchorId) anchorIndex = count;
                 balance = checked(balance + value.SignedAmount);
+                if (value.Status == ReconciliationStatus.Unmarked) unmarkedAmount = checked(unmarkedAmount + value.SignedAmount);
+                else pointedBalance = checked(pointedBalance + value.SignedAmount);
                 count = checked(count + 1);
             }
             var requestedOffset = anchorIndex >= 0 ? anchorIndex / pageSize * pageSize : offset;
@@ -65,7 +70,7 @@ public sealed partial class MonetaFile
                 }
             }
             transaction.Commit();
-            return new(rows.AsReadOnly(), before, balance, count, actualOffset);
+            return new(rows.AsReadOnly(), before, balance, count, actualOffset) { Totals = new(balance, pointedBalance, unmarkedAmount) };
         }
         catch (Exception exception) when (exception is not DocumentException) { throw Translate(exception, DocumentError.InvalidData); }
     }
@@ -74,7 +79,7 @@ public sealed partial class MonetaFile
     {
         using var command = Connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT transaction_id,date,created_utc,amount_minor,direction,native_code FROM Transactions WHERE account_id=$account AND is_deleted=0 ORDER BY date,created_utc,transaction_id COLLATE BINARY;";
+        command.CommandText = "SELECT transaction_id,date,created_utc,amount_minor,direction,native_code,status,reconciliation_id FROM Transactions WHERE account_id=$account AND is_deleted=0 ORDER BY date,created_utc,transaction_id COLLATE BINARY;";
         command.Parameters.AddWithValue("$account", account.Id.ToString("D"));
         using var reader = command.ExecuteReader();
         var nextPending = 0;
@@ -90,7 +95,10 @@ public sealed partial class MonetaFile
             if (minor < 0 || direction is not (0 or 1) || reader.GetString(5) != account.Currency.Code)
                 throw Error(DocumentError.Corrupt, "Montant ou devise de l’opération invalide.");
             var amount = ExactMoney.FromMinorUnits(minor, account.Currency);
-            var value = new LedgerLight(id, reader.GetString(0), date, created, direction == 0 ? -amount : amount);
+            var status = (ReconciliationStatus)checked((int)reader.GetInt64(6));
+            if (!Enum.IsDefined(status) || (!reader.IsDBNull(7) && status != ReconciliationStatus.Reconciled))
+                throw Error(DocumentError.Corrupt, "État de pointage incohérent.");
+            var value = new LedgerLight(id, reader.GetString(0), date, created, direction == 0 ? -amount : amount, status);
             while (nextPending < pending.Length && CompareLight(pending[nextPending], value) < 0) yield return pending[nextPending++];
             yield return value;
         }

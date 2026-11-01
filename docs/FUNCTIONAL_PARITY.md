@@ -2,7 +2,7 @@
 
 ## Portée et légende
 
-État mission 7A : dossiers `.moneta`, comptes/devises et opérations persistants, recettes/dépenses, modification, suppression logique et sauvegarde/restauration complètes. Cycle manuel Ctrl+S ; pointage bancaire, virements, change et import natif restent futurs. Les sections historiques gardent leurs preuves BankPerfect, sans attribuer les choix Moneta au logiciel original.
+État mission 7B : dossiers/comptes, registre, pointage et rapprochements/historique persistants, schéma 4, sauvegarde/restauration complètes. Cycle manuel Ctrl+S ; virements, change et import natif restent futurs. Les preuves BankPerfect sont distinctes des conventions de sécurité Moneta et des comportements restant à observer.
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
@@ -34,8 +34,8 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Numérotation des chèques | M03 : numéro dans le détail, progression lors d'une nouvelle saisie | Vérifié — manuel | Reprendre le parcours, stockage structuré sans perdre le détail importé | À développer |
 | Calculatrice dans le montant | M03 : expressions et priorité multiplication/division | Vérifié — manuel | Analyse arithmétique sûre en décimal, sans exécution de code | À développer |
 | Auto-complétion et chargement d'un tiers | M03, M11 : Opérations > Charger un tiers | Vérifié — manuel | Réutiliser les modèles de tiers et l'historique selon le comportement à relever | À développer |
-| Pointage et rapprochement | M03 : menu contextuel, dernière colonne, cycle non pointé/pointé/rapproché | Vérifié — manuel | Trois états et option deux états ; ne pas confondre solde total et pointé | Trois états conservables en stockage ; nouvelle saisie non pointée ; commandes, dates et rapprochement réel réservés à 7B, solde pointé non calculé |
-| Date de pointage | M09 : Opérations > Date de pointage ; Affichage pour la bascule des dates | Vérifié — manuel | Date métier distincte de la date d'opération | À développer |
+| Pointage et rapprochement | M03 : contexte, dernière colonne, P/Espace et cycle NP/P/R ; [plugin public Rapprocher](https://chelly.net/bankperfect/wiki/Rapprocher.html), non attesté installé localement | Vérifié — manuel/public ; détails locaux à confirmer | Trois états distincts et relevé contrôlé, solde pointé explicite | Réalisé : NP/P individuel/multiple, totaux natifs, relevé/écart/invariants, R protégées, réouverture avec motif/historique. Écart MON : pas de cycle manuel vers/hors R ; pas de Magic/pause |
+| Date de pointage | M09 : Opérations > Date de pointage ; Affichage pour la bascule, Ctrl+Maj+P/F11 | Vérifié — manuel | Date métier distincte, inconnue préservée | Réalisé : date de vérification P modifiable, première colonne basculable ; dates inconnues héritées non fabriquées et nouveaux pointages futurs refusés |
 | Annuler/refaire | M17, M18 ; emplacement natif exact non établi | Vérifié — manuel pour les commandes | Annulation contrôlée, compatible avec persistance et historique de corrections | À développer |
 | Copier/coller ou déplacer des lignes entre comptes | M05 : Édition > Copier/Coller | Vérifié — manuel | Préserver devises, références et invariants ; règles de déplacement à confirmer | À développer |
 | Saisie multiple | `Scripts/MultipleInput/multiple_input.ini:2-7` : Opérations | Vérifié — local | Saisie en série fidèle | À développer |
@@ -87,6 +87,14 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Ouverture et conversion natives BankPerfect | Aucun spécimen de fichier de comptes examiné ; format interne non établi | **À confirmer — faisabilité technique et versions couvertes** | **Priorité P0** : Fichier > Ouvrir `.bp` → proposition de conversion → analyse en lecture seule → rapport de couverture/rapprochement → nouveau `.moneta` ; original inchangé et conservé | À développer |
 
 **Contraintes de migration découvertes dans les scripts :** XML n'exporte ni UID, ni liens de virements, ni date de pointage, ni champs supplémentaires, ni données d'échéancier/budget. Des notes et profils résident dans des fichiers auxiliaires. Les liens des virements directs diffèrent des branches d'échéancier examinées. Aucune désérialisation `pickle`, évaluation de règle ou exécution d'ancien plugin ne sera admise comme simple lecture d'un fichier importé. Voir les preuves et périmètres précis dans l'audit.
+
+## Conventions de mission 7B à valider avec l’utilisateur
+
+- Manuel et fichiers lisibles confirment les trois états, pointage de sélection, clic dernière colonne, P/Espace et date de pointage. `history.txt:305,317,533` signale verrou R, avertissement au dépointage et Ctrl+Maj+P ; `Scripts/Totals/totals.py:58-69` distingue états >0 et non pointés. Ce sont des preuves documentaires, pas une exécution du binaire.
+- Le plugin public décrit relevé daté/numéroté, solde final et sélection à écart nul ; sa présence locale et ses règles de correction ne sont pas établies. Moneta ne copie pas son code et ne revendique ni Magic, ni pause/sauvegarde de session inachevée.
+- R Moneta nouveau = relevé validé et conservé ; réouverture du dernier actif avec motif. P corrigée conserve date/état avec confirmation financière. Ouverture incluse une fois dans le solde pointé, mouvements futurs inclus dans actuel mais nouveau pointage futur refusé. Ces règles BP exactes restent à observer ; conventions Moneta explicites, pas compatibilité parfaite annoncée.
+- Premier relevé part de l’ouverture du compte ; suivants de la dernière clôture active. Des anciens non rapprochés peuvent être candidats. Un R hérité sans session reste non attesté ; libération motivée auditable, pas de relevé inventé.
+- Brouillon de validation/réouverture/libération à enregistrer avant autre mutation du registre. F11/Ctrl+Maj+P/P/Espace conservés ; Maj+P et Ctrl+Maj+R sont des choix Moneta, non des raccourcis historiques prétendument vérifiés.
 
 ## Ajouts demandés pour Moneta
 

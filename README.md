@@ -2,7 +2,7 @@
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 7A : recettes et dépenses persistantes dans les dossiers `.moneta`, modification, suppression confirmée et sauvegarde/restauration du registre complet. Version de développement à qualifier sur données synthétiques avant usage réel.** Pas de lecteur `.bp`, de change effectif, de virements, d’échéancier ou de sauvegarde automatique.
+**Mission 7B : pointage individuel/multiple, soldes pointés et rapprochements bancaires persistants avec réouverture motivée et historique conservé. SQLite schéma 4 ; cycle manuel Ctrl+S maintenu. Version de développement à qualifier sur données synthétiques avant usage réel.** Pas de lecteur `.bp`, de change effectif, de virements, d’échéancier ou de sauvegarde automatique.
 
 **Consolidation 6.1 :** 97 tests Debug/Release, contrôles SQLite/sauvegardes revus et erreur de source verrouillé corrigée. Un pic CPU capturé est attribué à la compilation étagée .NET, sans boucle de layout démontrée ; aucun contournement graphique/runtime livré. [Audit, mesures et réserves avant mission 7](docs/AUDIT_MISSION_6_1.md).
 
@@ -66,7 +66,13 @@ Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`
 
 Navigation conservée : sélection de compte, détails, clavier, défilement et virtualisation, colonnes et panneau gauche redimensionnables. Registre réel paginé par **100 opérations** avec précédent/suivant ; solde total et solde progressif tiennent compte des opérations hors page. Ordre stable : date, création UTC, UUID canonique. La ligne compacte reste une prévisualisation avec boutons d’action ; la saisie s’effectue dans un dialogue validant, pas directement dans les cellules.
 
-Le solde est **solde initial + recettes − dépenses non supprimées**, sans conversion. La suppression enregistrée conserve une ligne marquée supprimée, exclue du registre et des soldes mais incluse dans les contrôles et sauvegardes. Pas encore de corbeille, de restauration individuelle ou d’historique complet des versions antérieures d’une modification. Les états non pointé/pointé/rapproché sont stockables ; l’interface crée des opérations non pointées et ne prétend pas réaliser un rapprochement bancaire.
+Le solde actuel est **solde initial + recettes − dépenses non supprimées**, toutes dates comprises, sans conversion. **Solde pointé = solde initial + mouvements actifs P/R** ; **Non pointé = somme des mouvements actifs NP**, sans ajouter une deuxième fois le solde initial. Ces totaux restent en monnaie native même lorsque la devise d’affichage du solde actuel change. Le prévisionnel reste indisponible. Les suppressions logiques sont exclues des soldes mais restent dans les contrôles et sauvegardes ; pas encore de corbeille ni d’historique général des modifications.
+
+**Pointage :** dans le registre, P/Espace ou le bouton de dernière colonne basculent NP/P ; **Maj+P** dépointage, **Ctrl+Maj+P** date de pointage, **F11** bascule la première colonne entre date d’opération et date de pointage. Menus Opérations et contextuel utilisent les mêmes commandes. Ctrl/clic permet plusieurs lignes de la page courante ; Pointer/Dépointer applique tout le lot ou rien. Aucun montant, libellé ou compte n’est modifié. Nouveau pointage d’une opération future refusé ; date locale de vérification proposée aujourd’hui, modifiable et distincte de la date d’opération.
+
+**Opérations → Rapprochement bancaire / Ctrl+Maj+R dans le registre :** enregistrer d’abord le dossier ; saisir date de fin (au plus tard aujourd’hui), numéro facultatif et solde final signé. Ouverture non modifiable : solde initial du compte au premier relevé, sinon clôture du dernier relevé encore actif. Cocher les mouvements NP/P réellement portés au relevé, y compris des anciens non rapprochés. L’écart doit être nul **et** les dates, comptes, devises, références et révisions cohérents. Valider prépare un brouillon ; **Ctrl+S après fermeture** le rend durable. Annuler le dialogue ne change rien.
+
+Les opérations R sont protégées contre édition, suppression et dépointage. Une modification financière d’une P demande confirmation et conserve son pointage. Dans **Historique et réouverture**, seul le dernier relevé actif peut être rouvert, avec motif et confirmation : anciens états/dates restaurés, instantanés et événements conservés. **Enregistrer ce brouillon avant toute autre mutation du registre**, y compris sur un autre compte. Un relevé corrigé reçoit un nouvel UUID. Les R héritées d’un schéma 3 sans relevé attesté restent identifiées comme telles ; libération explicite avec motif depuis Opérations, jamais de relevé ou date inventé.
 
 **Devise d'affichage** : native = montant réel ; autre = **Cours indisponible**, sans modifier compte/opérations. **Affichage → Thème → Clair / Sombre** conserve la préférence locale et la correction de sélection ; contraste élevé prioritaire. **Outils → Options** conserve ses cinq rubriques ; options de taux et de mises à jour enregistrables uniquement, services non développés. Voir [CURRENCIES_AND_SETTINGS](docs/CURRENCIES_AND_SETTINGS.md).
 
@@ -74,9 +80,54 @@ Le solde est **solde initial + recettes − dépenses non supprimées**, sans co
 
 L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et l'organisation de la principale restent fidèles à la capture privée. Elle ne prouve ni sous-menus fermés ni accélérateurs Alt. Choix Moneta explicites : Nouveau dans Fichier (également accessible sous Comptes), Enregistrer sous dans Fichier, sauvegarde/restauration manuelles et mode démonstration. F12 est documenté historiquement, pas l'emplacement exact d'Enregistrer sous. Aucun menu inconnu déclaré identique à BankPerfect.
 
-Pas encore d’édition/suppression de compte, de filtre effectif, de pointage modifiable/rapprochement bancaire, d’import/export, de change, de transfert, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; les comptes archivés ne reçoivent pas de modifications d’opérations. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
+Pas encore d’édition/suppression de compte, de filtre effectif, d’import/export, de change, de transfert, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; les comptes archivés ne reçoivent pas de modifications d’opérations. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
 
 **Erreurs et sécurité :** fichier absent/incompatible/corrompu ou version future refusé, aucune base vide substituée ; destinations existantes et journaux de récupération préservés. Une session par chemin via verrou système `.moneta.lock` ; fichier vide résiduel normal après fermeture/crash. Attente SQLite bornée, checkpoint bloqué signalé en gardant la session utilisable. Stockage actif local uniquement : réseau refusé, dossiers synchronisés non pris en charge. SQLite et sauvegardes **non chiffrés/non signés** ; protéger les droits du dossier et le support. Ne jamais supprimer WAL/SHM/journal pour débloquer.
+
+## Vérifications de mission 7B
+
+Debug et Release : **0 erreur, 0 avertissement ; 261 tests réussis, 0 échec, 0 ignoré par configuration**, dont les 168 cas précédents. Couverture ajoutée : transitions/dates/futurs, lots atomiques, totaux exacts et devises, protections des R, corrections des P, sessions et réouverture, R héritées, concurrence, refus conservant les brouillons, sauvegarde/restauration de l’historique complet et migrations 1/2/3 → 4.
+
+Parcours réel du binaire Release sous Windows : comptes EUR/BYN synthétiques, recette/dépenses, Ctrl+clic multiple, P/Espace/clic/Maj+P, édition de date et F11, sélection de texte au clavier sans pointage parasite, écart non nul refusé, validation puis Ctrl+S, protections R, fermeture du processus et réouverture, sauvegarde/restauration, réouverture motivée, nouvel enregistrement et nouvelle restauration. Comparaison hors interface : trois opérations, un relevé, deux instantanés, un événement avant correction puis deux après correction, référentiels et empreintes complets identiques entre copies correspondantes. Sonde séparée : 10 000 opérations restaurées et comparées individuellement, avec session/instantanés/événement.
+
+Défauts confirmés et corrigés : sélection multiple réduite par le binding SelectedItem ; brouillon de réouverture/libération modifiable puis impossible à enregistrer ; date de pointage recalculée au jour du Save ; cases de rapprochement ignorant le TogglePattern d’accessibilité ; onglets non thémés. L’analyse exacte du solde initial réutilise maintenant `MoneyInput`, pour refuser une longue fraction qu’un parseur `decimal` général arrondissait silencieusement.
+
+**Limite visuelle du poste :** les captures écran GDI/PrintWindow produisent un client blanc ou périmé, y compris au démarrage sans dossier. Elles ne prouvent donc pas l’affichage composé natif. Les contrôles réels ont été exercés par UIA et souris/clavier ; l’arbre visuel WPF a été inspecté via `RenderTargetBitmap`, en rendu matériel puis logiciel de diagnostic, dans les deux thèmes. Le rendu logiciel et l’instrumentation ne sont pas livrés. Captures synthétiques `screenshots-private/moneta-m7b-*-visual.png` locales seulement. Validation utilisateur de la fenêtre composée, lecteurs d’écran et campagne multi-DPI/moniteurs restent nécessaires.
+
+Les conventions Moneta ne prétendent pas reproduire intégralement le cycle BP NP → P → R → NP : **R exige ici un relevé validé**, et sa correction est traçable. Les commandes « Magic », pause de rapprochement, relevé initial différent du solde d’ouverture du compte et restauration individuelle d’une opération restent absentes. La liste des candidats est paginée en mémoire, mais sa validation parcourt encore le compte à chaque sélection ; pas de cache financier ajouté.
+
+### Mesures de mission 7B
+
+Windows 10.0.26220 x64, Core i5-1235U (12 processeurs logiques), Intel Iris Xe pilote 32.0.101.7092, SDK 10.0.401, Release sans débogueur. Deux lancements à vide, cinq secondes de stabilisation puis un échantillon de cinq secondes. Démarrage jusqu’à `WaitForInputIdle`, **pas au premier pixel**. Démonstration : dix secondes de stabilisation puis six fenêtres de cinq secondes sans interrogation UIA pendant l’échantillon.
+
+| Mesure du véritable exécutable | Résultat observé |
+|---|---:|
+| Démarrage à vide, deux essais | 1,376–1,491 s |
+| Résidente / privée à vide | 150,34–150,82 / 95,13–95,72 Mio |
+| CPU à vide, équivalent un cœur | 0,62–2,50 % |
+| Démonstration visible, 3 200 lignes dans le premier compte | 207,56–207,63 Mio résidente ; 142,06–142,18 Mio privée |
+| CPU démonstration, six fenêtres | 0 / 0,94 / 0 / 0 / 0 / 0,31 % d’un cœur |
+| Première fenêtre après minimisation, transition incluse | 3,43 % d’un cœur |
+| Après restauration et trois secondes de stabilisation | 0 % d’un cœur ; 208,18 / 142,05 Mio |
+
+Pas de croissance progressive sur ces trente secondes, ni de charge prolongée comparable aux pics historiques ; observation courte seulement. La minimisation n’a pas de deuxième fenêtre stabilisée, donc **pas de CPU nul minimisé revendiqué**. Les mesures 7A restent ci-dessous : conditions proches, pas un benchmark statistique ni une preuve causale d’amélioration. La limite de capture composée native s’applique aussi à cette campagne.
+
+Sonde API séparée, **10 000 opérations dans un seul compte EUR**, métadonnées synthétiques, page de 100 ; pas directement comparable aux quatre comptes de la sonde 7A. Pointage individuel : dix échauffements puis cent bascules de brouillon ; autres valeurs = un essai, sans dialogue.
+
+| Mesure API | Durée |
+|---|---:|
+| Création des 10 000 opérations | 7,623 s |
+| Ouverture et validation | 1,546 s |
+| Pointage d’une ligne, médiane / P95 | 0,018 / 0,124 ms |
+| Pointage d’une page de 100 | 1,878 ms |
+| Commit après pointage | 1,620 s |
+| Page de candidats au rapprochement | 122,463 ms |
+| Préparation d’un relevé de deux opérations | 187,947 ms |
+| Commit du relevé | 1,859 s |
+| Sauvegarde / restauration | 1,711 / 4,035 s |
+
+Le coût de validation/commit reste linéaire et plus important que le clic de pointage. Les candidats formels parcourent encore le compte ; une optimisation SQL mesurée reste à envisager si les gros relevés deviennent lents, sans cache financier opaque. Chronométrage de l’ouverture **par dialogue WPF** de ce gros fichier non obtenu : l’automatisation native s’est bloquée ; aucune durée API présentée comme durée UI. Les restaurations et leurs 10 000 opérations/historique ont néanmoins été comparées intégralement. Sondes et scripts temporaires retirés après vérification ; aucune dépendance supplémentaire.
+
 
 ## Vérifications de mission 7A
 

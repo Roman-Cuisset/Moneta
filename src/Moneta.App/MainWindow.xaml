@@ -27,6 +27,13 @@
         <CommandBinding Command="{x:Static local:WindowCommands.EditTransaction}" Executed="EditTransaction_Executed" CanExecute="SelectedTransaction_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.DeleteTransaction}" Executed="DeleteTransaction_Executed" CanExecute="SelectedTransaction_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.RefreshRates}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.TogglePointing}" Executed="TogglePointing_Executed" CanExecute="Pointing_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.MarkTransactions}" Executed="Mark_Executed" CanExecute="Pointing_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.UnmarkTransactions}" Executed="Unmark_Executed" CanExecute="Pointing_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.MarkingDate}" Executed="MarkingDate_Executed" CanExecute="MarkingDate_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ShowMarkingDates}" Executed="ShowMarkingDates_Executed" CanExecute="ShowMarkingDates_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Reconcile}" Executed="Reconcile_Executed" CanExecute="Reconcile_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ReleaseLegacyReconciliation}" Executed="ReleaseLegacy_Executed" CanExecute="ReleaseLegacy_CanExecute" />
     </Window.CommandBindings>
     <Window.Resources>
         <!-- Géométries originales Moneta : aucune ressource ni forme extraite de BankPerfect. -->
@@ -126,7 +133,7 @@
                         </MenuItem>
                         <Separator />
                         <MenuItem Header="Affichage sur _2 lignes" InputGestureText="F4" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="Dates de pointage" InputGestureText="F11" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem x:Name="ShowMarkingDatesItem" Header="Dates de pointage" IsCheckable="True" IsChecked="{Binding ShowMarkingDates, Mode=OneWay}" Command="{x:Static local:WindowCommands.ShowMarkingDates}" InputGestureText="F11 (registre)" AutomationProperties.AutomationId="ShowMarkingDatesCommand" />
                         <MenuItem Header="Filtres enregistrés…" InputGestureText="F7" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Cacher les lignes inutiles" InputGestureText="Ctrl+H" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
@@ -148,8 +155,13 @@
                         <MenuItem Header="_Modifier…" Command="{x:Static local:WindowCommands.EditTransaction}" InputGestureText="Maj+Entrée (registre)" AutomationProperties.AutomationId="EditTransactionCommand" />
                         <MenuItem Header="_Supprimer…" Command="{x:Static local:WindowCommands.DeleteTransaction}" InputGestureText="Suppr / Ctrl+Suppr (registre)" AutomationProperties.AutomationId="DeleteTransactionCommand" />
                         <Separator />
+                        <MenuItem Header="_Pointer la sélection" Command="{x:Static local:WindowCommands.MarkTransactions}" AutomationProperties.AutomationId="MarkTransactionsCommand" />
+                        <MenuItem Header="_Dépointer la sélection" Command="{x:Static local:WindowCommands.UnmarkTransactions}" InputGestureText="Maj+P (registre)" AutomationProperties.AutomationId="UnmarkTransactionsCommand" />
+                        <MenuItem Header="_Rapprochement bancaire…" Command="{x:Static local:WindowCommands.Reconcile}" InputGestureText="Ctrl+Maj+R (registre)" AutomationProperties.AutomationId="ReconcileCommand" />
+                        <MenuItem Header="Réexaminer un état rapproché hérité…" Command="{x:Static local:WindowCommands.ReleaseLegacyReconciliation}" ToolTip="Sans relevé lié : libération explicite avec motif et historique, pas un rapprochement bancaire attesté." AutomationProperties.AutomationId="ReleaseLegacyCommand" />
+                        <Separator />
                         <MenuItem Header="Charger un tiers…" InputGestureText="F10" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="Date de pointage…" InputGestureText="Ctrl+Maj+P" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="Date de pointage…" Command="{x:Static local:WindowCommands.MarkingDate}" InputGestureText="Ctrl+Maj+P (registre)" AutomationProperties.AutomationId="MarkingDateCommand" /><Separator />
                         <MenuItem Header="Saisie multiple…" InputGestureText="F2" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Modifier un groupe…" InputGestureText="Ctrl+M" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Transfert de compte à compte…" InputGestureText="Ctrl+Maj+T" Style="{StaticResource UnavailableMenuItem}" />
@@ -233,7 +245,8 @@
                         <TextBlock Text="COMPTE SÉLECTIONNÉ" Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,0,0,10" />
                         <TextBlock Text="{Binding SelectedAccount.Name}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
                         <TextBlock Text="{Binding SelectedAccount.CurrencyCode}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,5,0,18" />
-                        <DockPanel Margin="0,0,0,9"><TextBlock Text="Solde pointé" /><TextBlock Text="Non calculé" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Le calcul du solde pointé n'est pas implémenté." /></DockPanel>
+                        <DockPanel Margin="0,0,0,9"><TextBlock Text="Solde pointé" /><TextBlock Text="{Binding SelectedPointedBalanceText}" FontWeight="SemiBold" TextAlignment="Right" TextWrapping="Wrap" ToolTip="Solde initial + opérations pointées ou rapprochées, dans la devise native." AutomationProperties.AutomationId="PointedBalance" /></DockPanel>
+                        <DockPanel Margin="0,0,0,9"><TextBlock Text="Non pointé" /><TextBlock Text="{Binding SelectedUnmarkedAmountText}" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Somme signée des opérations non pointées, sans le solde initial." AutomationProperties.AutomationId="UnmarkedAmount" /></DockPanel>
                         <DockPanel Margin="0,0,0,14"><TextBlock Text="À venir" /><TextBlock Text="Indisponible" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Échéancier non implémenté." /></DockPanel>
                         <TextBlock Text="Solde actuel" Style="{StaticResource MutedText}" />
                         <Grid Margin="0,4,0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="64" /></Grid.ColumnDefinitions>
@@ -283,23 +296,39 @@
                     </TextBlock>
                 </StackPanel>
                 <DataGrid x:Name="TransactionsGrid" Grid.Row="1" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=OneWay}"
-                          SelectionChanged="TransactionSelectionChanged" MouseDoubleClick="Transaction_DoubleClick" AutoGenerateColumns="False" IsReadOnly="True"
+                          SelectionChanged="TransactionSelectionChanged" MouseDoubleClick="Transaction_DoubleClick" PreviewMouseRightButtonDown="Register_PreviewRightClick" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False" CanUserResizeColumns="True" CanUserReorderColumns="False"
-                          SelectionMode="Single" SelectionUnit="FullRow" IsSynchronizedWithCurrentItem="False" ClipboardCopyMode="None"
+                          SelectionMode="Extended" SelectionUnit="FullRow" IsSynchronizedWithCurrentItem="False" ClipboardCopyMode="None"
                           EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                           HeadersVisibility="Column" RowHeight="42" ColumnHeaderHeight="64" GridLinesVisibility="Horizontal"
                           AutomationProperties.AutomationId="TransactionsGrid" AutomationProperties.Name="Registre du compte sélectionné"
-                          AutomationProperties.HelpText="Flèches pour naviguer. Ctrl+Entrée : nouvelle opération ; Maj+Entrée : modifier ; Suppr : demander la suppression. Enregistrer avec Ctrl+S.">
+                          AutomationProperties.HelpText="Ctrl ou Maj pour sélectionner plusieurs lignes de cette page. P / Espace : basculer non pointé / pointé ; Maj+P : dépointer ; Ctrl+Maj+R : rapprochement ; F11 : dates de pointage. Ctrl+S enregistre les brouillons.">
                     <DataGrid.InputBindings>
                         <KeyBinding Key="Enter" Modifiers="Control" Command="{x:Static local:WindowCommands.NewTransaction}" />
                         <KeyBinding Key="Enter" Modifiers="Shift" Command="{x:Static local:WindowCommands.EditTransaction}" />
                         <KeyBinding Key="Delete" Command="{x:Static local:WindowCommands.DeleteTransaction}" />
                         <KeyBinding Key="Delete" Modifiers="Control" Command="{x:Static local:WindowCommands.DeleteTransaction}" />
+                        <KeyBinding Key="P" Command="{x:Static local:WindowCommands.TogglePointing}" />
+                        <KeyBinding Key="Space" Command="{x:Static local:WindowCommands.TogglePointing}" />
+                        <KeyBinding Key="P" Modifiers="Shift" Command="{x:Static local:WindowCommands.UnmarkTransactions}" />
+                        <KeyBinding Key="P" Modifiers="Control+Shift" Command="{x:Static local:WindowCommands.MarkingDate}" />
+                        <KeyBinding Key="R" Modifiers="Control+Shift" Command="{x:Static local:WindowCommands.Reconcile}" />
+                        <KeyBinding Key="F11" Command="{x:Static local:WindowCommands.ShowMarkingDates}" />
                     </DataGrid.InputBindings>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Pointer la sélection" Command="{x:Static local:WindowCommands.MarkTransactions}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <MenuItem Header="Dépointer la sélection" Command="{x:Static local:WindowCommands.UnmarkTransactions}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <MenuItem Header="Date de pointage…" Command="{x:Static local:WindowCommands.MarkingDate}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <Separator />
+                            <MenuItem Header="Rapprochement bancaire…" Command="{x:Static local:WindowCommands.Reconcile}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <MenuItem Header="Réexaminer un état rapproché hérité…" Command="{x:Static local:WindowCommands.ReleaseLegacyReconciliation}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Date" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn x:Name="RegisterDateColumn" Header="Date" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DisplayDateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
                         <DataGridTextColumn Header="Mode" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
                         <DataGridTemplateColumn Header="Tiers / libellé" HeaderTemplate="{StaticResource RegisterHeader}" Width="2*" MinWidth="170">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
@@ -315,7 +344,15 @@
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Débit" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DebitText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
                         <DataGridTextColumn Header="Crédit" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding CreditText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
-                        <DataGridTextColumn Header="Pointage" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding MarkText}" Width="100" MinWidth="90" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTemplateColumn Header="Pointage" HeaderTemplate="{StaticResource RegisterHeader}" Width="150" MinWidth="115">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <Button Content="{Binding MarkText}" Command="{x:Static local:WindowCommands.TogglePointing}" CommandParameter="{Binding}"
+                                        CommandTarget="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        Focusable="False" IsTabStop="False" Padding="5,3" Margin="4,1" MinHeight="26"
+                                        ToolTip="Clic : non pointé ↔ pointé. Une opération rapprochée exige une réouverture explicite du relevé."
+                                        ToolTipService.ShowOnDisabled="True" AutomationProperties.AutomationId="PointingCell" AutomationProperties.Name="{Binding MarkText}" />
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
                 <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" Padding="12,8" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">

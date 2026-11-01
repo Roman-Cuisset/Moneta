@@ -32,7 +32,8 @@ internal sealed class DraftCatalog(FinancialDocument document)
             PayeeId = payee?.Id, CategoryId = category?.Id, SubcategoryId = subcategory?.Id,
             PaymentMethodId = method?.Id, PaymentMode = method?.Name,
             CreatedUtc = previous?.CreatedUtc ?? now, ModifiedUtc = now,
-            Revision = previous?.Revision ?? 1
+            Revision = previous?.Revision ?? 1,
+            MarkedOn = previous?.MarkedOn, ReconciliationId = previous?.ReconciliationId
         };
     }
 
@@ -88,14 +89,20 @@ internal static class LedgerProjection
         offset = transactions.Length == 0 ? 0 : Math.Min(offset, (transactions.Length - 1) / pageSize * pageSize);
         var balance = account.OpeningBalance;
         var before = balance;
+        var pointed = account.OpeningBalance;
         var page = new List<Transaction>(pageSize);
         for (var index = 0; index < transactions.Length; index++)
         {
             if (index == offset) before = balance;
             var transaction = transactions[index];
             balance = checked(balance + FinancialRules.SignedAmount(transaction));
+            if (transaction.Status != ReconciliationStatus.Unmarked)
+                pointed = checked(pointed + FinancialRules.SignedAmount(transaction));
             if (index >= offset && index < offset + pageSize) page.Add(transaction);
         }
-        return new LedgerPage(page.AsReadOnly(), before, balance, transactions.LongLength, offset);
+        return new LedgerPage(page.AsReadOnly(), before, balance, transactions.LongLength, offset)
+        {
+            Totals = new AccountLedgerTotals(balance, pointed, checked(balance - pointed))
+        };
     }
 }

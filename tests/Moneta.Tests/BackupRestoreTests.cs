@@ -431,7 +431,8 @@ public sealed class BackupRestoreTests
 
     // Execute the actual old DDL; a current ledger schema with an old version tag
     // is not a legacy fixture and must be rejected by exact-schema validation.
-    internal static void BuildLegacy(string path, FinancialDocument snapshot, int version = 1)
+    internal static void BuildLegacy(string path, FinancialDocument snapshot, int version = 1,
+        IReadOnlyList<Transaction>? rows = null)
     {
         var schema = typeof(MonetaFile).GetMethod("SchemaSql",
             System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
@@ -496,9 +497,67 @@ public sealed class BackupRestoreTests
             command.Parameters.AddWithValue("$created", Stamp(account.CreatedUtc));
             command.Parameters.AddWithValue("$modified", Stamp(account.ModifiedUtc));
             command.Parameters.AddWithValue("$ordinal", index);
-            if (version == 2) command.Parameters.AddWithValue("$archived", account.IsArchived ? 1 : 0);
+            if (version >= 2) command.Parameters.AddWithValue("$archived", account.IsArchived ? 1 : 0);
             command.ExecuteNonQuery();
             command.Parameters.Clear();
+        }
+        if (version == 3)
+        {
+            void Reference(string table, string column, Guid id, string name, int ordinal, Guid? parent = null)
+            {
+                command.CommandText = $"INSERT INTO {table}({column},name,name_key,ordinal" +
+                    (table == "Categories" ? ",parent_id" : "") + ") VALUES($id,$name,$key,$ordinal" +
+                    (table == "Categories" ? ",$parent" : "") + ");";
+                command.Parameters.AddWithValue("$id", id.ToString("D"));
+                command.Parameters.AddWithValue("$name", name);
+                command.Parameters.AddWithValue("$key", FinancialRules.NameKey(name));
+                command.Parameters.AddWithValue("$ordinal", ordinal);
+                if (table == "Categories") command.Parameters.AddWithValue("$parent", (object?)parent?.ToString("D") ?? DBNull.Value);
+                command.ExecuteNonQuery();
+                command.Parameters.Clear();
+            }
+            for (var index = 0; index < snapshot.Categories.Count; index++)
+            {
+                var value = snapshot.Categories[index];
+                Reference("Categories", "category_id", value.Id, value.Name, index, value.ParentId);
+            }
+            for (var index = 0; index < snapshot.Payees.Count; index++)
+            {
+                var value = snapshot.Payees[index];
+                Reference("Payees", "payee_id", value.Id, value.Name, index);
+            }
+            for (var index = 0; index < snapshot.PaymentMethods.Count; index++)
+            {
+                var value = snapshot.PaymentMethods[index];
+                Reference("PaymentMethods", "payment_method_id", value.Id, value.Name, index);
+            }
+            foreach (var value in rows ?? Array.Empty<Transaction>())
+            {
+                command.CommandText = """
+                    INSERT INTO Transactions(transaction_id,account_id,date,label,amount_minor,native_code,direction,status,notes,
+                        payee_id,category_id,subcategory_id,payment_method_id,is_deleted,created_utc,modified_utc,revision)
+                    VALUES($id,$account,$date,$label,$minor,$currency,$direction,$status,$notes,$payee,$category,$subcategory,$method,$deleted,$created,$modified,$revision);
+                    """;
+                command.Parameters.AddWithValue("$id", value.Id.ToString("D"));
+                command.Parameters.AddWithValue("$account", value.AccountId.ToString("D"));
+                command.Parameters.AddWithValue("$date", value.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+                command.Parameters.AddWithValue("$label", value.Label);
+                command.Parameters.AddWithValue("$minor", ExactMoney.ToMinorUnits(value.Amount, value.Currency));
+                command.Parameters.AddWithValue("$currency", value.Currency.Code);
+                command.Parameters.AddWithValue("$direction", (int)value.Direction);
+                command.Parameters.AddWithValue("$status", (int)value.Status);
+                command.Parameters.AddWithValue("$notes", value.Details);
+                command.Parameters.AddWithValue("$payee", (object?)value.PayeeId?.ToString("D") ?? DBNull.Value);
+                command.Parameters.AddWithValue("$category", (object?)value.CategoryId?.ToString("D") ?? DBNull.Value);
+                command.Parameters.AddWithValue("$subcategory", (object?)value.SubcategoryId?.ToString("D") ?? DBNull.Value);
+                command.Parameters.AddWithValue("$method", (object?)value.PaymentMethodId?.ToString("D") ?? DBNull.Value);
+                command.Parameters.AddWithValue("$deleted", value.IsDeleted ? 1 : 0);
+                command.Parameters.AddWithValue("$created", Stamp(value.CreatedUtc));
+                command.Parameters.AddWithValue("$modified", Stamp(value.ModifiedUtc));
+                command.Parameters.AddWithValue("$revision", value.Revision);
+                command.ExecuteNonQuery();
+                command.Parameters.Clear();
+            }
         }
         transaction.Commit();
     }

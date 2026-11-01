@@ -4,34 +4,6 @@
         Title="Paramètres — Moneta" Width="780" Height="560" MinWidth="700" MinHeight="460"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
         Style="{StaticResource {x:Type Window}}">
-    <Window.Resources>
-        <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-            <Setter Property="Background" Value="{DynamicResource SubtleBrush}" />
-            <Setter Property="Padding" Value="12,10" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Chrome" Background="{TemplateBinding Background}"
-                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                Padding="{TemplateBinding Padding}" Margin="0,0,3,0" CornerRadius="4,4,0,0">
-                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
-                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SelectionBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

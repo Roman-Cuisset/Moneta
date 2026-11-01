@@ -95,7 +95,7 @@ public sealed class LedgerStorageTests
         string deletedDigest;
         using (var file = MonetaFile.Create(FileName, metadata, new[] { new TransactionChange(first, 0) }))
         {
-            var edited = first with { Label = "Libellé corrigé", Amount = 0m, Status = ReconciliationStatus.Marked, Revision = 2, ModifiedUtc = Created.AddMinutes(1) };
+            var edited = first with { Label = "Libellé corrigé", Amount = 0m, Status = ReconciliationStatus.Marked, MarkedOn = new DateOnly(2026, 2, 3), Revision = 2, ModifiedUtc = Created.AddMinutes(1) };
             var originalDigest = file.Snapshot.LedgerDigest;
             file.Save(file.Snapshot, new[] { new TransactionChange(edited, 1) });
             Assert.AreEqual(edited, file.GetTransaction(first.Id));
@@ -453,7 +453,7 @@ public sealed class LedgerStorageTests
         ExpectError(DocumentError.MigrationRequired, () => MonetaFile.Open(FileName));
         using (var migrated = MonetaBackup.Migrate(FileName, Path.Combine(directory, "migrated.moneta")))
         {
-            Assert.AreEqual(3, migrated.Snapshot.SchemaVersion);
+            Assert.AreEqual(4, migrated.Snapshot.SchemaVersion);
             Assert.AreEqual(metadata.Id, migrated.Snapshot.Id);
             Assert.AreEqual(metadata.Name, migrated.Snapshot.Name);
             Assert.AreEqual(metadata.CreatedUtc, migrated.Snapshot.CreatedUtc);

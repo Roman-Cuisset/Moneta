@@ -1,0 +1,128 @@
+<Window x:Class="Moneta.App.ReconciliationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Rapprochement bancaire" Width="1120" Height="780" MinWidth="840" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Style="{StaticResource {x:Type Window}}" AutomationProperties.AutomationId="ReconciliationWindow">
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,12">
+            <TextBlock x:Name="AccountHeading" FontSize="20" FontWeight="SemiBold" AutomationProperties.AutomationId="ReconciliationAccount" />
+            <TextBlock Text="Brouillon uniquement : valider ou rouvrir ne sauvegarde pas le dossier. Ctrl+S après fermeture pour enregistrer dans SQLite. Annuler ne change rien."
+                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReconciliationDraftNotice" />
+        </StackPanel>
+        <TabControl Grid.Row="1" x:Name="ReconciliationTabs" AutomationProperties.AutomationId="ReconciliationTabs">
+            <TabItem Header="Nouveau relevé" AutomationProperties.AutomationId="ReconciliationStatementTab">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0"><Label Content="_Date du relevé (jj/mm/aaaa)" Target="{Binding ElementName=StatementDate}" /><TextBox x:Name="StatementDate" MaxLength="10" TextChanged="StatementDate_Changed" AutomationProperties.AutomationId="StatementDate" /></StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,12,0"><Label Content="_Numéro (facultatif)" Target="{Binding ElementName=StatementNumber}" /><TextBox x:Name="StatementNumber" MaxLength="120" AutomationProperties.AutomationId="StatementNumber" /></StackPanel>
+                        <StackPanel Grid.Column="2"><Label Content="Solde _final signé du relevé" Target="{Binding ElementName=StatementClosingBalance}" /><TextBox x:Name="StatementClosingBalance" MaxLength="128" TextAlignment="Right" TextChanged="ClosingBalance_Changed" AutomationProperties.AutomationId="StatementClosingBalance" /></StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Row="1" Margin="0,8,0,6">
+                        <Label Content="Solde d’ouverture (non modifiable)" Target="{Binding ElementName=StatementOpeningBalance}" />
+                        <TextBox x:Name="StatementOpeningBalance" IsReadOnly="True" IsTabStop="False" AutomationProperties.AutomationId="StatementOpeningBalance" />
+                        <TextBlock Text="Dernier solde final validé encore actif, sinon solde initial du compte. Sélectionnez les opérations effectivement portées au relevé (NP ou P), même anciennes. Double-clic ou Espace dans le tableau : sélectionner / désélectionner."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" AutomationProperties.AutomationId="ReconciliationOpeningNotice" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="2" x:Name="LegacyWarning" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,0,0,8" AutomationProperties.AutomationId="ReconciliationLegacyWarning" />
+                    <DataGrid Grid.Row="3" x:Name="ReconciliationCandidates" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" SelectionUnit="FullRow"
+                              CanUserAddRows="False" CanUserDeleteRows="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                              PreviewKeyDown="Candidates_KeyDown" MouseDoubleClick="Candidates_DoubleClick" AutomationProperties.AutomationId="ReconciliationCandidates">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Choix" Width="60"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <CheckBox IsChecked="{Binding Selected, Mode=OneWay}" Checked="CandidateCheck_Changed" Unchecked="CandidateCheck_Changed" HorizontalAlignment="Center" AutomationProperties.AutomationId="ReconciliationCandidateCheck" AutomationProperties.Name="Inclure cette opération au relevé" />
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Date" Binding="{Binding DateText}" Width="100" />
+                            <DataGridTextColumn Header="Libellé" Binding="{Binding Original.Label}" Width="*" />
+                            <DataGridTextColumn Header="Tiers" Binding="{Binding Original.Payee.Name}" Width="150" />
+                            <DataGridTextColumn Header="Montant signé" Binding="{Binding AmountText}" Width="140" />
+                            <DataGridTextColumn Header="État" Binding="{Binding StatusText}" Width="65" />
+                            <DataGridTextColumn Header="Pointé le" Binding="{Binding MarkedOnText}" Width="105" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DockPanel Grid.Row="4" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <Button x:Name="CandidatesPrevious" Content="Précédent" Click="CandidatesPrevious_Click" Margin="0,0,6,0" AutomationProperties.AutomationId="CandidatesPrevious" />
+                            <Button x:Name="CandidatesNext" Content="Suivant" Click="CandidatesNext_Click" AutomationProperties.AutomationId="CandidatesNext" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="CandidatePageText" VerticalAlignment="Center" Margin="0,0,12,0" AutomationProperties.AutomationId="ReconciliationCandidatePage" />
+                            <Button Content="Vider la sélection" Click="ClearSelection_Click" AutomationProperties.AutomationId="ClearReconciliationSelection" />
+                            <Button Content="Actualiser" Click="RefreshCandidates_Click" Margin="6,0,0,0" AutomationProperties.AutomationId="RefreshReconciliationCandidates" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Grid Grid.Row="5" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ReconciliationSelectedCount" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationSelectedCount" />
+                        <TextBlock Grid.Column="1" x:Name="ReconciliationSelectedNet" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationSelectedNet" />
+                        <TextBlock Grid.Column="2" x:Name="ReconciliationGap" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationGap" />
+                        <Button Grid.Column="3" x:Name="ValidateReconciliation" Content="Valider au brouillon" IsEnabled="False" Click="Validate_Click" AutomationProperties.AutomationId="ValidateReconciliation" AutomationProperties.Name="Valider au brouillon, Ctrl S pour enregistrer" />
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Historique et réouverture" AutomationProperties.AutomationId="ReconciliationHistoryTab">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions><RowDefinition Height="2*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="3*" /></Grid.RowDefinitions>
+                    <DataGrid x:Name="ReconciliationHistory" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" CanUserAddRows="False" CanUserDeleteRows="False"
+                              EnableRowVirtualization="True" EnableColumnVirtualization="True" SelectionChanged="History_SelectionChanged" AutomationProperties.AutomationId="ReconciliationHistory">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Date relevé" Binding="{Binding DateText}" Width="100" />
+                            <DataGridTextColumn Header="Numéro" Binding="{Binding Session.StatementNumber}" Width="100" />
+                            <DataGridTextColumn Header="État" Binding="{Binding StateText}" Width="85" />
+                            <DataGridTextColumn Header="Ouverture" Binding="{Binding OpeningText}" Width="120" />
+                            <DataGridTextColumn Header="Clôture" Binding="{Binding ClosingText}" Width="120" />
+                            <DataGridTextColumn Header="Validation" Binding="{Binding ValidatedText}" Width="150" />
+                            <DataGridTextColumn Header="Réouverture" Binding="{Binding ReopenedText}" Width="150" />
+                            <DataGridTextColumn Header="Motif" Binding="{Binding Session.ReopenReason}" Width="200" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DockPanel Grid.Row="1" Margin="0,8,0,0">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button x:Name="HistoryPrevious" Content="Précédent" Click="HistoryPrevious_Click" Margin="0,0,6,0" AutomationProperties.AutomationId="HistoryPrevious" />
+                            <Button x:Name="HistoryNext" Content="Suivant" Click="HistoryNext_Click" AutomationProperties.AutomationId="HistoryNext" />
+                        </StackPanel>
+                        <TextBlock x:Name="HistoryPageText" VerticalAlignment="Center" AutomationProperties.AutomationId="ReconciliationHistoryPage" />
+                    </DockPanel>
+                    <DockPanel Grid.Row="2" Margin="0,10,0,10">
+                        <Button DockPanel.Dock="Right" x:Name="ReopenReconciliation" Content="Rouvrir le dernier relevé actif…" IsEnabled="False" Click="Reopen_Click" AutomationProperties.AutomationId="ReopenReconciliation" />
+                        <TextBlock Text="Historique conservé : instantanés avant validation et événements immuables. Seul le dernier relevé actif peut être rouvert, avec motif et confirmation."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,0,12,0" AutomationProperties.AutomationId="ReconciliationHistoryNotice" />
+                    </DockPanel>
+                    <TabControl Grid.Row="3" AutomationProperties.AutomationId="ReconciliationDetailsTabs">
+                        <TabItem Header="Opérations figées" AutomationProperties.AutomationId="ReconciliationEntriesTab">
+                            <Grid><Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="100" /></Grid.RowDefinitions>
+                                <DataGrid x:Name="ReconciliationEntries" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single"
+                                          SelectionChanged="Entry_SelectionChanged" EnableRowVirtualization="True" EnableColumnVirtualization="True" AutomationProperties.AutomationId="ReconciliationEntries">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Date" Binding="{Binding DateText}" Width="100" />
+                                        <DataGridTextColumn Header="Libellé d’origine" Binding="{Binding Original.Label}" Width="*" />
+                                        <DataGridTextColumn Header="Montant signé" Binding="{Binding AmountText}" Width="140" />
+                                        <DataGridTextColumn Header="État avant validation" Binding="{Binding StatusText}" Width="140" />
+                                        <DataGridTextColumn Header="Pointé le" Binding="{Binding MarkedOnText}" Width="100" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBox Grid.Row="1" x:Name="EntrySnapshotText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ReconciliationEntrySnapshot" AutomationProperties.Name="Instantané intégral de l’opération avant validation" />
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Événements" AutomationProperties.AutomationId="ReconciliationEventsTab">
+                            <DataGrid x:Name="ReconciliationEvents" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" AutomationProperties.AutomationId="ReconciliationEvents">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Date / heure" Binding="{Binding OccurredText}" Width="170" />
+                                    <DataGridTextColumn Header="Événement" Binding="{Binding KindText}" Width="130" />
+                                    <DataGridTextColumn Header="Motif" Binding="{Binding Event.Reason}" Width="*" />
+                                    <DataGridTextColumn Header="Identifiant" Binding="{Binding Event.Id}" Width="260" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <TextBlock Grid.Row="2" x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,10,0,0"
+                   AutomationProperties.AutomationId="ReconciliationError" AutomationProperties.LiveSetting="Assertive" />
+        <Button Grid.Row="3" Content="Annuler / Fermer sans changement" IsCancel="True" HorizontalAlignment="Right" Margin="0,12,0,0" AutomationProperties.AutomationId="CancelReconciliation" />
+    </Grid>
+</Window>

@@ -77,6 +77,8 @@ public sealed record Transaction(
     public DateTimeOffset ModifiedUtc { get; init; } = DateTimeOffset.UtcNow;
     public long Revision { get; init; } = 1;
     public bool IsDeleted { get; init; }
+    public DateOnly? MarkedOn { get; init; }
+    public Guid? ReconciliationId { get; init; }
 }
 
 public sealed record DemoPortfolio(

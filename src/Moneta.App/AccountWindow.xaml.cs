@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows;
 using Moneta.Core;
 using Moneta.Core.Presentation;
@@ -23,12 +22,6 @@ public partial class AccountWindow : Window
     }
     private void Add_Click(object sender, RoutedEventArgs e)
     {
-        if (!decimal.TryParse(OpeningBalance.Text, NumberStyles.Number, CultureInfo.GetCultureInfo("fr-FR"), out var amount))
-        {
-            ErrorText.Text = "Montant invalide : utilisez le format français, par exemple 1 234,56.";
-            OpeningBalance.Focus();
-            return;
-        }
         if (NativeCurrency.SelectedItem is not Currency currency)
         {
             ErrorText.Text = "Choisissez une devise native.";
@@ -36,6 +29,7 @@ public partial class AccountWindow : Window
         }
         try
         {
+            var amount = MoneyInput.ParseFrench(OpeningBalance.Text, currency, allowNegative: true);
             if (_model.IsDemo) _model.AddDemoAccount(AccountName.Text, currency, AccountType.Text, amount, Notes.Text);
             else _model.AddAccount(AccountName.Text, currency, AccountType.Text, amount, Notes.Text);
             DialogResult = true;

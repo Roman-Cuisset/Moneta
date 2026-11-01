@@ -23,5 +23,12 @@ public static class WindowCommands
     public static RoutedUICommand NewTransaction { get; } = new("Nouvelle opération", nameof(NewTransaction), typeof(WindowCommands));
     public static RoutedUICommand EditTransaction { get; } = new("Modifier une opération", nameof(EditTransaction), typeof(WindowCommands));
     public static RoutedUICommand DeleteTransaction { get; } = new("Supprimer une opération", nameof(DeleteTransaction), typeof(WindowCommands));
+    public static RoutedUICommand TogglePointing { get; } = new("Basculer le pointage", nameof(TogglePointing), typeof(WindowCommands));
+    public static RoutedUICommand MarkTransactions { get; } = new("Pointer", nameof(MarkTransactions), typeof(WindowCommands));
+    public static RoutedUICommand UnmarkTransactions { get; } = new("Dépointer", nameof(UnmarkTransactions), typeof(WindowCommands));
+    public static RoutedUICommand MarkingDate { get; } = new("Date de pointage", nameof(MarkingDate), typeof(WindowCommands));
+    public static RoutedUICommand ShowMarkingDates { get; } = new("Afficher les dates de pointage", nameof(ShowMarkingDates), typeof(WindowCommands));
+    public static RoutedUICommand Reconcile { get; } = new("Rapprochement bancaire", nameof(Reconcile), typeof(WindowCommands));
+    public static RoutedUICommand ReleaseLegacyReconciliation { get; } = new("Réexaminer un état rapproché hérité", nameof(ReleaseLegacyReconciliation), typeof(WindowCommands));
     public static RoutedUICommand RefreshRates { get; } = new("Actualiser les cours", nameof(RefreshRates), typeof(WindowCommands));
 }

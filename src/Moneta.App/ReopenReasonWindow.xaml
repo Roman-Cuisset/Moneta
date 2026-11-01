@@ -1,0 +1,20 @@
+<Window x:Class="Moneta.App.ReopenReasonWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Motif" Width="560" Height="400" MinWidth="440" MinHeight="330"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Style="{StaticResource {x:Type Window}}" AutomationProperties.AutomationId="ReopenReasonWindow">
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <TextBlock x:Name="ReasonNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" AutomationProperties.AutomationId="ReopenReasonNotice" />
+        <Label Grid.Row="1" Content="_Motif obligatoire (1 000 caractères maximum)" Target="{Binding ElementName=ReopenReason}" Margin="0,12,0,0" />
+        <TextBox Grid.Row="2" x:Name="ReopenReason" MaxLength="1000" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"
+                 AutomationProperties.AutomationId="ReopenReason" AutomationProperties.Name="Motif obligatoire" />
+        <TextBlock Grid.Row="3" x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,10,0,0"
+                   AutomationProperties.AutomationId="ReopenReasonError" AutomationProperties.LiveSetting="Assertive" />
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0" AutomationProperties.AutomationId="CancelReopenReason" />
+            <Button Content="Confirmer le motif" IsDefault="True" Click="Confirm_Click" AutomationProperties.AutomationId="ConfirmReopenReason" />
+        </StackPanel>
+    </Grid>
+</Window>
