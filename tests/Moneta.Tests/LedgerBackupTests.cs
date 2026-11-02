@@ -280,7 +280,7 @@ public sealed class LedgerBackupTests
             using var migrated = restore
                 ? MonetaBackup.Restore(input, PathFor("upgraded.moneta"))
                 : MonetaBackup.Migrate(input, PathFor("upgraded.moneta"));
-            Assert.AreEqual(4, migrated.Snapshot.SchemaVersion);
+            Assert.AreEqual(MonetaFile.CurrentSchemaVersion, migrated.Snapshot.SchemaVersion);
             Assert.AreEqual(rows.LongLength, migrated.Snapshot.OperationCount);
             Assert.AreEqual(0L, migrated.Snapshot.ReconciliationCount);
             Assert.AreEqual(0L, migrated.Snapshot.ReconciliationEventCount);
@@ -392,6 +392,7 @@ public sealed class LedgerBackupTests
 
     private static void AssertLedger(FinancialDocument expected, IEnumerable<Transaction> rows, MonetaFile actual)
     {
+        BackupRestoreTests.AssertCompleteSnapshot(expected, actual.Snapshot);
         Assert.AreEqual(expected.Id, actual.Snapshot.Id);
         Assert.AreEqual(expected.Name, actual.Snapshot.Name);
         Assert.AreEqual(expected.LedgerDigest, actual.Snapshot.LedgerDigest);
@@ -496,8 +497,14 @@ public sealed class LedgerBackupTests
                     writer.WriteEndObject();
                 }
                 writer.WriteEndArray();
-                writer.WriteString("ledgerDigest", snapshot.LedgerDigest);
+                if (snapshot.SchemaVersion == 3) writer.WriteString("ledgerDigest", snapshot.LedgerDigest);
                 writer.WriteNumber("operationCount", snapshot.OperationCount);
+            }
+            if (snapshot.SchemaVersion == 4)
+            {
+                writer.WriteString("v4LedgerDigest", snapshot.LedgerDigest);
+                writer.WriteNumber("reconciliationCount", snapshot.ReconciliationCount);
+                writer.WriteNumber("reconciliationEventCount", snapshot.ReconciliationEventCount);
             }
             writer.WriteEndObject();
         }

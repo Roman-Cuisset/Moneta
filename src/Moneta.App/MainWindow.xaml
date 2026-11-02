@@ -34,6 +34,10 @@
         <CommandBinding Command="{x:Static local:WindowCommands.ShowMarkingDates}" Executed="ShowMarkingDates_Executed" CanExecute="ShowMarkingDates_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Reconcile}" Executed="Reconcile_Executed" CanExecute="Reconcile_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.ReleaseLegacyReconciliation}" Executed="ReleaseLegacy_Executed" CanExecute="ReleaseLegacy_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.NewTransfer}" Executed="NewTransfer_Executed" CanExecute="NewTransfer_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.OpenTransfer}" Executed="OpenTransfer_Executed" CanExecute="ReadTransfer_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.NavigateTransfer}" Executed="NavigateTransfer_Executed" CanExecute="ReadTransfer_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.DeleteTransfer}" Executed="DeleteTransfer_Executed" CanExecute="DeleteTransfer_CanExecute" />
     </Window.CommandBindings>
     <Window.Resources>
         <!-- Géométries originales Moneta : aucune ressource ni forme extraite de BankPerfect. -->
@@ -164,7 +168,10 @@
                         <MenuItem Header="Date de pointage…" Command="{x:Static local:WindowCommands.MarkingDate}" InputGestureText="Ctrl+Maj+P (registre)" AutomationProperties.AutomationId="MarkingDateCommand" /><Separator />
                         <MenuItem Header="Saisie multiple…" InputGestureText="F2" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Modifier un groupe…" InputGestureText="Ctrl+M" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="_Transfert de compte à compte…" InputGestureText="Ctrl+Maj+T" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Virement…" Command="{x:Static local:WindowCommands.NewTransfer}" InputGestureText="Ctrl+Maj+T (registre)" AutomationProperties.AutomationId="NewTransferCommand" />
+                        <MenuItem Header="Ouvrir le virement lié…" Command="{x:Static local:WindowCommands.OpenTransfer}" AutomationProperties.AutomationId="OpenTransferCommand" />
+                        <MenuItem Header="Autre côté du virement" Command="{x:Static local:WindowCommands.NavigateTransfer}" AutomationProperties.AutomationId="NavigateTransferCommand" />
+                        <MenuItem Header="Supprimer le virement entier…" Command="{x:Static local:WindowCommands.DeleteTransfer}" AutomationProperties.AutomationId="DeleteTransferCommand" />
                         <MenuItem Header="Convertir une ligne en transfert…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Ventiler l'opération…" InputGestureText="F6" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Champs supplémentaires…" InputGestureText="F3" Style="{StaticResource UnavailableMenuItem}" />
@@ -228,7 +235,7 @@
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Graphiques"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Graphiques" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Échéancier"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Échéancier" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Transfert"><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Transfert" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.NewTransfer}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Virement" AutomationProperties.AutomationId="NewTransferButton" ToolTip="Virement lié dans le dossier : deux montants natifs exacts, frais séparés."><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Virement" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                 </ToolBar>
             </ToolBarTray>
         </Border>
@@ -316,9 +323,14 @@
                         <KeyBinding Key="P" Modifiers="Control+Shift" Command="{x:Static local:WindowCommands.MarkingDate}" />
                         <KeyBinding Key="R" Modifiers="Control+Shift" Command="{x:Static local:WindowCommands.Reconcile}" />
                         <KeyBinding Key="F11" Command="{x:Static local:WindowCommands.ShowMarkingDates}" />
+                        <KeyBinding Key="T" Modifiers="Control+Shift" Command="{x:Static local:WindowCommands.NewTransfer}" />
                     </DataGrid.InputBindings>
                     <DataGrid.ContextMenu>
                         <ContextMenu>
+                            <MenuItem Header="Ouvrir le virement lié…" Command="{x:Static local:WindowCommands.OpenTransfer}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <MenuItem Header="Autre côté du virement" Command="{x:Static local:WindowCommands.NavigateTransfer}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <MenuItem Header="Supprimer le virement entier…" Command="{x:Static local:WindowCommands.DeleteTransfer}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <Separator />
                             <MenuItem Header="Pointer la sélection" Command="{x:Static local:WindowCommands.MarkTransactions}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                             <MenuItem Header="Dépointer la sélection" Command="{x:Static local:WindowCommands.UnmarkTransactions}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                             <MenuItem Header="Date de pointage…" Command="{x:Static local:WindowCommands.MarkingDate}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
@@ -332,7 +344,17 @@
                         <DataGridTextColumn Header="Mode" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
                         <DataGridTemplateColumn Header="Tiers / libellé" HeaderTemplate="{StaticResource RegisterHeader}" Width="2*" MinWidth="170">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
-                                <TextBlock Text="{Binding PayeeName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PayeeName}" />
+                                <TextBlock Text="{Binding PayeeName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PayeeName}">
+                                    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Style.Triggers><DataTrigger Binding="{Binding IsTransfer}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                                </TextBlock>
+                                <DockPanel>
+                                    <DockPanel.Style><Style TargetType="DockPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsTransfer}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></DockPanel.Style>
+                                    <Button Content="↔" Command="{x:Static local:WindowCommands.NavigateTransfer}" CommandParameter="{Binding}" CommandTarget="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}}" DockPanel.Dock="Right"
+                                            Focusable="False" IsTabStop="False" Padding="3,0" MinHeight="18" Height="18" Margin="4,0,0,0" AutomationProperties.AutomationId="NavigateTransferCell" AutomationProperties.Name="Autre côté du virement" ToolTip="Afficher l’autre compte et sélectionner le mouvement lié." />
+                                    <Button Content="{Binding TransferText}" Command="{x:Static local:WindowCommands.OpenTransfer}" CommandParameter="{Binding}" CommandTarget="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            HorizontalAlignment="Left" Focusable="False" IsTabStop="False" Padding="0" MinHeight="18" Height="18" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource AccentBrush}"
+                                            AutomationProperties.AutomationId="OpenTransferCell" AutomationProperties.Name="Ouvrir le virement lié" ToolTip="Consulter ou modifier le virement entier, jamais une jambe isolée." />
+                                </DockPanel>
                                 <TextBlock Text="{Binding Label}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}" />
                             </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

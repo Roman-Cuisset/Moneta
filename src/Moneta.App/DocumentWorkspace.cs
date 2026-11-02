@@ -45,13 +45,14 @@ public sealed class DocumentWorkspace : IDisposable
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(newPath);
             var candidate = _file is null
-                ? MonetaFile.Create(newPath, snapshot, model.PendingChanges)
-                : MonetaBackup.SaveAs(_file, newPath, snapshot, model.PendingChanges, model.PendingReconciliations);
+                ? MonetaFile.Create(newPath, snapshot, model.PendingChanges, model.PendingTransfers)
+                : MonetaBackup.SaveAs(_file, newPath, snapshot, model.PendingChanges, model.PendingReconciliations,
+                    model.PendingTransfers);
             try { _file?.Close(); }
             catch { candidate.Dispose(); throw; }
             _file = candidate;
         }
-        else _file.Save(snapshot, model.PendingChanges, model.PendingReconciliations);
+        else _file.Save(snapshot, model.PendingChanges, model.PendingReconciliations, model.PendingTransfers);
         model.SetLedgerSource(_file);
         model.AcceptSaved(_file.Snapshot);
         Changed?.Invoke(this, EventArgs.Empty);

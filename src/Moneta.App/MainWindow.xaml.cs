@@ -225,13 +225,17 @@ public partial class MainWindow : Window
     {
         if (CanEditLedger && _workspace.Model is { } model &&
             SingleSelectedRow is { Transaction.Status: not ReconciliationStatus.Reconciled } row)
-            new TransactionWindow(model, row.Transaction) { Owner = this }.ShowDialog();
+        {
+            if (row.TransferId is { } id) OpenTransfer(id);
+            else new TransactionWindow(model, row.Transaction) { Owner = this }.ShowDialog();
+        }
         CommandManager.InvalidateRequerySuggested();
     }
     private void DeleteTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (!CanEditLedger || _workspace.Model is not { } model ||
             SingleSelectedRow is not { Transaction.Status: not ReconciliationStatus.Reconciled } row) return;
+        if (row.TransferId is { } transferId) { DeleteWholeTransfer(transferId); return; }
         var value = row.Transaction;
         if (MessageBox.Show(this,
             $"Retirer l’opération « {value.Label} » du {row.DateText} ?\n\n{(value.Status == ReconciliationStatus.Marked ? "Cette opération est pointée : le solde pointé sera recalculé.\n\n" : "")}La suppression sera enregistrée avec Ctrl+S. Une trace sera conservée dans le dossier ; aucune commande de récupération n’est encore disponible.",

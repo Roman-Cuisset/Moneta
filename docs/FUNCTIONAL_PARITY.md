@@ -2,7 +2,7 @@
 
 ## Portée et légende
 
-État mission 7B : dossiers/comptes, registre, pointage et rapprochements/historique persistants, schéma 4, sauvegarde/restauration complètes. Cycle manuel Ctrl+S ; virements, change et import natif restent futurs. Les preuves BankPerfect sont distinctes des conventions de sécurité Moneta et des comportements restant à observer.
+État mission 7C : dossiers/comptes, registre, pointage/rapprochements et virements liés même devise/multidevises avec frais persistants, schéma 5 ; sauvegarde/restauration du graphe complet. Cycle manuel Ctrl+S ; cours officiels/valorisation et import natif restent futurs. Les preuves BankPerfect sont distinctes des conventions de sécurité Moneta et des comportements restant à observer ; aucune parité parfaite n’est déduite de 7C.
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.
@@ -21,7 +21,7 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 
 | Fonction BankPerfect | Emplacement connu / preuve | État de la preuve | Cible Moneta | Réalisation |
 |---|---|---|---|---|
-| Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | Réalisé pour comptes et opérations simples persistants, dossiers isolés ; autres domaines encore absents |
+| Fichier regroupant plusieurs comptes, plusieurs fichiers possibles | M02 ; fichier `.bp` | Vérifié — manuel | Un dossier financier indépendant **`.moneta` SQLite** avec plusieurs comptes ; conserver la logique ouvrir/enregistrer | Réalisé pour comptes, registre, rapprochements et virements persistants, dossiers isolés ; autres domaines encore absents |
 | Nouveau fichier, solde initial | M02 : Comptes > Créer un nouveau fichier de comptes | Vérifié — manuel ; emplacement local à confirmer | Même commande et parcours | Partiel : nouveau dossier vierge nommé, solde initial par compte ajouté ; pas de solde initial global au dialogue de création |
 | Ouvrir, enregistrer, enregistrer sous, imprimer | M02, M18 ; Fichier pour ouvrir/enregistrer ; détails des autres chemins à relever | Vérifié — manuel ; arborescence partielle | Mêmes gestes et raccourcis ; **Fichier > Ouvrir** ouvre `.moneta` ou propose la conversion d'un `.bp` ; aucun enregistrement vers `.bp` | Partiel : ouvrir/enregistrer/enregistrer sous/sauvegarde/restauration réalisés sur `.moneta` ; `.bp` refusé proprement et import non implémenté ; impression absente |
 | Gestion et changement de compte | M02 : Comptes > Gestion des comptes ; liste sous les menus | Vérifié — manuel | Créer, modifier, supprimer selon règles de sécurité ; changement de compte au même endroit | Partiel : sélection et ajout persistant sans plafond produit ; modification/suppression non proposées, drapeau archivé seulement conservé |
@@ -42,7 +42,7 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 | Modification groupée | M05 ; `Scripts/ModifyGroup/modifygroup.ini:2-8` : Opérations + contexte | Vérifié — manuel et local | Modification prévisualisée d'une sélection | À développer |
 | Remplacer du texte | M05 : Opérations > Remplacer ; `Scripts/Replace/search_replace.ini:2-7` : Édition | **À confirmer — chemins contradictoires** | Ne pas choisir le menu définitif sans capture locale | À développer |
 | Ventilation par catégories | M15 ; `Scripts/Ventilate/ventilate.ini:2-6` : Opérations + contexte | Vérifié — manuel et local ; détails de regroupement à confirmer | Ventilation équilibrée, total inchangé ; vue fidèle malgré modèle interne plus sûr | À développer |
-| Virement entre comptes et navigation entre ses lignes | M03 ; `Scripts/Transfer/transfer.ini:2-9` : Opérations + barre d'outils | Vérifié — manuel et local | Deux jambes liées et atomiques, navigation réciproque | À développer |
+| Virement entre comptes et navigation entre ses lignes | M03 ; `Scripts/Transfer/transfer.ini:2-9` : Opérations + barre d'outils | Vérifié — manuel et local | Deux jambes liées et atomiques, navigation réciproque | **Réalisé 7C** : Opérations → Virement et outil existant, Ctrl+Maj+T dans le registre ; navigation UUID hors page comprise, correction/suppression d’ensemble, frais optionnels. Commandes liées explicites et protections Moneta ; détails BP non observés non déclarés identiques |
 | Convertir une ligne en transfert | `Scripts/Transfer/convert_line_to_transfer.ini:2-8` : Opérations + contexte | Vérifié — local | Conversion atomique avec contrôle des lignes déjà existantes | À développer |
 | Filtres par colonne, date, texte et montant | M04 : ligne d'en-tête du relevé | Vérifié — manuel | Reprendre la grammaire documentée, pas seulement une recherche générique | À développer |
 | Filtres enregistrés et périodes dynamiques | M04 ; `Scripts/Filters/setfilters.ini:2-9` : Affichage + barre d'outils déroulante | Vérifié — manuel et local | Périodes glissantes, application et réinitialisation rapides | À développer |
@@ -96,24 +96,37 @@ La [cartographie des commandes](UI_MENU_MAP.md) détaille fonction, fenêtre, co
 - Premier relevé part de l’ouverture du compte ; suivants de la dernière clôture active. Des anciens non rapprochés peuvent être candidats. Un R hérité sans session reste non attesté ; libération motivée auditable, pas de relevé inventé.
 - Brouillon de validation/réouverture/libération à enregistrer avant autre mutation du registre. F11/Ctrl+Maj+P/P/Espace conservés ; Maj+P et Ctrl+Maj+R sont des choix Moneta, non des raccourcis historiques prétendument vérifiés.
 
+## Conventions de virements livrées en mission 7C
+
+- Deux comptes actifs distincts du même dossier ; principal strictement positif en devise native exacte, égalité hors frais si même devise, deux montants réels libres sinon. Magnitudes stockées avec sens séparé ; impact −débit/+crédit/−frais, sans valorisation d’affichage ni somme implicite de monnaies différentes.
+- Rapport exact **crédit/débit principal**, hors frais, reçu pour **1 unité source**, conservé par les deux montants. Le quotient décimal n’est qu’un aperçu **approximatif**, omis s’il déborde ou devient zéro. Date du change et source déclarée/non vérifiée, défaut « Montants saisis par l’utilisateur » ; aucun taux officiel ou conversion imposée.
+- Frais séparés sur source/cible/troisième compte actif dans sa devise native. Premier ajout positif ; frais déjà ajouté, brouillon compris, ramenable à zéro en conservant UUID/compte/lien. Comptes principaux fixes dès création, compte des frais fixe dès ajout ; correction de compte par suppression entière puis recréation, pas de remplacement de jambe.
+- Pointage indépendant pour chaque jambe ; une seule R, frais compris et hors écran, rend l’ensemble consultable seulement et interdit toute correction/suppression financière. Réouverture/libération puis Ctrl+S obligatoire. Correction P conservant état/date avec confirmation ; aucune mutation financière isolée d’une jambe, même par l’API de stockage.
+- Tout reste brouillon jusqu’au Save manuel, y compris sur dossier neuf ; SaveAs, concurrence, révisions et transaction couvrent l’ensemble. Suppression avant premier Save retire les brouillons ; suppression persistée conserve toutes les traces/liens ; frais nouveaux non enregistrés abandonnés si le principal persistant est supprimé.
+- Schéma 5 additif, `Transaction` et instantanés V1 historiques inchangés ; migrations 1..4 sur copie et certificats originaux conservés. Digest/restauration couvrent entités, liens, frais, tombstones et historique, pas seulement des soldes égaux.
+- **Ouvrir le virement lié… / Autre côté du virement / Supprimer le virement entier…** sont des commandes Moneta, dans Opérations/contexte ; bouton ↔ dans la ligne. Débit → crédit ; crédit/frais → débit, page de 100 chargée et sélectionnée par UUID. Ni nouveaux emplacements BP prétendus observés, ni transfert inter-dossiers, ni conversion d’une opération ordinaire en virement.
+- Preuves acquises : parcours Windows synthétique clair/sombre avec création/correction/frais, P/R indépendant, consultation/refus R, fermeture/réouverture, sauvegarde à chaud puis restauration ouverte ; passages ciblés réussis après corrections, chiffres/limites dans le README. Les résultats 7B restent historiques ; aucun total final 7C ni mesure de performance non exécutée annoncé.
+- La provenance BP reste prospective : UUID stables pour une future correspondance démontrée, sans faux identifiant source, faux jeu BP ou import annoncé. Cours officiels et comparaison après rafraîchissement relèvent d’une mission séparée ; conversion de ligne et autres parités absentes restent explicitement à développer.
+
+
 ## Ajouts demandés pour Moneta
 
 Ces capacités ne sont **pas attribuées à BankPerfect** sans preuve.
 
 | Besoin | État BankPerfect | Cible Moneta | Statut |
 |---|---|---|---|
-| EUR, BYN, RUB et autres codes monétaires | Le convertisseur et les monnaies de comptes sont vérifiés ; support BYN/RUB complet non établi | Registre extensible, précision par monnaie et dates de validité | À développer |
+| EUR, BYN, RUB et autres codes monétaires | Le convertisseur et les monnaies de comptes sont vérifiés ; support BYN/RUB complet non établi | Registre extensible, précision par monnaie et dates de validité | Registre/précision et comptes natifs réalisés ; historique des périodes monétaires et convertisseur futurs |
 | Cours officiels NBRB et étude CBR, unités et dates d'effet | Non établi dans BankPerfect ; contrats tiers étudiés dans ARCHITECTURE | NBRB prioritaire ; CBR alternative explicite, échelles variables, aucune substitution ou combinaison de sources cachée | À développer |
 | Historique, cache hors ligne et taux manuel | Non établi pour les exigences demandées | Cours datés/sourcés, date demandée distincte de la date réelle ; dernier disponible antérieur explicitement indiqué ; manuel étiqueté utilisateur | À développer |
 | Soldes convertis en euros | Totalisation et deux monnaies documentées ; équivalence au besoin non prouvée | Total EUR avec date/source du cours et absence de cours explicite | À développer |
-| Transferts entre monnaies différentes | Transferts vérifiés ; garanties multidevises non établies | Deux montants natifs figés, taux effectif, frais et transaction atomique | À développer |
-| Restauration et migration financièrement vérifiées | Restauration documentée ; contrôles internes inconnus | Vérifier intégrité, comptes, soldes, pointages, liens et anomalies | À développer |
-| Format indépendant `.moneta` et association Windows | Sans équivalent BankPerfect revendiqué | SQLite versionné ; identité vérifiée au-delà de l'extension ; association `.moneta` consentie, jamais prise de contrôle de `.bp` | À développer |
-| Identité visuelle originale | Les ressources BankPerfect restent en référence uniquement | Aucune réutilisation de logo, icône, image, illustration ou ressource extraite ; navigation fidèle mais graphisme original à valider séparément | À développer |
+| Transferts entre monnaies différentes | Transferts vérifiés ; garanties multidevises non établies | Deux montants natifs figés, rapport effectif, frais et transaction atomique | **Réalisé 7C** avec source déclarée non vérifiée, frais séparés et ratio exact crédit/débit ; cours officiel indicatif absent |
+| Restauration et migration financièrement vérifiées | Restauration documentée ; contrôles internes inconnus | Vérifier intégrité, comptes, soldes, pointages, liens et anomalies | Réalisé sur `.moneta` connu 1..5 : graphe complet et historique, certificats 1..4 conservés ; aucune compatibilité `.bp` déduite |
+| Format indépendant `.moneta` et association Windows | Sans équivalent BankPerfect revendiqué | SQLite versionné ; identité vérifiée au-delà de l'extension ; association `.moneta` consentie, jamais prise de contrôle de `.bp` | Format schéma 5 réalisé ; association Windows non réalisée |
+| Identité visuelle originale | Les ressources BankPerfect restent en référence uniquement | Aucune réutilisation de logo, icône, image, illustration ou ressource extraite ; navigation fidèle mais graphisme original à valider séparément | Ressources Moneta originales et thèmes réalisés ; identité définitive et qualification visuelle complète non acquises |
 
 ## Raccourcis à préserver
 
-Source par défaut : M18. « Local » désigne la déclaration INI correspondante dans l'inventaire d'audit. Tous sont **à développer dans Moneta**. La priorité des touches lorsque le curseur est dans une cellule ou une zone de texte reste à relever en situation.
+Source par défaut : M18. « Local » désigne la déclaration INI correspondante dans l'inventaire d'audit. La table conserve la preuve historique, pas une promesse que toutes ces touches fonctionnent dans Moneta. Sont notamment opérationnels Ctrl+N/O/S, F12, Ctrl+Entrée/Maj+Entrée, Suppr/Ctrl+Suppr, P/Espace, Ctrl+Maj+P, F11 et **Ctrl+Maj+T** ; les gestes de registre restent limités à son DataGrid, sans interception des champs texte. État détaillé dans UI_MENU_MAP.
 
 | Touche | Action | Preuve / réserve |
 |---|---|---|
@@ -156,7 +169,7 @@ Source par défaut : M18. « Local » désigne la déclaration INI correspondant
 | Ctrl+Maj+C | Calculatrice | M18 + local Calc |
 | Ctrl+Maj+N | Notes | M18 + local Notes |
 | Ctrl+Maj+P | Modifier la date de pointage | M18 |
-| Ctrl+Maj+T | Transfert de compte à compte | M03, M18 + local Transfer |
+| Ctrl+Maj+T | Transfert de compte à compte | M03, M18 + local Transfer ; **réalisé Moneta 7C, uniquement dans le registre** |
 | P / Espace | Pointer | M03 ; contexte du tableau, pas de la saisie |
 | Entrée dans Montant | Ajouter l'opération | M03 ; contexte à préserver |
 | Flèche bas / haut dans Date | Avancer / reculer d'un jour | M03 |

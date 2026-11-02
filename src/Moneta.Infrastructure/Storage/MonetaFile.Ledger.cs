@@ -126,12 +126,14 @@ public sealed partial class MonetaFile
             }
             reader.Close();
             var historyCounts = metadata.SchemaVersion >= 4 ? ValidateAndHashReconciliations(connection, metadata, lookup, digest, transaction) : (Sessions: 0L, Events: 0L);
+            var transferCount = metadata.SchemaVersion >= 5 ? ValidateAndHashTransfers(connection, metadata, lookup, digest, transaction) : 0L;
             return metadata with
             {
                 LedgerDigest = Convert.ToHexString(digest.GetHashAndReset()), OperationCount = count,
                 AccountBalances = new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(balances),
                 AccountPointedBalances = metadata.SchemaVersion >= 4 ? new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(pointed) : null,
-                ReconciliationCount = historyCounts.Sessions, ReconciliationEventCount = historyCounts.Events
+                ReconciliationCount = historyCounts.Sessions, ReconciliationEventCount = historyCounts.Events,
+                TransferCount = transferCount
             };
         }
         catch (Exception exception) when (exception is ArgumentException or OverflowException or KeyNotFoundException)

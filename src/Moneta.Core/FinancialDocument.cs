@@ -8,7 +8,7 @@ public sealed record FinancialDocument(
     IReadOnlyList<Currency> Currencies,
     IReadOnlyList<Account> Accounts)
 {
-    public int SchemaVersion { get; init; } = 4;
+    public int SchemaVersion { get; init; } = 5;
     public Guid? SelectedAccountId { get; init; }
     public IReadOnlyList<LedgerCategory> Categories { get; init; } = Array.Empty<LedgerCategory>();
     public IReadOnlyList<LedgerPayee> Payees { get; init; } = Array.Empty<LedgerPayee>();
@@ -20,6 +20,7 @@ public sealed record FinancialDocument(
     public IReadOnlyDictionary<Guid, decimal>? AccountPointedBalances { get; init; }
     public long ReconciliationCount { get; init; }
     public long ReconciliationEventCount { get; init; }
+    public long TransferCount { get; init; }
 
     public static FinancialDocument New(string name)
     {

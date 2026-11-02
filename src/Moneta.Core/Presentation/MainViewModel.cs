@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Moneta.Core.Presentation;
 
-public sealed partial class MainViewModel : INotifyPropertyChanged
+public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSource
 {
     private static readonly PropertyChangedEventArgs AccountChanged = new(nameof(SelectedAccount));
     private static readonly PropertyChangedEventArgs RowsChanged = new(nameof(Rows));
@@ -153,6 +153,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         // SQL has already committed. A refresh error must not resurrect committed drafts.
         _document = snapshot;
         _pending.Clear();
+        _pendingTransfers.Clear();
         _pendingReconciliations = ReconciliationBatch.Empty;
         foreach (var summary in _accounts)
             if (snapshot.AccountBalances?.TryGetValue(summary.Account.Id, out var balance) == true)
@@ -171,6 +172,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             SetLedgerError($"Enregistrement effectué ; lecture du registre impossible : {exception.Message}");
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingChanges)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingTransfers)));
         if (IsDirty)
         {
             IsDirty = false;
@@ -202,6 +204,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     {
         var account = EditableAccount();
         var previous = FindEditable(id, expectedRevision, account);
+        EnsureOrdinaryTransaction(id);
         EnsureNotReconciled(previous);
         var catalog = new DraftCatalog(CaptureDocument());
         var originalRevision = _pending.TryGetValue(id, out var pending) ? pending.ExpectedRevision : previous.Revision;
@@ -217,6 +220,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     {
         var account = EditableAccount();
         var previous = FindEditable(id, expectedRevision, account);
+        EnsureOrdinaryTransaction(id);
         EnsureNotReconciled(previous);
         if (_pending.TryGetValue(id, out var pending) && pending.ExpectedRevision == 0)
         {
@@ -290,15 +294,17 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         return LedgerProjection.ReadPending(account, offset, PageSize, pending, anchorId);
     }
 
-    private IReadOnlyList<LedgerRow> BuildRows(LedgerPage page)
+    private IReadOnlyList<LedgerRow> BuildRows(LedgerPage page, IReadOnlyDictionary<Guid, TransferChange>? transfers = null)
     {
         var balance = page.BalanceBeforePage;
         var rows = new LedgerRow[page.Transactions.Count];
+        var links = BuildTransferLinks(page, transfers ?? _pendingTransfers);
         for (var index = 0; index < rows.Length; index++)
         {
             var transaction = page.Transactions[index];
             balance = checked(balance + FinancialRules.SignedAmount(transaction));
-            rows[index] = new LedgerRow(transaction, balance, _showMarkingDates);
+            rows[index] = new LedgerRow(transaction, balance, _showMarkingDates,
+                links.TryGetValue(transaction.Id, out var transferId) ? transferId : null);
         }
         return Array.AsReadOnly(rows);
     }
@@ -470,7 +476,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         var ledger = value is null ? null : _ledgers[value.Account.Id];
         _rows = rows ?? ledger?.Rows ?? Array.Empty<LedgerRow>();
         if (rows is null && _showMarkingDates)
-            _rows = Array.AsReadOnly(_rows.Select(row => new LedgerRow(row.Transaction, row.Balance, true)).ToArray());
+            _rows = Array.AsReadOnly(_rows.Select(row => new LedgerRow(row.Transaction, row.Balance, true, row.TransferId)).ToArray());
         _pageOffset = page?.Offset ?? 0;
         _totalCount = page?.TotalCount ?? 0;
         if (page is not null) value!.UpdateBalance(page.AccountBalance);

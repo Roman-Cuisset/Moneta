@@ -18,6 +18,7 @@ public sealed record LedgerPage(
     decimal AccountBalance, long TotalCount, int Offset)
 {
     public AccountLedgerTotals? Totals { get; init; }
+    public IReadOnlyDictionary<Guid, Guid> TransferIds { get; init; } = new Dictionary<Guid, Guid>();
 }
 
 // Storage supplies only the requested page; pending edits remain private to the workspace until Save.

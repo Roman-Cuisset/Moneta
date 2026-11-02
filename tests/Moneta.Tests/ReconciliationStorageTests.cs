@@ -456,7 +456,7 @@ public sealed class ReconciliationStorageTests
         var before = File.ReadAllBytes(FileName);
         Assert.AreEqual(DocumentError.MigrationRequired, Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(FileName)).Error);
         using var migrated = MonetaBackup.Migrate(FileName, Path.Combine(directory, "migrated.moneta"));
-        Assert.AreEqual(4, migrated.Snapshot.SchemaVersion);
+        Assert.AreEqual(5, migrated.Snapshot.SchemaVersion);
         Assert.AreEqual(metadata.Id, migrated.Snapshot.Id); Assert.AreEqual(metadata.CreatedUtc, migrated.Snapshot.CreatedUtc);
         Assert.AreEqual(metadata.ModifiedUtc, migrated.Snapshot.ModifiedUtc);
         Assert.AreEqual((long)rows.Length, migrated.Snapshot.OperationCount);

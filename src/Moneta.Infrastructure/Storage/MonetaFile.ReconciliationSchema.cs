@@ -81,8 +81,8 @@ public sealed partial class MonetaFile
         using var transaction = connection.BeginTransaction();
         Execute(connection, string.Join(";\n", ReconciliationTables.Values) + ";ALTER TABLE Transactions ADD COLUMN " + MarkedOnColumnSql + "; ALTER TABLE Transactions ADD COLUMN " + ReconciliationIdColumnSql + ";" + ReconciliationIndexSql + "UPDATE Document SET schema_version=4,min_reader=4,min_writer=4; PRAGMA user_version=4;", transaction);
         InsertHistory(connection, transaction, 4, 3, "v3-to-v4-reconciliation", "pointing-and-statement-history-v4");
-        var migrated = ReadWithinTransaction(connection, false, transaction);
-        var legacy = ReadLedgerMetadata(connection, migrated with { SchemaVersion = 3, ReconciliationCount = 0, ReconciliationEventCount = 0, AccountPointedBalances = null }, transaction);
+        var migrated = ReadWithinTransaction(connection, true, transaction);
+        var legacy = ReadLedgerMetadata(connection, migrated with { SchemaVersion = 3, ReconciliationCount = 0, ReconciliationEventCount = 0, AccountPointedBalances = null, TransferCount = 0 }, transaction);
         if (!SameSnapshot(original, legacy)) throw Error(DocumentError.VerificationFailed, "La migration a modifié le registre historique.");
         transaction.Commit();
     }
@@ -92,7 +92,7 @@ public sealed partial class MonetaFile
         using var transaction = connection.BeginTransaction(deferred: true);
         var current = ReadWithinTransaction(connection, true, transaction);
         if (current.SchemaVersion < 3) throw Error(DocumentError.UnsupportedVersion, "Un registre v3 ou v4 est requis.");
-        var result = current.SchemaVersion == 3 ? current : ReadLedgerMetadata(connection, current with { SchemaVersion = 3, ReconciliationCount = 0, ReconciliationEventCount = 0, AccountPointedBalances = null }, transaction);
+        var result = current.SchemaVersion == 3 ? current : ReadLedgerMetadata(connection, current with { SchemaVersion = 3, ReconciliationCount = 0, ReconciliationEventCount = 0, AccountPointedBalances = null, TransferCount = 0 }, transaction);
         transaction.Commit();
         return Freeze(result);
     }

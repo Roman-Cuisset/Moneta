@@ -69,8 +69,12 @@ public sealed partial class MonetaFile
                     rows.Add(value);
                 }
             }
+            var transferIds = ReadPageTransferIds(pageIds, transaction);
             transaction.Commit();
-            return new(rows.AsReadOnly(), before, balance, count, actualOffset) { Totals = new(balance, pointedBalance, unmarkedAmount) };
+            return new(rows.AsReadOnly(), before, balance, count, actualOffset)
+            {
+                Totals = new(balance, pointedBalance, unmarkedAmount), TransferIds = transferIds
+            };
         }
         catch (Exception exception) when (exception is not DocumentException) { throw Translate(exception, DocumentError.InvalidData); }
     }

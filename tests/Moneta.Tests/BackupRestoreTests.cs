@@ -501,7 +501,7 @@ public sealed class BackupRestoreTests
             command.ExecuteNonQuery();
             command.Parameters.Clear();
         }
-        if (version == 3)
+        if (version >= 3)
         {
             void Reference(string table, string column, Guid id, string name, int ordinal, Guid? parent = null)
             {
@@ -538,6 +538,14 @@ public sealed class BackupRestoreTests
                         payee_id,category_id,subcategory_id,payment_method_id,is_deleted,created_utc,modified_utc,revision)
                     VALUES($id,$account,$date,$label,$minor,$currency,$direction,$status,$notes,$payee,$category,$subcategory,$method,$deleted,$created,$modified,$revision);
                     """;
+                if (version >= 4)
+                {
+                    command.CommandText = command.CommandText
+                        .Replace("modified_utc,revision)", "modified_utc,revision,marked_on,reconciliation_id)", StringComparison.Ordinal)
+                        .Replace("$modified,$revision)", "$modified,$revision,$marked,$reconciliation)", StringComparison.Ordinal);
+                    command.Parameters.AddWithValue("$marked", (object?)value.MarkedOn?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) ?? DBNull.Value);
+                    command.Parameters.AddWithValue("$reconciliation", (object?)value.ReconciliationId?.ToString("D") ?? DBNull.Value);
+                }
                 command.Parameters.AddWithValue("$id", value.Id.ToString("D"));
                 command.Parameters.AddWithValue("$account", value.AccountId.ToString("D"));
                 command.Parameters.AddWithValue("$date", value.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
@@ -626,6 +634,29 @@ public sealed class BackupRestoreTests
             Assert.AreEqual(account.CreatedUtc, restored.CreatedUtc);
             Assert.AreEqual(account.ModifiedUtc, restored.ModifiedUtc);
         }
+    }
+
+    internal static void AssertCompleteSnapshot(FinancialDocument expected, FinancialDocument actual)
+    {
+        AssertSnapshot(expected, actual);
+        Assert.AreEqual(expected.LedgerDigest, actual.LedgerDigest);
+        Assert.AreEqual(expected.OperationCount, actual.OperationCount);
+        Assert.AreEqual(expected.ReconciliationCount, actual.ReconciliationCount);
+        Assert.AreEqual(expected.ReconciliationEventCount, actual.ReconciliationEventCount);
+        Assert.AreEqual(expected.TransferCount, actual.TransferCount);
+        CollectionAssert.AreEquivalent(expected.Categories.ToArray(), actual.Categories.ToArray());
+        CollectionAssert.AreEquivalent(expected.Payees.ToArray(), actual.Payees.ToArray());
+        CollectionAssert.AreEquivalent(expected.PaymentMethods.ToArray(), actual.PaymentMethods.ToArray());
+        AssertBalances(expected.AccountBalances, actual.AccountBalances);
+        AssertBalances(expected.AccountPointedBalances, actual.AccountPointedBalances);
+    }
+
+    private static void AssertBalances(IReadOnlyDictionary<Guid, decimal>? expected, IReadOnlyDictionary<Guid, decimal>? actual)
+    {
+        if (expected is null) { Assert.IsNull(actual); return; }
+        Assert.IsNotNull(actual);
+        Assert.AreEqual(expected.Count, actual.Count);
+        foreach (var (id, balance) in expected) Assert.AreEqual(balance, actual[id]);
     }
 
     private static void ExpectError(DocumentError expected, Action action) =>

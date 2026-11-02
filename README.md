@@ -2,7 +2,7 @@
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 7B : pointage individuel/multiple, soldes pointés et rapprochements bancaires persistants avec réouverture motivée et historique conservé. SQLite schéma 4 ; cycle manuel Ctrl+S maintenu. Version de développement à qualifier sur données synthétiques avant usage réel.** Pas de lecteur `.bp`, de change effectif, de virements, d’échéancier ou de sauvegarde automatique.
+**Mission 7C : virements liés intradossier, même devise ou multidevises, frais séparés, correction/suppression de l’ensemble et navigation entre mouvements. SQLite schéma 5 ; pointage/rapprochements 7B conservés et cycle manuel Ctrl+S maintenu. Version de développement à qualifier sur données synthétiques avant usage réel.** Aucun cours officiel, convertisseur de valorisation, lecteur `.bp`, échéancier ou sauvegarde automatique.
 
 **Consolidation 6.1 :** 97 tests Debug/Release, contrôles SQLite/sauvegardes revus et erreur de source verrouillé corrigée. Un pic CPU capturé est attribué à la compilation étagée .NET, sans boucle de layout démontrée ; aucun contournement graphique/runtime livré. [Audit, mesures et réserves avant mission 7](docs/AUDIT_MISSION_6_1.md).
 
@@ -56,11 +56,13 @@ Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`
 
 1. **Fichier → Nouveau dossier / Ctrl+N** : saisir un nom ; dossier vierge en mémoire, sans compte ni opération fictive. Le démarrage n'ouvre aucun dossier automatiquement.
 2. **Comptes → Ajouter un compte** : nom, devise native, type libre, solde initial français exact et notes. Plusieurs comptes de même devise, aucun plafond produit. Le compte est sélectionné et le dossier marqué **non enregistré**.
-3. **Fichier → Enregistrer / Ctrl+S** : choisir un nouveau fichier `.moneta` au premier enregistrement ; les suivants commitent comptes, référentiels et opérations dans une transaction atomique. Ajouter/modifier/supprimer prépare un **brouillon**, sans commit implicite. Une erreur conserve le brouillon et ne produit pas l’état « enregistré ». **Enregistrer sous / F12** copie aussi toutes les opérations existantes avant d’appliquer les brouillons à la nouvelle copie ; l’ancien fichier reste inchangé.
-4. **Fichier → Ouvrir / Ctrl+O** : identité, version, intégrité et références vérifiées avant affichage. Comptes, devises, UUID, notes, soldes exacts et dernière sélection enregistrée sont relus, sans fusion avec l'ancien dossier. Fermer/remplacer un dossier modifié propose enregistrer / abandonner / annuler. Un `.bp` reçoit une information d'importation future, jamais une écriture.
+3. **Fichier → Enregistrer / Ctrl+S** : choisir un nouveau fichier `.moneta` au premier enregistrement ; les suivants commitent comptes, référentiels, opérations, virements/liens et rapprochements dans une transaction atomique. Ajouter/modifier/supprimer prépare un **brouillon**, sans commit implicite, y compris pour un dossier encore sans fichier. Une erreur conserve le brouillon et ne produit pas l’état « enregistré ». **Enregistrer sous / F12** copie le graphe complet existant avant d’appliquer les brouillons à la nouvelle copie ; l’ancien fichier reste inchangé.
+4. **Fichier → Ouvrir / Ctrl+O** : identité, version, intégrité et références vérifiées avant affichage. Comptes, devises, UUID, notes, soldes exacts et **sélection de compte du dernier Save** sont relus, sans fusion avec l’ancien dossier ; une simple navigation ultérieure non enregistrée n’est pas restaurée. Fermer/remplacer un dossier modifié propose enregistrer / abandonner / annuler. Un `.bp` reçoit une information d’importation future, jamais une écriture.
 5. **Fichier → Sauvegarder le dossier** : enregistrer d'abord les modifications, choisir un nouveau nom ; copie via API SQLite, contrôle du snapshot complet, puis publication de `Sauvegarde.moneta` et `Sauvegarde.moneta.manifest.json`. **Conserver les deux ensemble.** Copier le seul fichier actif ne constitue pas une sauvegarde.
 6. **Fichier → Restaurer une sauvegarde** : choisir une sauvegarde avec son manifeste et une destination neuve. Taille/hash, format, schéma, intégrité, clés et données sont vérifiés ; la copie est effectivement rouverte et comparée. Le dossier affiché et ses brouillons restent intacts. Ouvrir ensuite la copie restaurée pour une bascule volontaire ; ne pas travailler directement dans l'archive certifiée.
 7. **Fichier → Mode démonstration** : quatre comptes fictifs et 3 212 opérations, dont 3 200 sur le premier compte. Ajout de comptes en mémoire possible, enregistrement financier désactivé. Aucun passage silencieux de ces données dans un dossier réel.
+
+Les schémas connus **1..4** s’ouvrent par **migration consentie vers une nouvelle copie de schéma 5** : original inchangé, opérations/UUID et historique de rapprochement conservés. L’ajout de `Transfers`/`TransferLegs` ne modifie ni `Transaction` ni les instantanés V1 ; les certificats de sauvegarde 1..4 sont vérifiés avec leurs algorithmes d’origine avant migration de la seule copie. Version future/inconnue refusée, jamais rétrogradée.
 
 **Opérations → Nouvelle opération** ou bouton **Nouvelle** sous le registre : date française, sens Recette/Dépense, montant non négatif dans la devise native, libellé obligatoire, mode/tiers/catégorie/sous-catégorie/notes facultatifs. Les valeurs personnalisées alimentent les référentiels du dossier ; les variantes de casse et d’espaces ne créent pas de doublons. Une fraction sous l’unité monétaire est refusée sans arrondi ; zéro est autorisé. Sélectionner une ligne puis **Modifier**, ou double-cliquer. **Suppr / Ctrl+Suppr** dans le registre demande confirmation ; ces touches ne suppriment aucune opération depuis un champ texte. **Ctrl+Entrée / Maj+Entrée**, uniquement dans le registre, ouvrent respectivement la création/modification. **Ctrl+S** reste nécessaire pour rendre ces changements durables.
 
@@ -74,15 +76,71 @@ Le solde actuel est **solde initial + recettes − dépenses non supprimées**, 
 
 Les opérations R sont protégées contre édition, suppression et dépointage. Une modification financière d’une P demande confirmation et conserve son pointage. Dans **Historique et réouverture**, seul le dernier relevé actif peut être rouvert, avec motif et confirmation : anciens états/dates restaurés, instantanés et événements conservés. **Enregistrer ce brouillon avant toute autre mutation du registre**, y compris sur un autre compte. Un relevé corrigé reçoit un nouvel UUID. Les R héritées d’un schéma 3 sans relevé attesté restent identifiées comme telles ; libération explicite avec motif depuis Opérations, jamais de relevé ou date inventé.
 
+### Virements liés — mission 7C
+
+**Opérations → Virement…**, outil **Virement**, ou **Ctrl+Maj+T uniquement dans le registre** : choisir deux comptes actifs distincts du même dossier, une date commune et les montants principaux strictement positifs en devises natives. Même devise : le crédit recopie exactement le débit, hors frais. Devises différentes : saisir les deux montants réellement débités/crédités, sans conversion automatique ni arrondi. La date du change reprend par défaut celle du virement ; la source est **« Montants saisis par l’utilisateur »**, libre mais toujours déclarée/non vérifiée, jamais présentée comme officielle.
+
+Les montants saisis sont des magnitudes : le principal source produit un débit (impact −), le principal reçu un crédit (impact +). Le **rapport exact = crédit / débit principal hors frais**, en unités de devise reçue pour **1 unité source** ; les deux montants exacts le conservent, pas un quotient arrondi. L’aperçu « Taux approximatif » est purement informatif ; si le quotient décimal déborde ou devient zéro, seul le rapport exact est affiché. Une devise d’affichage différente ne transforme ni ces montants ni ce rapport.
+
+Les **frais facultatifs** sont un débit distinct sur la source, le destinataire ou un troisième compte actif du dossier, dans sa devise native. Strictement positifs au premier ajout ; un frais déjà présent, même encore en brouillon, peut être corrigé à **zéro**, en conservant son UUID, son compte et son lien. On peut ajouter les premiers frais à un virement qui n’en avait pas ; on ne retire ni ne remplace un mouvement de frais existant. Aucun total ne mélange implicitement des devises ; le débit principal n’inclut pas les frais.
+
+Une ligne liée ouvre le **virement entier** avec Modifier/double-clic ; Supprimer demande confirmation pour l’ensemble. Les comptes source/destinataire et le compte de frais déjà ajouté sont immuables : pour corriger un compte, annuler tout le virement puis le recréer. La suppression avant tout enregistrement retire les brouillons ; après enregistrement elle conserve l’entité, tous les mouvements persistés et leurs liens comme traces supprimées. Des frais ajoutés mais non enregistrés sont écartés si le virement persistant est supprimé avant leur Save. Aucune édition/suppression financière d’une jambe isolée n’est autorisée, dans Core comme dans le stockage.
+
+Les états **NP/P/R restent indépendants** : pointer le débit ne pointe ni crédit ni frais. Une correction d’un mouvement P conserve état/date avec confirmation si date ou montant change. **Une seule jambe R, frais compris et même hors écran, protège tout le virement** : consultation seule, édition/suppression refusées. Rouvrir le relevé concerné ou libérer explicitement une R héritée, puis **Ctrl+S avant toute correction**.
+
+**Ouvrir le virement lié… / Autre côté du virement / Supprimer le virement entier…** sont des commandes Moneta explicites dans Opérations et le contexte ; le bouton ↔ de la ligne rejoint aussi la contrepartie. Débit → crédit ; crédit ou frais → débit. La sélection utilise l’UUID et charge sa page de **100 lignes**, même si elle n’était pas affichée. Ces accès et les garanties multidevises ne prétendent pas être une parité BankPerfect parfaite.
+
+
 **Devise d'affichage** : native = montant réel ; autre = **Cours indisponible**, sans modifier compte/opérations. **Affichage → Thème → Clair / Sombre** conserve la préférence locale et la correction de sélection ; contraste élevé prioritaire. **Outils → Options** conserve ses cinq rubriques ; options de taux et de mises à jour enregistrables uniquement, services non développés. Voir [CURRENCIES_AND_SETTINGS](docs/CURRENCIES_AND_SETTINGS.md).
 
 ## Limites et divergences volontaires
 
 L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et l'organisation de la principale restent fidèles à la capture privée. Elle ne prouve ni sous-menus fermés ni accélérateurs Alt. Choix Moneta explicites : Nouveau dans Fichier (également accessible sous Comptes), Enregistrer sous dans Fichier, sauvegarde/restauration manuelles et mode démonstration. F12 est documenté historiquement, pas l'emplacement exact d'Enregistrer sous. Aucun menu inconnu déclaré identique à BankPerfect.
 
-Pas encore d’édition/suppression de compte, de filtre effectif, d’import/export, de change, de transfert, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; les comptes archivés ne reçoivent pas de modifications d’opérations. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
+Pas encore d’édition/suppression de compte, de filtre effectif, d’import/export, de cours officiels/valorisation convertie, de conversion d’une opération ordinaire en virement, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; tous les comptes d’un virement, frais compris, doivent être actifs pour une mutation. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
 
 **Erreurs et sécurité :** fichier absent/incompatible/corrompu ou version future refusé, aucune base vide substituée ; destinations existantes et journaux de récupération préservés. Une session par chemin via verrou système `.moneta.lock` ; fichier vide résiduel normal après fermeture/crash. Attente SQLite bornée, checkpoint bloqué signalé en gardant la session utilisable. Stockage actif local uniquement : réseau refusé, dossiers synchronisés non pris en charge. SQLite et sauvegardes **non chiffrés/non signés** ; protéger les droits du dossier et le support. Ne jamais supprimer WAL/SHM/journal pour débloquer.
+
+## Vérifications observées de mission 7C
+
+**Debug et Release : 0 erreur, 0 avertissement ; 329 tests réussis, 0 échec et 0 ignoré par configuration**, dont les 261 cas précédents. Couverture supplémentaire : mêmes devises et six directions EUR/BYN/RUB, précision extensible, frais, révisions indépendantes, protection globale R, refus des demi-patches, rollback, concurrence, pagination liée, migrations et archives historiques.
+
+Trois incompatibilités de brouillon/Save ont été reproduites puis corrigées : correction financière combinée au pointage NP/P, suppression après ajout de frais non persistés et frais ramenés à zéro avant leur premier enregistrement. **Neuf cas de régression** couvrent ces transitions, dans la suite complète. Les fixtures historiques v4 respectent les clés étrangères et reconstruisent le graphe avant certification ; les tests de copie ferment leur session propriétaire avant une ouverture indépendante.
+
+Parcours du vrai processus Windows, UIA et souris/clavier, en clair/sombre, exclusivement synthétique : comptes EUR A (1 000), EUR B (100), BYN (8 000) ; A → B de 150 + frais 2 corrigé à **175 + 2,50 EUR** ; BYN → A de **500 BYN / 140 EUR + frais 3 BYN** ; virement brouillon de 10 créé puis supprimé en entier ; Save. Débit EUR 175 pointé P et crédit 175 rapproché R dans un relevé enregistré : consultation de l’ensemble et refus de suppression exercés. Fermeture/réouverture normale, sauvegarde à chaud puis restauration vers une copie et ouverture effectuées. Soldes observés : **A 962,50 EUR / pointé 825 ; B 275 EUR / pointé 275 ; BYN 7 497**.
+
+Comparaison hors interface réussie : **deux virements, six mouvements dont deux frais, un relevé, un instantané et un événement** identiques entre source et restauration, avec tous les champs, UUID, révisions, liens, états et historique V1 — pas seulement les soldes. Une sonde synthétique séparée a aussi vérifié individuellement le graphe de **1 006 virements dont six supprimés, 2 352 mouvements**, après cycles de création/correction/suppression, réouverture et sauvegarde/restauration.
+
+Les véritables fenêtres WPF ont été construites et leur arbre visuel inspecté via `RenderTargetBitmap` : registre, dialogue multidevise modifiable et consultation protégée R, clair/sombre, sélection de texte. Le libellé des frais désactivés était noir sur fond sombre : correction par style partagé de case à cocher, puis inspection confirmant sa lisibilité ; le lien du registre est compact et ses infobulles conservent les explications. Captures synthétiques locales dans `screenshots-private/moneta-m7c-*.png`, exclues de Git. **La capture composée native GDI reste limitée sur ce poste** ; validation utilisateur, lecteurs d’écran et campagne multi-DPI/moniteurs restent nécessaires.
+
+### Mesures de mission 7C
+
+Windows 10.0.26220 x64, Core i5-1235U, 12 processeurs logiques, .NET 10.0.12, Release sans débogueur. Sonde API : trois comptes EUR/EUR/BYN ; **1 000 virements initiaux, 2 334 mouvements, 334 frais**, moitié même devise / moitié multidevise. Un échauffement puis cinq échantillons dans le même processus ; médianes ci-dessous, sans vidage du cache disque ni garantie statistique. Création/correction/suppression désignent la préparation du brouillon, distincte du commit. Initialisation du corpus : **2,424 s**, un essai séparé.
+
+| Mesure API | Médiane |
+|---|---:|
+| Créer un virement avec frais | 38,139 ms |
+| Modifier le virement complet | 45,483 ms |
+| Supprimer le virement complet | 28,208 ms |
+| Rejoindre la contrepartie hors première page | 13,381 ms |
+| Enregistrer après création / correction / suppression | 345,122 / 343,225 / 267,832 ms |
+| Ouvrir, vérifier et charger la première page du dossier | 269,536 ms |
+| Lire une page de 100 mouvements et leurs liens | 7,421 ms |
+| Sauvegarder à chaud | 301,330 ms |
+| Restaurer, vérifier et rouvrir | 642,640 ms |
+
+L’exécutable WPF a aussi été observé sur le petit dossier du scénario Windows : trois comptes, deux virements/six mouvements et un relevé. Un lancement, disponibilité de la fenêtre via UIA : **2,512 s**, pas une mesure du premier pixel. Le parcours automatisé d’ouverture a pris **6,127 s**, dialogue natif et attentes UIA inclus : ce n’est pas le temps d’E/S mesuré par la sonde API.
+
+Après dix secondes de stabilisation, fenêtre visible pendant trente secondes sans interrogation UIA, puis minimisée pendant dix secondes après deux secondes de transition :
+
+| Mesure de l’exécutable | Observation |
+|---|---:|
+| CPU visible / minimisé, équivalent un cœur | 0 / 0 % observé |
+| Mémoire privée, début → fin de fenêtre visible | 150,04 → 149,86 Mio |
+| Mémoire résidente, début → fin de fenêtre visible | 252,05 → 251,93 Mio |
+| Mémoire privée / résidente, minimisée | 149,73 / 251,93 Mio |
+
+Pas de croissance sur cet intervalle court ; aucune preuve d’absence de fuite à long terme. Le raccourci **Ctrl+Maj+T depuis le registre** a ouvert le vrai dialogue, annulé sans mutation, et le processus s’est fermé normalement. Conditions et bornes de démarrage différentes de 7B, autres vérifications sur le même poste : **pas de comparaison causale avant/après** revendiquée. Les sondes et projets temporaires ne sont pas livrés.
 
 ## Vérifications de mission 7B
 
@@ -298,4 +356,4 @@ Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
 ## Prochaine mission proposée
 
-Mission 7B : valider les règles de pointage et rapprochement avant de développer dates, relevés, protections des opérations rapprochées et soldes pointés. Définir séparément la récupération individuelle et l’historique de corrections ; qualifier sauvegardes avant cadence/rétention automatiques. Le corpus `.bp` fictif reste nécessaire pour le lecteur indépendant prioritaire. Change daté, virements liés, filtres et accessibilité multi-écran restent des lots distincts. Voir [ROADMAP](docs/ROADMAP.md).
+Après 7C, qualifier avec l’utilisateur les conventions de virements et NP/P/R, l’accessibilité et le rendu composé multi-DPI/moniteurs. Une mission distincte peut traiter les **cours officiels datés/sourcés et leur cache**, sans modifier les montants réels des virements : contrats NBRB/CBR, unités/nominal, dates manquantes, absence de taux et valorisation explicitement séparée. Import `.bp`, filtres, récupération individuelle et automatisation des sauvegardes restent des lots séparés. Le corpus `.bp` strictement fictif et sa spécification demeurent nécessaires ; les UUID Moneta prépareront une future correspondance de provenance, sans fabriquer aujourd’hui de données BankPerfect. Voir [ROADMAP](docs/ROADMAP.md).

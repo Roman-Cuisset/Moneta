@@ -23,6 +23,10 @@ public static class WindowCommands
     public static RoutedUICommand NewTransaction { get; } = new("Nouvelle opération", nameof(NewTransaction), typeof(WindowCommands));
     public static RoutedUICommand EditTransaction { get; } = new("Modifier une opération", nameof(EditTransaction), typeof(WindowCommands));
     public static RoutedUICommand DeleteTransaction { get; } = new("Supprimer une opération", nameof(DeleteTransaction), typeof(WindowCommands));
+    public static RoutedUICommand NewTransfer { get; } = new("Virement", nameof(NewTransfer), typeof(WindowCommands));
+    public static RoutedUICommand OpenTransfer { get; } = new("Ouvrir le virement lié", nameof(OpenTransfer), typeof(WindowCommands));
+    public static RoutedUICommand NavigateTransfer { get; } = new("Autre côté du virement", nameof(NavigateTransfer), typeof(WindowCommands));
+    public static RoutedUICommand DeleteTransfer { get; } = new("Supprimer le virement entier", nameof(DeleteTransfer), typeof(WindowCommands));
     public static RoutedUICommand TogglePointing { get; } = new("Basculer le pointage", nameof(TogglePointing), typeof(WindowCommands));
     public static RoutedUICommand MarkTransactions { get; } = new("Pointer", nameof(MarkTransactions), typeof(WindowCommands));
     public static RoutedUICommand UnmarkTransactions { get; } = new("Dépointer", nameof(UnmarkTransactions), typeof(WindowCommands));

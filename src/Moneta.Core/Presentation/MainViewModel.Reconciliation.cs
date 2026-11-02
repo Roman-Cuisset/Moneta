@@ -24,7 +24,7 @@ public sealed partial class MainViewModel
         {
             if (_showMarkingDates == value) return;
             var anchor = _selectedRow?.Transaction.Id;
-            var rows = Array.AsReadOnly(_rows.Select(row => new LedgerRow(row.Transaction, row.Balance, value)).ToArray());
+            var rows = Array.AsReadOnly(_rows.Select(row => new LedgerRow(row.Transaction, row.Balance, value, row.TransferId)).ToArray());
             _showMarkingDates = value;
             PublishRows(rows, anchor);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowMarkingDates)));
@@ -135,7 +135,7 @@ public sealed partial class MainViewModel
             }
         }
         var rows = Array.AsReadOnly(_rows.Select(row => values.TryGetValue(row.Transaction.Id, out var value)
-            ? new LedgerRow(value, row.Balance, _showMarkingDates) : row).ToArray());
+            ? new LedgerRow(value, row.Balance, _showMarkingDates, row.TransferId) : row).ToArray());
         _pending = proposed;
         _pendingReconciliations = batch;
         _totals = totals;

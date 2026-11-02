@@ -32,9 +32,10 @@ public sealed class AccountSummary : INotifyPropertyChanged
 
 public sealed class LedgerRow
 {
-    internal LedgerRow(Transaction transaction, decimal balance, bool showMarkingDates = false)
+    internal LedgerRow(Transaction transaction, decimal balance, bool showMarkingDates = false, Guid? transferId = null)
     {
         Transaction = transaction;
+        TransferId = transferId;
         Balance = balance;
         DateText = transaction.Date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
         MarkedOnText = transaction.MarkedOn?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
@@ -55,6 +56,9 @@ public sealed class LedgerRow
     }
 
     public Transaction Transaction { get; }
+    public Guid? TransferId { get; }
+    public bool IsTransfer => TransferId is not null;
+    public string TransferText => IsTransfer ? "Virement lié" : string.Empty;
     public string DateText { get; }
     public string MarkedOnText { get; }
     public string DisplayDateText { get; }
