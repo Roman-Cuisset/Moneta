@@ -44,15 +44,6 @@ public enum ReconciliationStatus
 
 public sealed record MoneyValuation(decimal Amount, Currency Currency, DateOnly RateDate, string Source);
 
-// Published Value units of QuoteCurrency for Scale units of BaseCurrency.
-// This is a dated source contract only, not a conversion service or a computed rate.
-public sealed record ExchangeRateQuote(
-    Currency BaseCurrency,
-    Currency QuoteCurrency,
-    decimal Value,
-    int Scale,
-    DateOnly RateDate,
-    string Source);
 
 public sealed record Transaction(
     Guid Id,

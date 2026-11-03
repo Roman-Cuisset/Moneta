@@ -25,6 +25,8 @@ public partial class MainWindow : Window
             if (Dispatcher.CheckAccess()) UpdateDocumentState();
             else Dispatcher.BeginInvoke(UpdateDocumentState);
         };
+        App.Rates.Changed += Rates_Changed;
+        Closed += (_, _) => App.Rates.Changed -= Rates_Changed;
         UpdateDocumentState();
     }
 
@@ -44,6 +46,7 @@ public partial class MainWindow : Window
             : _workspace.HasUnsavedChanges ? "Brouillon — Ctrl+S pour enregistrer durablement"
             : "Développement — dossier local enregistré";
         RegisterDateColumn.Header = model?.DateColumnHeader ?? "Date";
+        ApplyRateState();
         IsEnabled = !_busy;
         CommandManager.InvalidateRequerySuggested();
     }

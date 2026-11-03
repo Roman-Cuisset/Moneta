@@ -2,7 +2,7 @@
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
-**Mission 7C : virements liés intradossier, même devise ou multidevises, frais séparés, correction/suppression de l’ensemble et navigation entre mouvements. SQLite schéma 5 ; pointage/rapprochements 7B conservés et cycle manuel Ctrl+S maintenu. Version de développement à qualifier sur données synthétiques avant usage réel.** Aucun cours officiel, convertisseur de valorisation, lecteur `.bp`, échéancier ou sauvegarde automatique.
+**Mission 8 : cours officiels NBRB/CBR datés et sourcés, historique/cache hors ligne, convertisseur indicatif et estimation du solde sélectionné.** Virements liés 7C, pointage/rapprochements et cycle manuel Ctrl+S conservés ; **format financier SQLite schéma 5 inchangé**. Actualisation automatique désactivée par défaut, aucune connexion obligatoire pour gérer ses comptes. Version de développement à qualifier sur données synthétiques avant usage réel ; aucun lecteur `.bp`, budget, échéancier, installateur de mises à jour ou sauvegarde automatique.
 
 **Consolidation 6.1 :** 97 tests Debug/Release, contrôles SQLite/sauvegardes revus et erreur de source verrouillé corrigée. Un pic CPU capturé est attribué à la compilation étagée .NET, sans boucle de layout démontrée ; aucun contournement graphique/runtime livré. [Audit, mesures et réserves avant mission 7](docs/AUDIT_MISSION_6_1.md).
 
@@ -50,7 +50,7 @@ dotnet test Moneta.slnx -c Release --no-build
 dotnet run --project src/Moneta.App/Moneta.App.csproj -c Release --no-build
 ```
 
-Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`. Le runtime WindowsDesktop .NET 10 est requis ; aucun installateur autonome fourni. La restauration NuGet des tests et de SQLite peut nécessiter Internet. **Aucune connexion réseau au démarrage de l'application** ; aucun service permanent de taux ou de mise à jour.
+Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`. Le runtime WindowsDesktop .NET 10 est requis ; aucun installateur autonome fourni. La restauration NuGet des tests et de SQLite peut nécessiter Internet. **Par défaut, aucune requête réseau au démarrage : l’actualisation automatique des cours est désactivée.** Si elle est activée explicitement dans Options, le prochain lancement peut interroger le fournisseur choisi, sans bloquer l’ouverture des comptes. Le fonctionnement financier reste local et sans Internet obligatoire ; aucun service de mise à jour ni service réseau permanent.
 
 ## Parcours réellement disponible
 
@@ -91,17 +91,86 @@ Les états **NP/P/R restent indépendants** : pointer le débit ne pointe ni cr�
 **Ouvrir le virement lié… / Autre côté du virement / Supprimer le virement entier…** sont des commandes Moneta explicites dans Opérations et le contexte ; le bouton ↔ de la ligne rejoint aussi la contrepartie. Débit → crédit ; crédit ou frais → débit. La sélection utilise l’UUID et charge sa page de **100 lignes**, même si elle n’était pas affichée. Ces accès et les garanties multidevises ne prétendent pas être une parité BankPerfect parfaite.
 
 
-**Devise d'affichage** : native = montant réel ; autre = **Cours indisponible**, sans modifier compte/opérations. **Affichage → Thème → Clair / Sombre** conserve la préférence locale et la correction de sélection ; contraste élevé prioritaire. **Outils → Options** conserve ses cinq rubriques ; options de taux et de mises à jour enregistrables uniquement, services non développés. Voir [CURRENCIES_AND_SETTINGS](docs/CURRENCIES_AND_SETTINGS.md).
+**Affichage → Thème → Clair / Sombre** conserve la préférence locale et la correction de sélection ; contraste élevé prioritaire. **Outils → Options** conserve ses cinq rubriques : **Devises et taux** pilote désormais le fournisseur et l’actualisation au démarrage ; **Mises à jour** reste une préférence enregistrable sans service développé. Voir [CURRENCIES_AND_SETTINGS](docs/CURRENCIES_AND_SETTINGS.md).
+
+### Cours officiels et valorisation — mission 8
+
+1. Ouvrir **Outils → Cours de change…**, accessible même sans dossier financier. Choisir **NBRB** (défaut, référence BYN) ou **CBR** (choix explicite, référence RUB), une date au format `jj/mm/aaaa`, puis **Consulter le cache** ou **Actualiser**. L’entrée **Outils → Actualiser les cours officiels** actualise aussi la source et la date courantes. Un changement de fournisseur est enregistré mais **consulte uniquement son cache** ; il ne déclenche pas de téléchargement, de repli vers l’autre banque ni de mélange de publications.
+2. L’onglet **Cotations** affiche code, nom, nominal, valeur officielle et devise de référence. La date demandée, la date d’effet réelle, l’heure de récupération et l’origine **cache disque / réponse HTTPS / mémoire non persistée** restent visibles ; l’adresse interrogée et l’empreinte SHA-256 permettent de retrouver le contenu conservé. L’identité de la devise de référence est explicitement mathématique, pas un cours publié inventé.
+3. **Historique local** montre au plus les 100 publications récentes du fournisseur ; les archives plus anciennes restent consultables par date, sans purge automatique. Pour une date de valorisation, le cache sélectionne la publication la plus récente **à cette date ou avant**, vieille d’au plus **31 jours calendaires** ; sa date réelle et son ancienneté ne sont pas masquées. Au-delà, ou si une devise n’est pas cotée, l’estimation est **Cours indisponible**, jamais zéro ou un taux de repli. Une publication anticipée est conservée mais inutilisable avant sa date d’effet.
+4. Le **convertisseur de montant** prend un montant français, les devises source/destination et le jeu officiel chargé ; **Convertir** ne crée aucune opération. Le résultat est indicatif, calculé avec les nominaux officiels et arrondi **une seule fois au pair** à la précision de destination. Zéro et montants négatifs sont acceptés ; une fraction non représentable dans la devise source est refusée. Même devise = identité, sans change ni publication nécessaire. Il s’agit d’une **saisie manuelle de montant**, pas d’une saisie de taux manuel.
+5. Près du **solde actuel**, le sélecteur **Devise d’affichage** conserve le montant réel en natif ; une autre devise affiche un **équivalent estimé**, sa source, date d’effet, date demandée, récupération et état du cache. Le solde natif reste indiqué séparément ; pointé/non pointé et toutes les opérations restent natifs. EUR/BYN/RUB et les devises déjà définies dans le dossier sont des choix de présentation, sans ajout au catalogue financier. Changer de cible ne modifie ni les comptes, ni les opérations, ni l’état « modifié ». L’API d’agrégat existe ; **l’interface Total des comptes / relevé multicomptes n’est pas réalisée**.
+6. Dans **Outils → Options → Devises et taux**, l’option d’actualisation automatique est **désactivée par défaut** et ne s’applique qu’au prochain lancement. Si activée, un cache correspondant au jour demandé et récupéré depuis au plus six heures évite un nouveau téléchargement ; un cache historique applicable est réutilisé. **Actualiser** force une nouvelle demande. L’absence de publication peut conduire à interroger au plus les sept dates calendaires précédentes (huit au total), avec délai global de 20 s et 10 s par requête ; une erreur HTTP/réseau n’est pas retentée. **Annuler la requête**, changer de sélection ou fermer la fenêtre annule la demande concernée ; une ancienne réponse ne remplace pas une sélection plus récente.
+
+**Hors ligne et erreurs :** les comptes restent utilisables et un cours applicable déjà validé peut servir, avec sa date et l’avertissement explicite. Sans cours applicable, aucune estimation n’est fabriquée. Un échec d’écriture du cache n’efface pas les cours valides en mémoire ; il est annoncé comme **non enregistré**, donc sans promesse de récupération au redémarrage. Le cache public indépendant `%LocalAppData%\Moneta\exchange-rates.sqlite` n’entre pas dans le `.moneta`, son WAL, ses empreintes ou ses sauvegardes financières.
+
+**Réseau et sécurité :** seuls les endpoints HTTPS officiels fixes reçoivent une date publique, jamais comptes, montants, opérations ou identifiants. Redirections et cookies désactivés ; réponses limitées à 1 Mio et 1 000 cotations, XML sans DTD ni résolution externe, encodage déclaré respecté. L’empreinte atteste le contenu conservé, **pas une signature officielle du flux**. Aucun ajout de télémétrie, cloud ou installation de mises à jour. Les virements gardent leurs **deux montants réels figés**, frais et source déclarée : aucune suggestion officielle appliquée, aucun recalcul rétroactif et aucun changement du cycle Ctrl+S.
 
 ## Limites et divergences volontaires
 
 L'ordre principal **Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?** et l'organisation de la principale restent fidèles à la capture privée. Elle ne prouve ni sous-menus fermés ni accélérateurs Alt. Choix Moneta explicites : Nouveau dans Fichier (également accessible sous Comptes), Enregistrer sous dans Fichier, sauvegarde/restauration manuelles et mode démonstration. F12 est documenté historiquement, pas l'emplacement exact d'Enregistrer sous. Aucun menu inconnu déclaré identique à BankPerfect.
 
-Pas encore d’édition/suppression de compte, de filtre effectif, d’import/export, de cours officiels/valorisation convertie, de conversion d’une opération ordinaire en virement, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; tous les comptes d’un virement, frais compris, doivent être actifs pour une mutation. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
+Pas encore d’édition/suppression de compte, de filtre effectif, d’import/export, de total multicomptes dans l’interface, de saisie de taux manuel, de conversion d’une opération ordinaire en virement, d’échéancier, de budget, d’annulation financière globale ou d’automatisation des sauvegardes. Le drapeau archivé est conservé ; tous les comptes d’un virement, frais compris, doivent être actifs pour une mutation. Le solde progressif reste à gauche ; le tri libre est désactivé pour conserver sa signification. Les dialogues natifs de fichier et de confirmation gardent l’apparence fournie par Windows.
 
 **Erreurs et sécurité :** fichier absent/incompatible/corrompu ou version future refusé, aucune base vide substituée ; destinations existantes et journaux de récupération préservés. Une session par chemin via verrou système `.moneta.lock` ; fichier vide résiduel normal après fermeture/crash. Attente SQLite bornée, checkpoint bloqué signalé en gardant la session utilisable. Stockage actif local uniquement : réseau refusé, dossiers synchronisés non pris en charge. SQLite et sauvegardes **non chiffrés/non signés** ; protéger les droits du dossier et le support. Ne jamais supprimer WAL/SHM/journal pour débloquer.
 
+## Preuves acquises de mission 8
+
+Les endpoints publics ont été interrogés avec le véritable client .NET `OfficialRateClient` sous Windows : **HTTP 200 pour les deux banques**, aux dates explicites du **03/04/2026** et du **03/11/2026**. [NBRB, table quotidienne](https://api.nbrb.by/exrates/rates?ondate=2026-04-03&periodicity=0) : 5 030 octets et 30 cotations ; [CBR, XML quotidien](https://www.cbr.ru/scripts/XML_daily.asp?date_req=03/04/2026) : 9 510/9 511 octets selon la réponse et 54 cotations, encodage Windows-1251 d’origine correctement lu. La [documentation XML CBR](https://www.cbr.ru/development/SXML/) a été consultée. La [page d’aide NBRB](https://www.nbrb.by/apihelp/exrates) a expiré dans l’outil de lecture : **son contenu n’est pas réputé vérifié**, contrairement aux réponses API, dont l’accès individuel EUR avec `parammode=2`.
+
+Sur ces réponses authentiques, **1 000 BYN** donnent, au 03/11/2026, **301,67 EUR / 27 339,58 RUB avec NBRB**, contre **302,92 EUR / 27 403,10 RUB avec CBR** ; au 03/04/2026, respectivement **295,41 EUR / 27 024,84 RUB** et **294,97 EUR / 27 353,10 RUB**. Ce sont des observations datées, **pas des taux codés dans l’application ni une garantie de disponibilité**. Une lecture du dimanche 05/04 a renvoyé un effet réel au 04/04 pour CBR et au 05/04 pour NBRB : la date de réponse n’est pas réécrite pour coïncider avec la demande.
+
+**Compilation Debug et Release : 0 erreur et 0 avertissement. Tests : 516 réussis, 0 échec et 0 ignoré dans chaque configuration**, dont les 329 cas antérieurs conservés. Résultats locaux reproductibles dans `tests/Moneta.Tests/TestResults/mission8-final-debug.trx` et `mission8-final-release.trx` (exclus de Git). Les tests permanents n’utilisent pas Internet : réponses authentiques figées, transports/cache/horloge contrôlés, SQLite temporaire. Couverture : nominaux 1/10/100/1 000 et au-delà, calculs directs/inverses/croisés, arrondi au pair final unique, dates/futur/week-end et redénominations, erreurs HTTP/timeout/annulation, cache/redémarrage/corruption, source explicite et protection des virements/P/R.
+
+Trois défauts d’intégration ont été corrigés après revue indépendante : perte du dernier lot valide en mémoire après échec du cache ; requête tardive déclenchée par une ancienne sélection de date ; devises de présentation proposées à tort à la création d’un compte natif. Les régressions vérifient notamment la séparation du catalogue financier, les générations/annulations et la conservation des snapshots, virements, schéma 5 et octets financiers/WAL lors des conversions. Les observations des missions précédentes ci-dessous restent **historiques**, avec leurs propres conditions et limites.
+
+Défaut historique supplémentaire reproduit : les réponses anciennes, pourtant valides, étaient étiquetées avec la monnaie de référence actuelle. Quatre régressions échouaient avant correction ; les six cas ciblés passent après garde-fou, y compris les deux bornes acceptées. **NBRB d’effet avant le 01/07/2016 et CBR avant le 01/01/1998 sont désormais refusés**, sans redénomination automatique. L’API NBRB du 30/06/2016 renvoie notamment EUR 22 210 en anciennes unités, et CBR demandé au 31/12/1997 renvoie USD 5 960 à l’effet du 30/12/1997 : les présenter comme BYN/RUB modernes aurait été faux. [Preuves, sources officielles et politique](docs/ARCHITECTURE.md#54-banque-centrale-de-russie--étude-complémentaire-mission-2).
+
+Le vrai processus WPF Release a ensuite refusé ces deux réponses historiques, refusé leur conversion, accepté le premier jour BYN **01/07/2016**, puis rechargé les cours CBR actuels. La règle est donc exercée au-delà des tests unitaires, sans modifier un dossier financier.
+
+### Parcours Windows et indépendance financière
+
+Véritable processus Release : ouverture d’un `.moneta` strictement synthétique, compte à **1 000 BYN** après virement réel fictif de 500 BYN / 140 EUR et frais 3 BYN ; choix EUR/RUB/BYN, montants natifs toujours conservés, NBRB puis CBR, fenêtre des cours, source et dates visibles. Redémarrage confirmant source et préférence automatique ; essais de l’option désactivée puis activée avec cache frais.
+
+Hors ligne simulé **uniquement dans l’environnement du processus enfant**, par proxy local inaccessible : cache disque relu après redémarrage, erreurs réseau explicites, estimations NBRB et CBR identiques à leurs résultats en ligne respectifs, sans mélange. Retour à un processus sans ce proxy : réponses officielles à nouveau validées. Le parcours CBR du **05/04/2026** affiche bien l’effet du **04/04/2026**. Aucune carte réseau Windows désactivée.
+
+Requête réellement retenue par une sonde proxy locale finie : saisie, **Ctrl+A**, conversion avec cours déjà chargés et annulation restent utilisables pendant l’attente ; annulation explicite observée, puis fermeture normale. La sonde a effectivement reçu la connexion ; il ne s’agit pas d’une simulation de l’état visuel « téléchargement ».
+
+Après les parcours en ligne/hors ligne, réouverture, historique et clair/sombre, **SHA-256 du fichier financier entier identique avant/après**, schéma 5, intégrité SQLite et références valides. Les nouvelles préférences ont été exercées puis les choix locaux préexistants restitués. La suite financière conserve aussi les vérifications de sauvegarde/restauration et les protections P/R ; le cache public n’est volontairement pas inclus dans une sauvegarde de comptes.
+
+Inspection des véritables arbres visuels WPF via `RenderTargetBitmap`, clair/sombre, poste à **200 % / 192 DPI** : texte sélectionné lisible, source/date et natif visibles. Une compression des colonnes coupait les codes de devise sur la petite fenêtre ; minima de largeur corrigés, défilement horizontal conservé et texte intégral accessible en infobulle. Nouvelle inspection effectuée après correction. Captures synthétiques locales `screenshots-private/moneta-m8-{light,dark}-{rates,balance}.png`, exclues de Git. **Ce rendu d’arbre n’est pas une preuve de capture composée native** ; qualification physique multi-DPI/moniteurs, haut contraste et lecteurs d’écran à poursuivre.
+
+### Mesures de mission 8
+
+Windows **10.0.26220 x64**, Core **i5-1235U**, .NET **10.0.12**, 12 processeurs logiques, Release sans débogueur, 200 %. Vrai processus en démonstration (3 200 opérations), fenêtre des cours ouverte puis fermée ; 5 s d’attente avant l’intervalle visible de 30 s, puis 10 s minimisé. Aucune interrogation UIA pendant ces deux intervalles. Lancement = démarrage du processus jusqu’à fenêtre principale accessible via UIA, et non une mesure de premier pixel. **Un essai final par condition**, caches système et cours déjà chauds ; pas de garantie statistique ni comparaison stricte aux anciennes missions.
+
+| Mesure WPF finale | Observation |
+|---|---:|
+| Démarrage, actualisation désactivée | 2,579 s |
+| Démarrage, actualisation activée, cache frais réutilisé | 3,782 s |
+| CPU visible final, intervalle 30,018 s | 33,001 % d’un cœur / 2,750 % des 12 processeurs logiques |
+| CPU visible, deux essais préliminaires de 30 s | 5,934 et 9,683 % d’un cœur |
+| Mémoire privée visible finale, début → fin | 72,898 → 69,430 Mio |
+| Mémoire résidente visible finale, début → fin | 152,598 → 155,555 Mio |
+| CPU minimisé final, intervalle 10,006 s | 0 % observé |
+| Mémoire privée / résidente à la fin, minimisé | 58,988 / 145,051 Mio |
+
+**L’objectif indicatif de démarrage inférieur à 2 s n’est pas atteint dans cette méthode ; le CPU visible reste élevé et variable sur le dernier intervalle. Ce point n’est pas déclaré résolu.** Aucune attribution causale à un service de cours ou à la compilation étagée n’est déduite de ces essais courts ; aucune garantie d’absence de fuite sur longue durée. Il n’existe ni timer permanent de cours ni service résident ajouté. Un profilage prolongé du vrai processus visible, avant le prochain pilote, est recommandé ; les anciens chiffres et les essais préliminaires ne démontrent pas à eux seuls une régression ni une amélioration.
+
+Sonde API séparée sur réponses officielles du 03/11/2026 ; lecture et conversion : un échauffement puis médiane de 100 appels dans le même processus. Téléchargements et agrégat : **un appel observé**, sans test de débit. Le premier GET était historique (03/04) ; le suivant réutilisait le client/transport pour le jour local. Les 10 000 montants synthétiques sont répartis en BYN/EUR/RUB, avec signes différents ; le total est arrondi une fois.
+
+| Mesure API/cache | NBRB | CBR |
+|---|---:|---:|
+| Premier GET historique | 845,889 ms | 461,382 ms |
+| GET suivant du jour, transport chaud | 75,931 ms | 73,613 ms |
+| Lecture/revalidation du cache, médiane | 3,095 ms | 3,433 ms |
+| Conversion de 1 000 BYN en EUR, médiane | 0,073 ms | 0,095 ms |
+| Conversion et agrégation exacte de 10 000 montants | 65,285 ms | 26,362 ms |
+
+
 ## Vérifications observées de mission 7C
+
+**Campagne historique 7C : résultats et parcours ci-dessous antérieurs à la mission 8.**
 
 **Debug et Release : 0 erreur, 0 avertissement ; 329 tests réussis, 0 échec et 0 ignoré par configuration**, dont les 261 cas précédents. Couverture supplémentaire : mêmes devises et six directions EUR/BYN/RUB, précision extensible, frais, révisions indépendantes, protection globale R, refus des demi-patches, rollback, concurrence, pagination liée, migrations et archives historiques.
 
@@ -113,7 +182,7 @@ Comparaison hors interface réussie : **deux virements, six mouvements dont deux
 
 Les véritables fenêtres WPF ont été construites et leur arbre visuel inspecté via `RenderTargetBitmap` : registre, dialogue multidevise modifiable et consultation protégée R, clair/sombre, sélection de texte. Le libellé des frais désactivés était noir sur fond sombre : correction par style partagé de case à cocher, puis inspection confirmant sa lisibilité ; le lien du registre est compact et ses infobulles conservent les explications. Captures synthétiques locales dans `screenshots-private/moneta-m7c-*.png`, exclues de Git. **La capture composée native GDI reste limitée sur ce poste** ; validation utilisateur, lecteurs d’écran et campagne multi-DPI/moniteurs restent nécessaires.
 
-### Mesures de mission 7C
+### Mesures de mission 7C — historiques
 
 Windows 10.0.26220 x64, Core i5-1235U, 12 processeurs logiques, .NET 10.0.12, Release sans débogueur. Sonde API : trois comptes EUR/EUR/BYN ; **1 000 virements initiaux, 2 334 mouvements, 334 frais**, moitié même devise / moitié multidevise. Un échauffement puis cinq échantillons dans le même processus ; médianes ci-dessous, sans vidage du cache disque ni garantie statistique. Création/correction/suppression désignent la préparation du brouillon, distincte du commit. Initialisation du corpus : **2,424 s**, un essai séparé.
 
@@ -332,7 +401,7 @@ Après une inspection UI Automation intensive et un grand défilement, un échan
 | [Cartographie des commandes](docs/UI_MENU_MAP.md) | Menus prouvés/provisoires, raccourcis, comportements, fenêtres et priorités |
 | [Inventaire des écrans](docs/UI_SCREEN_INVENTORY.md) | Champs, interactions, preuves manquantes et protocole de captures synthétiques |
 | [Identité visuelle](docs/VISUAL_IDENTITY.md) | Ressources entièrement originales, principes Windows classiques et validation graphique séparée |
-| [Devises et paramètres](docs/CURRENCIES_AND_SETTINGS.md) | Comptes dynamiques, contrat de cours, préférences locales, commandes et architecture des futurs services |
+| [Devises et paramètres](docs/CURRENCIES_AND_SETTINGS.md) | Comptes dynamiques, cours officiels/cache, préférences locales et séparation financière/valorisation |
 
 La référence statique prouve une présence ou une déclaration ; elle ne prouve pas qu'une commande fonctionne encore. Les pages du manuel sont anciennes et parfois contradictoires. Aucun exécutable ou script BankPerfect n'a été lancé ; aucune décompilation ni aucun désassemblage n'a été effectué.
 
@@ -356,4 +425,4 @@ Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
 ## Prochaine mission proposée
 
-Après 7C, qualifier avec l’utilisateur les conventions de virements et NP/P/R, l’accessibilité et le rendu composé multi-DPI/moniteurs. Une mission distincte peut traiter les **cours officiels datés/sourcés et leur cache**, sans modifier les montants réels des virements : contrats NBRB/CBR, unités/nominal, dates manquantes, absence de taux et valorisation explicitement séparée. Import `.bp`, filtres, récupération individuelle et automatisation des sauvegardes restent des lots séparés. Le corpus `.bp` strictement fictif et sa spécification demeurent nécessaires ; les UUID Moneta prépareront une future correspondance de provenance, sans fabriquer aujourd’hui de données BankPerfect. Voir [ROADMAP](docs/ROADMAP.md).
+Après la mission 8, qualifier avec l’utilisateur les conventions de virements et NP/P/R, l’accessibilité et le rendu composé multi-DPI/moniteurs ; compléter les réserves documentaires des fournisseurs sans confondre un GET réussi avec un contrat complet de disponibilité. Les cours/cache et l’estimation du compte sélectionné sont opérationnels ; total multicomptes dans l’interface, saisie de taux manuel, import `.bp`, filtres, récupération individuelle et automatisation des sauvegardes restent des lots séparés. Le corpus `.bp` strictement fictif et sa spécification demeurent nécessaires ; les UUID Moneta prépareront une future correspondance de provenance, sans fabriquer aujourd’hui de données BankPerfect. Voir [ROADMAP](docs/ROADMAP.md).

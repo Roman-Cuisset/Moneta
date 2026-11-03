@@ -9,6 +9,7 @@ public sealed record LocalSettings
     public string Theme { get; init; } = "Light";
     public bool CheckUpdatesAtStartup { get; init; }
     public bool RefreshRatesAtStartup { get; init; }
+    public string RateSource { get; init; } = "NBRB";
 }
 
 public sealed class SettingsException : Exception
@@ -22,7 +23,7 @@ public sealed class SettingsException : Exception
 /// <summary>Versioned, atomic storage independent of WPF and of financial data.</summary>
 public sealed class SettingsStore
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private bool _loaded;
     private SettingsException? _loadFailure;
@@ -95,7 +96,8 @@ public sealed class SettingsStore
                     SchemaVersion = SchemaVersion,
                     Theme = settings.Theme,
                     CheckUpdatesAtStartup = settings.CheckUpdatesAtStartup,
-                    RefreshRatesAtStartup = settings.RefreshRatesAtStartup
+                    RefreshRatesAtStartup = settings.RefreshRatesAtStartup,
+                    RateSource = settings.RateSource
                 }, JsonOptions);
                 stream.Flush(flushToDisk: true);
             }
@@ -142,7 +144,7 @@ public sealed class SettingsStore
         using var stream = File.OpenRead(path);
         var document = JsonSerializer.Deserialize<SettingsDocument>(stream, JsonOptions)
             ?? throw new JsonException("Le document est vide.");
-        if (document.SchemaVersion != SchemaVersion)
+        if (document.SchemaVersion is not (1 or SchemaVersion))
         {
             throw new SettingsException(
                 $"La version {document.SchemaVersion} du fichier de préférences n'est pas prise en charge.");
@@ -152,7 +154,9 @@ public sealed class SettingsStore
         {
             Theme = document.Theme,
             CheckUpdatesAtStartup = document.CheckUpdatesAtStartup,
-            RefreshRatesAtStartup = document.RefreshRatesAtStartup
+            RefreshRatesAtStartup = document.RefreshRatesAtStartup,
+            RateSource = document.SchemaVersion == 1 ? "NBRB" : document.RateSource
+                ?? throw new SettingsException("Le fournisseur des cours est absent des préférences.")
         };
         Validate(settings);
         return settings;
@@ -164,6 +168,8 @@ public sealed class SettingsStore
         {
             throw new SettingsException("Le thème doit être Light ou Dark.");
         }
+        if (settings.RateSource is not ("NBRB" or "CBR"))
+            throw new SettingsException("Le fournisseur des cours doit être NBRB ou CBR.");
     }
 
     private sealed class SettingsDocument
@@ -176,5 +182,6 @@ public sealed class SettingsStore
         public required string Theme { get; init; }
         public required bool CheckUpdatesAtStartup { get; init; }
         public required bool RefreshRatesAtStartup { get; init; }
+        public string? RateSource { get; init; }
     }
 }

@@ -109,8 +109,6 @@ public sealed class DynamicAccountTests
             Assert.AreEqual(originalBalance, model.SelectedAccount.Balance);
             Assert.AreEqual(originalDetails, model.SelectedRowDetails);
             Assert.AreEqual(code == "EUR" ? model.SelectedAccountBalanceText : "Cours indisponible", model.DisplayBalanceText);
-            StringAssert.Contains(model.DisplayRateDescription, "Aucun service de change actif");
-            StringAssert.Contains(model.DisplayRateDescription, "aucun cours chargé");
         }
         Assert.IsNull(typeof(Account).GetProperty(nameof(Account.Currency))!.SetMethod);
     }

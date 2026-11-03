@@ -63,7 +63,7 @@ public sealed class DocumentPresentationTests
         };
         var document = Document() with { Currencies = [Kwd, customEuro] };
         var model = new MainViewModel(document);
-        CollectionAssert.AreEqual(new[] { "KWD", "EUR" }, model.DisplayCurrencies.Select(currency => currency.Code).ToArray());
+        CollectionAssert.AreEqual(new[] { "KWD", "EUR" }, model.CurrencyRegistry.Currencies.Select(currency => currency.Code).ToArray());
         Assert.AreEqual(customEuro, model.CurrencyRegistry.Get("EUR"));
         Assert.IsFalse(model.CurrencyRegistry.TryGet("BYN", out _));
         Assert.IsFalse(model.CurrencyRegistry.TryGet("RUB", out _));

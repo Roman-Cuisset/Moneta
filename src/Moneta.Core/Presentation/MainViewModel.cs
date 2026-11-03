@@ -359,7 +359,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     public ReadOnlyObservableCollection<AccountSummary> Accounts { get; }
     public CurrencyRegistry CurrencyRegistry { get; }
-    public ReadOnlyObservableCollection<Currency> DisplayCurrencies => CurrencyRegistry.Currencies;
+    public ReadOnlyObservableCollection<Currency> DisplayCurrencies => PresentationCurrencies;
 
     public Currency? DisplayCurrency
     {
@@ -369,7 +369,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
             Currency? registered = null;
             if (value is not null)
             {
-                if (!CurrencyRegistry.TryGet(value.Code, out registered) || registered != value)
+                if (!TryPresentationCurrency(value.Code, out registered) || registered != value)
                     throw new ArgumentException("La devise d'affichage ne fait pas partie du référentiel.", nameof(value));
             }
             else if (_selectedAccount is not null)
@@ -383,15 +383,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         }
     }
 
-    public string DisplayBalanceText => _selectedAccount is null
-        ? string.Empty
-        : IsNativeDisplay ? _selectedAccount.BalanceText : "Cours indisponible";
-
-    public string DisplayRateDescription => _selectedAccount is null
-        ? "Aucun compte sélectionné. Aucun service de change actif ; aucun cours chargé."
-        : IsNativeDisplay
-            ? $"Devise native {_selectedAccount.CurrencyCode} · aucune conversion. Aucun service de change actif ; aucun cours chargé."
-            : $"Cours indisponible : {_selectedAccount.CurrencyCode} → {_displayCurrency?.Code}. Aucun service de change actif ; aucun cours chargé. Le solde natif reste inchangé.";
+    public string DisplayBalanceText => _projectedBalance;
+    public string DisplayRateDescription => _projectedRateDescription;
 
     private bool IsNativeDisplay => _displayCurrency?.Code == _selectedAccount?.CurrencyCode;
 
@@ -524,6 +517,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     private void NotifyDisplayCurrencyChanged()
     {
+        RefreshRateProjection();
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayCurrencies)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NativeBalanceDescription)));
         PropertyChanged?.Invoke(this, DisplayCurrencyChanged);
         PropertyChanged?.Invoke(this, DisplayBalanceChanged);
         PropertyChanged?.Invoke(this, DisplayRateChanged);

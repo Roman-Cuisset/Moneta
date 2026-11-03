@@ -2,7 +2,7 @@
 
 ## Portée et règle de lecture
 
-**Mission 7C : virements intradossier liés et atomiques, même devise/multidevises, frais séparés, correction/suppression d’ensemble et navigation, schéma 5.** Registre/pointage/rapprochements 7A/7B et cycle manuel Ctrl+S conservés. Travail fonctionnel 7C livré ; cours officiels, import `.bp` et automatismes restent des lots distincts. Aucun jalon de parité complet n’est présumé clos.
+**Mission 8 : cours officiels NBRB/CBR, cache/historique datés, conversion indicative et estimation du solde sélectionné opérationnels.** Les virements liés 7C, registre/pointage/rapprochements 7A/7B et Ctrl+S restent inchangés ; **format financier schéma 5 conservé**, cache public indépendant. Aucun jalon de parité complet n’est présumé clos : total multicomptes dans l’interface, taux manuel, import `.bp`, budgets, échéancier, sauvegarde automatique et mise à jour installable ne sont pas livrés.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
@@ -10,7 +10,26 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
-### Livraison des virements liés — mission 7C
+### Livraison des cours et valorisations — mission 8
+
+| Résultat livré | Portée / limite |
+|---|---|
+| Découverte et acquisition | **Outils → Cours de change…**, table officielle avec nominaux ; source/date, Consulter le cache, Actualiser et Annuler la requête ; ancienne entrée Actualiser les cours officiels active |
+| Choix de source | NBRB par défaut, CBR explicite ; préférence persistée dans **Outils → Options → Devises et taux** et dans la fenêtre de cours ; changement de banque = cache uniquement, aucun téléchargement ni repli/mélange automatique |
+| Démarrage | Automatique désactivé par défaut ; option appliquée au prochain lancement, sans Internet obligatoire ni blocage des comptes ; cache du jour ≤ 6 h réutilisé, historique applicable réutilisé, actualisation manuelle forcée |
+| Dates et absence de cours | Dernière publication d’effet ≤ date de valorisation, âge maximal 31 jours ; ancienneté/date réelle explicites, futur conservé mais non utilisé avant effet, cours manquant/périmé non inventé ; jusqu’à sept dates antérieures interrogées pour publication absente, pas de retry HTTP/réseau |
+| Historique hors ligne | Cache SQLite distinct du financier, réponse originale et SHA-256, publications immuables/corrections ajoutées ; 100 entrées récentes affichées, archives plus anciennes consultables par date, aucune purge automatique |
+| Montant et solde | Convertisseur de montant français et équivalent estimé du compte sélectionné ; natif toujours réel et visible, source/effet/récupération/cache affichés, arrondi final au pair ; aucune modification des écritures ou de l’état modifié |
+| Calcul d’agrégat | API `ConvertTotal` : somme exacte puis arrondi unique, refus du total entier si une cotation manque ; **aucun écran Total des comptes ou relevé multicomptes livré** |
+| Erreurs et sécurité | Annulation/génération empêchant une réponse périmée de remplacer le choix courant ; mémoire validée conservée après échec de cache, persistance non confirmée signalée ; HTTPS officiel fixe sans données financières, cookies/redirections, DTD/résolution XML externe interdits |
+| Virements et persistance | Deux montants réels, frais, rapport et source déclarée figés ; aucune suggestion de cours appliquée ; schéma financier 5, Save, sauvegardes et restauration conservés |
+| Preuves acquises | Debug/Release : 0 erreur/avertissement, **516 tests réussis par configuration**, aucun échec/ignoré ; clients .NET réels HTTP 200 NBRB/CBR, Windows-1251, parcours WPF clair/sombre, redémarrage, cache hors ligne, annulation sous réseau retenu et retour réseau ; refus des anciennes unités BYR/RUB, fichier financier entier inchangé. Mesures et limites dans le README |
+
+La [documentation XML CBR](https://www.cbr.ru/development/SXML/) a été consultée et les deux endpoints publics effectivement vérifiés. La [page d’aide NBRB](https://www.nbrb.by/apihelp/exrates) a expiré dans l’outil de lecture ; réponses API vérifiées ne signifient pas contrat complet, quotas ou horaires garantis. F01 garde cette réserve documentaire. F02 est livré pour cours/cache, convertisseur de montant et solde individuel, **pas** taux manuel ni total d’interface. Le [README](../README.md#preuves-acquises-de-mission-8) sépare les preuves courantes des campagnes historiques 7C/7B ; leur nombre de tests et leurs performances ne sont pas ceux de mission 8.
+
+**Priorité de consolidation avant le prochain pilote :** profiler l’activité CPU visible, élevée et variable au dernier intervalle mesuré ; aucun « CPU nul » ni correctif causal déclaré en mission 8. Qualifier aussi la fenêtre composée, les moniteurs/DPI et les conditions documentaires des fournisseurs. Le corpus `.bp` synthétique peut être préparé séparément ; aucun import, budget ou échéancier n’est commencé implicitement.
+
+### Livraison des virements liés — mission 7C, historique
 
 | Résultat livré | Validation / limite |
 |---|---|
@@ -23,9 +42,9 @@ La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacit�
 | Interface | Opérations → Virement et outil existant, Ctrl+Maj+T limité au registre ; ouverture/suppression d’ensemble et navigation UUID vers page de 100, commandes liées explicitement Moneta |
 | Qualification | Debug et Release : 329 tests réussis, aucun échec ni ignoré ; parcours Windows synthétique clair/sombre de création/correction/frais, suppression du brouillon entier, P/R indépendants, consultation/refus R, Save, fermeture/réouverture, sauvegarde à chaud/restauration ouverte ; mesures et portée de l’inspection visuelle dans le README |
 
-Le [README](../README.md#vérifications-observées-de-mission-7c) donne chiffres et portée des observations. Les **261 tests Debug/Release de 7B** ci-dessous sont historiques ; les 68 cas supplémentaires de 7C les complètent. Restent à qualifier : conventions utilisateur, rendu composé natif/accessibilité/multi-DPI, frontières matérielles de panne et volumes plus importants ; ces réserves ne signifient pas que les virements restent à implémenter.
+Le [README](../README.md#vérifications-observées-de-mission-7c) donne chiffres et portée des observations **historiques 7C**. Les **261 tests Debug/Release de 7B** ci-dessous sont historiques ; les 68 cas supplémentaires de 7C les complètent. Restent à qualifier : conventions utilisateur, rendu composé natif/accessibilité/multi-DPI, frontières matérielles de panne et volumes plus importants ; ces réserves ne signifient pas que les virements restent à implémenter.
 
-**Suite précise recommandée, mission distincte :** cours officiels datés/sourcés et cache (F01/F02), sans revalorisation destructive des virements existants ; T02 qualifie alors le rafraîchissement. Aucun connecteur réseau ni import BP ajouté à 7C. La future provenance d’import doit relier des UUID Moneta stables à des identifiants source effectivement démontrés, jamais inventer un faux corpus BankPerfect.
+**Suite recommandée à l’issue de 7C, désormais réalisée en mission 8 pour cours/cache et valorisation individuelle :** F01/F02 et séparation du rafraîchissement T02 ci-dessus. Aucun connecteur réseau ni import BP n’avait été ajouté à 7C ; ce constat historique n’exclut pas les connecteurs mission 8. La future provenance d’import doit relier des UUID Moneta stables à des identifiants source effectivement démontrés, jamais inventer un faux corpus BankPerfect.
 
 ### Livraison du pointage et rapprochement — mission 7B
 
@@ -39,7 +58,7 @@ Le [README](../README.md#vérifications-observées-de-mission-7c) donne chiffres
 | Schéma 4 et archives | Migration additive 3 → 4 sur copie, représentation v3 conservée ; concurrence/empreintes et restauration incluent opérations, sessions, snapshots et événements |
 | Qualification | 261 tests Debug/Release ; parcours WPF réel et comparaison des restaurations ; inspection des arbres visuels clair/sombre, réserve sur capture composée native et mesures détaillées dans le README |
 
-**Contexte historique avant 7C :** la validation utilisateur des conventions NP/P/R et de la fenêtre composée, ainsi que le coût des candidats sur gros dossier, restaient à qualifier. Les virements liés, y compris multidevises et frais, ont depuis été livrés en 7C ci-dessus ; les cours officiels et l’import `.bp` restent distincts.
+**Contexte historique avant 7C :** la validation utilisateur des conventions NP/P/R et de la fenêtre composée, ainsi que le coût des candidats sur gros dossier, restaient à qualifier. Les virements liés, y compris multidevises et frais, ont depuis été livrés en 7C, puis cours/cache en mission 8 ; l’import `.bp` reste distinct.
 
 ### Livraison du registre financier — mission 7A
 
@@ -77,7 +96,7 @@ S01/U01 couvrent maintenant registre, rapprochements simples et virements liés 
 
 97 tests Debug/Release, trois protections de session confirmées, six cas de sauvegarde/verrou/readonly ajoutés et classification d'erreur de source verrouillé corrigée. Diagnostic CPU : pic attribué au thread de compilation étagée .NET, sans preuve de boucle WPF ; toutes les occurrences prolongées précédentes ne sont pas expliquées avec certitude. Aucun commutateur de désactivation des optimisations ni refonte livré. [Rapport, mesures et réserves](AUDIT_MISSION_6_1.md).
 
-La mission 7A a réalisé le registre simple et le schéma 3 ; 7B a ajouté pointage/rapprochements et schéma 4 ; **7C livre les virements et leurs règles liées, schéma 5**, sans nouveau service de cours.
+La mission 7A a réalisé le registre simple et le schéma 3 ; 7B a ajouté pointage/rapprochements et schéma 4 ; **7C a livré les virements et leurs règles liées, schéma 5**, sans service de cours à cette date. La mission 8 ajoute ses connecteurs/cache séparés sans migration financière.
 
 
 ### Livraison de préparation fonctionnelle — mission 5
@@ -187,14 +206,14 @@ Le [récapitulatif clavier](https://chelly.net/bankperfect/wiki/Recapitulatif%20
 
 Le [manuel](https://chelly.net/bankperfect/wiki/Import-export-donnees.html) décrit un critère historique de doublon date/mode/montant : il ne prouve pas l'identité de deux transactions. Les limites XML/CSV locales citées en E04 rendent nécessaire un rapport de pertes même lorsque les soldes concordent. Les données `cPickle` de l'échéancier (`reference-bankperfect/Scripts/Scheduler/scheduler.py:21-56`) ne doivent **jamais** être désérialisées depuis une entrée non fiable ; aucune évaluation de règles legacy pour compléter un import. Les fichiers annexes et données d'extensions nécessitent un inventaire distinct, pas une assimilation à des opérations exportées.
 
-## 6. Transferts livrés ; cours officiels et cache séparés
+## 6. Transferts et cours officiels livrés — limites de parité
 
 | ID / priorité | Livrable et statut | Dépendances | Critère / portée |
 | --- | --- | --- | --- |
-| F01 / P0 | Finaliser contrats officiels NBRB prioritaire et CBR alternatif : cotation, nominal, date réelle/publication, historique des codes, BYR/BYN, corrections/erreurs et conditions d'utilisation. | E06 ; D01 ; observations sourcées de l'architecture. | Réserves NBRB levées par documentation lisible ; CBR XML quotidien/historique caractérisés, encodage Windows-1251 et décimales explicites. Quotas/horaires non inventés ; distinction cours officiel/taux manuel/taux bancaire. Aucun contrat complet déduit d'un GET. |
-| F02 / P1 | Réaliser acquisition automatique/manuelle de cours, historique/cache, convertisseur EUR/BYN/RUB, saisie de taux manuel et soldes en EUR. | F01 ; D02 ; S01–S03 ; U01. | Échelles 1/10/100 et grandes unités, source/date commune, orientation, dates absentes, dernier antérieur explicitement marqué, hors ligne et corrections ; aucun taux 0/1 de repli, ni mélange/fallback silencieux NBRB/CBR. Texte numérique exact sans `double`, notation exponentielle optionnelle interprétée sans double division du nominal ; aucun rafraîchissement ne modifie l'historique. |
-| T01 / P1 | **Réalisé en 7C** : transferts intradossier même devise/multidevises, frais, rapport effectif exact et navigation ; correction/suppression d’ensemble. | Domaine exact, stockage et 7B ; F02 seulement pour une proposition officielle indicative future. | Deux jambes principales et frais séparés, montants réels conservés, comptes distincts/immuables, cotation crédit/débit échelle 1 hors frais, source déclarée ; brouillons/Save/SaveAs, protection R globale, demi-patches refusés, digest/restauration du graphe complet. Observations et limites de validation dans le README ; pas de parité BP parfaite ni cours officiel revendiqué. |
-| T02 / P0 | Qualifier séparation taux officiel / taux effectif / frais / valorisation et invariants après rafraîchissement. | F02 ; T01 ; S04. | Enregistrer transfert, changer/récupérer cours, fermer/réouvrir/restaurer : montants, frais, lien et taux figé inchangés. Une valorisation datée peut varier sans réécriture d'historique. Ancien BYR et nouveau BYN ne sont pas fusionnés par simple libellé ; conversion historique explicitement décidée et sourcée. |
+| F01 / P0 | **Implémenté en mission 8 pour les flux quotidiens NBRB/CBR** : référence, nominal, date d’effet réelle et encodage contrôlés ; documentation fournisseur encore partielle. | E06 ; D01 ; observations sourcées de l’architecture. | Endpoints réellement vérifiés avec le client .NET, documentation XML CBR lue ; aide NBRB en timeout, quotas/horaires/conditions et histoire complète des codes non démontrés. Ne pas assimiler un GET à un contrat complet ni fusionner BYR/BYN. |
+| F02 / P1 | **Réalisé mission 8** : acquisition manuelle/automatique optionnelle, cache/historique, conversion indicative EUR/BYN/RUB et devises du dossier, solde individuel. **Restent futurs : taux manuel et total dans l’interface.** | F01 pour le contrat complet ; D02 ; S01–S03 ; U01. | Nominal/orientation et source/date commune, dernier antérieur ≤ 31 jours affiché, futur exclu avant effet, erreurs/hors ligne explicites ; aucun taux de repli fictif ni mélange/fallback NBRB/CBR. API d’agrégat avec arrondi final unique disponible, aucune parité Total des comptes UI déclarée. |
+| T01 / P1 | **Réalisé en 7C**, conservé en mission 8 : transferts intradossier même devise/multidevises, frais, rapport effectif exact et navigation ; correction/suppression d’ensemble. | Domaine exact, stockage et 7B ; indépendant du service de cours. | Deux jambes principales et frais séparés, montants réels conservés, comptes distincts/immuables, crédit/débit hors frais, source déclarée ; brouillons/Save/SaveAs, protection R globale, demi-patches refusés, digest/restauration du graphe complet. **Aucune suggestion de cours officielle appliquée**. |
+| T02 / P0 | **Séparation opérationnelle en mission 8** : taux officiel de valorisation sans modification du taux effectif, des montants ou frais réels. Qualification utilisateur et matérielle toujours distincte. | F02 ; T01 ; S04. | Régressions ciblées financières/P/R/schéma 5 et octets financiers/WAL inchangés réussies ; preuves courantes dans le README. La date/source de valorisation peut varier, pas les écritures. Ne pas déduire une conversion historique BYR/BYN ni une qualification Windows non observée. |
 
 Les [observations FX de l'architecture](ARCHITECTURE.md#5-devises-officielles-historique-et-fonctionnement-hors-ligne) distinguent les GET NBRB (échelles EUR 1/RUB 100), les [contrats XML CBR](https://www.cbr.ru/development/sxml/) et les limites documentaires restantes. Le transfert historique reste intrafichier ; ne pas étendre implicitement l'atomicité à plusieurs dossiers.
 

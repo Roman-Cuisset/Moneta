@@ -1,6 +1,6 @@
 # Formats de fichiers Moneta
 
-**État mission 7C : schéma courant 5, dossiers/comptes, registre, pointages, rapprochements/historique et virements liés avec frais persistants ; sauvegarde/restauration du graphe complet.** Cycle manuel Enregistrer ; pas de cours officiels, ventilations, automatisation ou lecture `.bp`. Voir [README](../README.md) et [ARCHITECTURE](ARCHITECTURE.md).
+**État mission 8 : schéma financier courant 5 inchangé**, dossiers/comptes, registre, pointages, rapprochements/historique et virements liés avec frais persistants ; sauvegarde/restauration du graphe complet. Les cours officiels et leur historique public sont dans un **cache SQLite séparé, schéma 1** ; les préférences locales passent au schéma JSON 2. Aucun cours ni choix de valorisation n’est ajouté au `.moneta`. Cycle manuel Enregistrer ; pas de ventilations, automatisation financière ou lecture `.bp`. Voir [README](../README.md) et [ARCHITECTURE](ARCHITECTURE.md).
 
 Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. « Doit » exprime une exigence Moneta ; une propriété documentée de SQLite n'est pas une garantie d'implémentation Moneta.
 
@@ -56,17 +56,17 @@ Les opérations référencent les comptes, tiers, modes et catégories par UUID.
 
 ## FMT-03 — Valeurs financières et dates exactes
 
-Soldes initiaux, opérations et montants natifs des virements sont réalisés ; les cours officiels/prix/quantités ci-dessous restent des contrats futurs. Le rapport effectif d’un virement est défini par ses deux montants exacts, pas par une colonne de taux arrondi.
+Soldes initiaux, opérations et montants natifs des virements sont réalisés. Les cours officiels de mission 8 sont conservés exclusivement dans le cache public FMT-10 ; prix/quantités boursiers restent futurs. Le rapport effectif d’un virement est défini par ses deux montants exacts, pas par une colonne de taux arrondi.
 
 | Donnée | Contrat de stockage | Validation requise |
 | --- | --- | --- |
 | Montant comptabilisé et solde initial | `INTEGER` 64 bits en unités mineures, devise et échelle explicites ; pour une opération, magnitude non négative avec sens débit/crédit séparé | Pas de supposition « toute devise a deux décimales ». À deux décimales, 12,34 EUR = 1234 unités ; solde négatif et sens restent distincts. Débordement ou fraction sous l'unité rejetés explicitement, jamais tronqués |
-| Taux, quantité de titres, prix unitaire | `TEXT` décimal canonique invariant, point décimal, sans séparateur de milliers ; précision, unité et provenance explicites | Ex. taux fictif `3.2500`, quantité `2.5`. Préserver la précision source nécessaire ; ne pas passer par `double` ou `REAL` |
+| Prix unitaire, quantité de titres — futurs | `TEXT` décimal canonique invariant, point décimal, sans séparateur de milliers ; précision, unité et provenance explicites | Ex. quantité fictive `2.5`. Préserver la précision source nécessaire ; ne pas passer par `double` ou `REAL`. Pour les cours officiels réalisés : réponse brute et métadonnées dans FMT-10, pas de colonne financière supplémentaire |
 | Dates métier | Texte ISO `YYYY-MM-DD`, sans fuseau | Dates d'opération, pointage, échéance et relevé distinctes ; inconnue reste inconnue |
 | Horodatages techniques | UTC avec représentation non ambiguë | Création/import/sauvegarde ne remplacent jamais les dates métier |
 | Texte utilisateur | Unicode, valeur et provenance conservées | Aucune translittération ou normalisation destructive silencieuse ; ne pas exécuter les champs de règles historiques |
 
-SQLite `REAL` est binaire flottant ; `DECIMAL(10,2)` ne garantit ni échelle ni exactitude. `Microsoft.Data.Sqlite` **10.0.12** est utilisé avec des paramètres entiers explicites pour les soldes, pas sa conversion automatique de `decimal`. `ExactMoney` rejette toute fraction sous l'unité et tout dépassement de `±long.MaxValue` unités mineures ; **aucun arrondi à la saisie**. Les taux/prix futurs resteront distincts, exacts et sourcés. Pas de `TOTAL`, `AVG`, cast `REAL` ou somme implicite de valeurs `TEXT` pour une vérité financière.
+SQLite `REAL` est binaire flottant ; `DECIMAL(10,2)` ne garantit ni échelle ni exactitude. `Microsoft.Data.Sqlite` **10.0.12** est utilisé avec des paramètres entiers explicites pour les soldes, pas sa conversion automatique de `decimal`. `ExactMoney` rejette toute fraction sous l'unité et tout dépassement de `±long.MaxValue` unités mineures ; **aucun arrondi à la saisie**. Les valeurs officielles sont analysées exactement en `decimal`, les fractions intermédiaires utilisent des coefficients entiers privés et le seul arrondi de valorisation est `ToEven` à la précision cible ; aucun de ces calculs ne réécrit un montant comptabilisé. Pas de `TOTAL`, `AVG`, cast `REAL` ou somme implicite de valeurs `TEXT` pour une vérité financière.
 
 Pour une opération, la magnitude doit être entre zéro et `long.MaxValue` unités mineures ; `Direction=Debit` soustrait, `Credit` ajoute. Le solde initial reste signé. Les agrégats sont calculés en `decimal` contrôlé sans être forcés dans `Int64`. Date, énumérations, devise native, précision, UUID, hiérarchie, projections des noms et horodatages/révisions sont validés. L’interface n’accepte ni signe négatif ni arrondi silencieux ; les zéros fractionnaires supplémentaires exacts n’altèrent pas le montant.
 
@@ -84,7 +84,7 @@ Le lot est enregistré atomiquement avec ses modifications d’opérations. Tout
 
 ### Virements, montants et relations — schéma 5
 
-Chaque virement exige exactement un principal débiteur et un principal créditeur, sur deux comptes distincts du même dossier, plus un débit de frais facultatif. Les montants des opérations restent des **magnitudes non négatives** en `INTEGER` natif ; principal strictement positif, impact signé −débit/+crédit/−frais, solde initial signé distinct. Même devise : principaux exactement égaux hors frais et métadonnées de change null. Multidevise : deux montants réellement saisis, date du change et source déclarée/non vérifiée obligatoires ; défauts de saisie = date du virement et « Montants saisis par l’utilisateur ». Aucun arrondi, conversion automatique ou cours officiel.
+Chaque virement exige exactement un principal débiteur et un principal créditeur, sur deux comptes distincts du même dossier, plus un débit de frais facultatif. Les montants des opérations restent des **magnitudes non négatives** en `INTEGER` natif ; principal strictement positif, impact signé −débit/+crédit/−frais, solde initial signé distinct. Même devise : principaux exactement égaux hors frais et métadonnées de change null. Multidevise : deux montants réellement saisis, date du change et source déclarée/non vérifiée obligatoires ; défauts de saisie = date du virement et « Montants saisis par l’utilisateur ». Aucun arrondi ni conversion automatique des jambes ; les cours officiels de mission 8 ne sont ni injectés dans ce dialogue ni appliqués rétroactivement.
 
 Le **rapport exact crédit principal / débit principal**, hors frais, cote des unités de devise reçue pour **1 unité source**. Ses opérandes exacts sont conservés avec leurs devises/échelles ; un quotient `decimal` affiché reste « Taux approximatif ». Débordement ou quotient devenu zéro : rapport seul. Ni cours d’affichage ni frais ne changent le principal ou son ratio.
 
@@ -192,7 +192,7 @@ Les tests d'intégration et scénarios Windows de mission 6 couvrent le socle d�
 | --- | --- | --- |
 | FMT-V01 | Fichier absent/vide/tronqué, ZIP, faux suffixe, SQLite d'une autre application | Refus sans création ni écriture ; identification explicite |
 | FMT-V02 | Versions connues anciennes, future, métadonnées incohérentes, schéma altéré | Migration uniquement connue ; refus futur/incohérent sans downgrade |
-| FMT-V03 | Centimes, négatifs, échelles différentes, taux `TEXT`, débordement | Relecture exacte et dépassement visible ; aucun flottant de repli |
+| FMT-V03 | Centimes, négatifs, échelles différentes, représentations décimales exactes, débordement | Relecture exacte et dépassement visible ; aucun flottant de repli |
 | FMT-V04 | Interruption avant/durant/après commit, coupure simulée, disque plein | Reprise moteur sans effacer de journal ; aucune réussite mensongère |
 | FMT-V05 | Lecteur long, checkpoint `BUSY`, deux ouvertures, fermeture interrompue | État cohérent préservé ; pas de déclaration « fichier autonome » prématurée |
 | FMT-V06 | Sauvegarde pendant écritures contrôlées ; panne avant publication | Snapshot cohérent comparé ; dernière copie valide préservée |
@@ -200,6 +200,48 @@ Les tests d'intégration et scénarios Windows de mission 6 couvrent le socle d�
 | FMT-V08 | Migration copie avant/après et interruption à chaque frontière | Original préservé, différences attendues seules, version cible atomiquement cohérente |
 | FMT-V09 | Copie fermée vers autre volume ; sauvegarde sans manifeste ; hash divergent | Aucun certificat de réussite sans contrôles ; publication non inter-volume présumée |
 | FMT-V10 | Association optionnelle avec espaces/accents et défaut concurrent | Commande correctement citée, consentement respecté, `.bp` et `UserChoice` intacts |
+
+## FMT-10 — Cache public de cours et préférences — mission 8
+
+### Trois formats indépendants
+
+| Fichier | Version / identité | Contenu et portée |
+|---|---|---|
+| Dossier `.moneta` | Schéma **5**, `MNTA` / `0x4D4E5441` | Vérité financière, inchangée par la mission 8 ; sauvegarde/manifeste et migrations FMT-01 à FMT-07 inchangés |
+| `%LocalAppData%\Moneta\exchange-rates.sqlite` | Schéma **1**, `user_version=1`, `application_id=0x4D465831` (`MFX1`) | Réponses officielles publiques, partagées entre dossiers locaux ; ni donnée de compte ni migration du dossier financier |
+| `%LocalAppData%\Moneta\settings.json` | Schéma **2**, lecture compatible du schéma **1** complet | Thème, booléens de démarrage et `RateSource` (`NBRB`/`CBR`) ; aucun montant/cours/secret |
+
+Un ancien JSON 1 conserve ses choix et prend NBRB par défaut. Le prochain enregistrement explicite écrit 2 ; l’ouverture seule ne réécrit pas le fichier. Champ obligatoire manquant, source inconnue, corruption ou version inconnue : avertissement, fichier conservé, écriture bloquée selon `SettingsStore`. Une nouvelle préférence source ne constitue pas un téléchargement ; l’option automatique est désactivée par défaut et ne prend effet qu’au prochain démarrage.
+
+### Lots bruts, immuables et vérifiables
+
+`SqliteRateCache` emploie une seule table **`RateSets STRICT`** et l’index `RateSets_ProviderDate(provider,effective_date,retrieved_utc)` :
+
+| Colonne | Représentation |
+|---|---|
+| `id` | UUID canonique `TEXT`, clé primaire |
+| `provider` | `INTEGER`, 0 NBRB / 1 CBR |
+| `requested_date`, `effective_date` | `TEXT` ISO `YYYY-MM-DD`, requête réelle et date retournée distinctes |
+| `retrieved_utc` | `TEXT` UTC canonique au format rond-trip `O` |
+| `endpoint` | `TEXT`, URL HTTPS fixe du fournisseur avec sa date de requête |
+| `sha256` | `TEXT`, 64 caractères hexadécimaux, empreinte des octets originaux |
+| `payload` | `BLOB`, réponse d’origine non modifiée, de 1 à 1 048 576 octets |
+
+Les valeurs numériques ne sont pas dupliquées dans une seconde table de cotations. Le lot structuré **`OfficialRateSet`** est reconstruit en reparsant le JSON NBRB ou le XML CBR original ; valeurs et nominaux restent exacts, sans `REAL`. Les réponses conservent notamment l’encodage Windows-1251 CBR. Une correction ajoute un lot ; elle n’écrase ni le précédent ni une écriture financière. Réutiliser le même UUID avec un contenu différent est refusé. Il n’y a aucune purge automatique.
+
+La recherche ne mélange pas les fournisseurs : date d’effet la plus récente dans **[date de valorisation −31 jours, date de valorisation]**, puis réception la plus récente. Une publication anticipée peut être stockée mais reste exclue des valorisations antérieures à sa date d’effet. L’historique est paginable par l’API (100 lots au maximum par page) ; l’interface présente les 100 plus récents, les lots antérieurs restent recherchables par date. La réception UTC ne prétend pas être l’heure de publication bancaire.
+
+Les références actuelles ont une borne de validité : **NBRB/BYN à partir du 01/07/2016**, **CBR/RUB à partir du 01/01/1998**, sur la **date d’effet réellement retournée**. Un lot antérieur est refusé par le validateur commun au parsing, au stockage et aux conversions ; il n’est pas réétiqueté, divisé ou remplacé automatiquement. La lecture de l’historique n’est pas une certification de monnaies anciennes ; voir les constats réseau et sources de [l’architecture](ARCHITECTURE.md#54-banque-centrale-de-russie--étude-complémentaire-mission-2).
+
+### Intégrité, erreurs et frontières de persistance
+
+Connexions courtes, sans pool, extensions désactivées, `trusted_schema=OFF`, journal **DELETE** et `synchronous=FULL` contrôlés ; ce n’est pas le mode WAL du dossier financier. Une création publie uniquement une base temporaire complète et committée sous un nom encore absent. Chaque opération contrôle identité/version, schéma exact et intégrité ; chaque lot retourné est reparsé et ses métadonnées/empreinte comparées aux octets. Réponse limitée à 1 Mio, 1..1 000 cotations uniques, valeurs décimales strictement positives et nominaux bornés ; DTD et résolution externe XML interdites.
+
+Cache absent = aucun cours disponible, pas création à la simple lecture. Cache corrompu, altéré, d’une autre application, de version inconnue, verrouillé ou inaccessible = diagnostic explicite ; **aucune suppression, réparation, réinitialisation ou migration financière implicite**. Le hash détecte une divergence locale, mais n’est ni une signature du fournisseur ni une authentification contre un attaquant capable de remplacer contenu et hash.
+
+Après une réponse réseau valide, un échec d’écriture du cache n’invalide pas la valeur reçue : la session peut la conserver **en mémoire non persistante**, avec avertissement et `IsPersistent=false`. Une requête ultérieure hors ligne pour le même fournisseur/date conserve ce lot applicable ; aucun succès disque ni disponibilité au redémarrage n’est annoncé. `FromCache` décrit la réutilisation d’un lot de session ; seule la confirmation de persistance distingue disque et mémoire.
+
+L’actualisation et son cache sont hors transaction financière : ils ne changent ni `IsDirty`, ni registre de devises financier, ni `.moneta`/WAL, ni instantanés V1, digests, rapports effectifs et protections NP/P/R des virements. Les sauvegardes financières n’embarquent pas le cache public ou les préférences locales. Calculs, limites temporelles et politiques réseau : [ARCHITECTURE §5](ARCHITECTURE.md#5-devises-officielles-historique-et-fonctionnement-hors-ligne) et [CURRENCIES_AND_SETTINGS](CURRENCIES_AND_SETTINGS.md).
 
 ## Sources officielles consultées le 28 octobre 2026
 

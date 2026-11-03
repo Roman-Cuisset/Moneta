@@ -26,7 +26,8 @@
         <CommandBinding Command="{x:Static local:WindowCommands.NewTransaction}" Executed="NewTransaction_Executed" CanExecute="NewTransaction_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.EditTransaction}" Executed="EditTransaction_Executed" CanExecute="SelectedTransaction_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.DeleteTransaction}" Executed="DeleteTransaction_Executed" CanExecute="SelectedTransaction_CanExecute" />
-        <CommandBinding Command="{x:Static local:WindowCommands.RefreshRates}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.RefreshRates}" Executed="RefreshRates_Executed" CanExecute="RefreshRates_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ShowRates}" Executed="ShowRates_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.TogglePointing}" Executed="TogglePointing_Executed" CanExecute="Pointing_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.MarkTransactions}" Executed="Mark_Executed" CanExecute="Pointing_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.UnmarkTransactions}" Executed="Unmark_Executed" CanExecute="Pointing_CanExecute" />
@@ -179,7 +180,8 @@
                     </MenuItem>
                     <MenuItem Header="O_utils">
                         <MenuItem Header="_Options…" Command="{x:Static local:WindowCommands.Settings}" /><Separator />
-                        <MenuItem Header="Actualiser les cours officiels" Command="{x:Static local:WindowCommands.RefreshRates}" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Cours de change…" Command="{x:Static local:WindowCommands.ShowRates}" AutomationProperties.AutomationId="ShowRatesCommand" />
+                        <MenuItem Header="Actualiser les cours officiels" Command="{x:Static local:WindowCommands.RefreshRates}" AutomationProperties.AutomationId="RefreshRatesCommand" />
                         <MenuItem Header="Budget mensuel…" InputGestureText="Ctrl+B" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Budget annuel…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Graphiques…" Style="{StaticResource UnavailableMenuItem}" />
@@ -260,7 +262,8 @@
                             <TextBlock Text="{Binding DisplayBalanceText}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="AccountBalance" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding DisplayCurrencies}" DisplayMemberPath="Code" SelectedItem="{Binding DisplayCurrency, Mode=TwoWay}" AutomationProperties.AutomationId="BalanceCurrencySelector" AutomationProperties.Name="Devise d'affichage du solde" ToolTip="Affichage seulement : ne modifie ni la devise native ni les opérations." />
                         </Grid>
-                        <TextBlock Text="{Binding DisplayRateDescription}" Style="{StaticResource MutedText}" Margin="0,0,0,12" />
+                        <TextBlock Text="{Binding NativeBalanceDescription}" Style="{StaticResource MutedText}" TextWrapping="Wrap" AutomationProperties.AutomationId="NativeBalance" />
+                        <TextBlock Text="{Binding DisplayRateDescription}" Style="{StaticResource MutedText}" Margin="0,0,0,12" TextWrapping="Wrap" AutomationProperties.AutomationId="BalanceRateDescription" />
                         <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,0,0,14" />
                         <TextBlock Text="OPÉRATION SÉLECTIONNÉE" Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,0,0,8" />
                     </StackPanel>

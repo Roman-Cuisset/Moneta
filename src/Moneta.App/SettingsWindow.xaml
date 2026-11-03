@@ -21,7 +21,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18">
                     <StackPanel>
                         <TextBlock Text="Préférences sur cet ordinateur" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-                        <TextBlock Text="Le thème et les deux options de démarrage sont enregistrés dans le profil Windows courant. Aucun compte, opération, solde ou taux de change n'est enregistré dans ce fichier."
+                        <TextBlock Text="Le thème, le fournisseur des cours et les options de démarrage sont enregistrés dans le profil Windows courant. Aucun compte, opération, solde ou taux de change n'est enregistré dans ce fichier."
                                    TextWrapping="Wrap" Margin="0,0,0,14" />
                         <TextBlock Text="Fichier des préférences" Margin="0,0,0,5" />
                         <TextBox x:Name="SettingsPath" IsReadOnly="True" TextWrapping="Wrap"
@@ -46,15 +46,22 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="_Devises et taux">
-                <StackPanel Margin="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18"><StackPanel>
                     <TextBlock Text="Actualisation des taux" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-                    <CheckBox x:Name="RefreshRates" Content="_Actualiser les taux au démarrage (préférence uniquement)"
-                              Foreground="{DynamicResource TextBrush}" />
-                    <TextBlock Text="Service non développé, aucune requête. Cette option est enregistrée sans déclencher d'accès réseau, sans récupérer de taux et sans convertir de montant."
-                               TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,14" />
-                    <TextBlock Text="La devise d'affichage se choisit dans la fenêtre principale. Sans taux de conversion, les montants conservent leur devise d'origine ; aucun taux n'est inventé."
+                    <CheckBox x:Name="RefreshRates" Content="_Actualiser automatiquement les cours au démarrage"
+                              AutomationProperties.AutomationId="AutomaticRatesSetting" />
+                    <Label Content="_Source officielle" Target="{Binding ElementName=RateSourceChoice}" Margin="0,12,0,4" />
+                    <ComboBox x:Name="RateSourceChoice" HorizontalAlignment="Left" MinWidth="300"
+                              AutomationProperties.AutomationId="RateSourceSetting" AutomationProperties.Name="Fournisseur officiel choisi">
+                        <ComboBoxItem Content="NBRB — Banque nationale du Bélarus" Tag="NBRB" />
+                        <ComboBoxItem Content="CBR — Banque centrale de Russie" Tag="CBR" />
+                    </ComboBox>
+                    <TextBlock Text="L’option s’applique au prochain démarrage, sans bloquer l’ouverture des comptes. Désactivée : cache local uniquement, aucune requête automatique. Aucun basculement ni mélange entre fournisseurs."
+                               TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,10" />
+                    <TextBlock x:Name="RatesInformation" TextWrapping="Wrap" Margin="0,0,0,10" />
+                    <TextBlock Text="Outils → Cours de change permet de consulter l’historique et d’actualiser manuellement. La devise d’affichage se choisit près du solde actuel : estimation uniquement, montants natifs inchangés."
                                TextWrapping="Wrap" />
-                </StackPanel>
+                </StackPanel></ScrollViewer>
             </TabItem>
             <TabItem Header="_Mises à jour">
                 <StackPanel Margin="18">
@@ -76,7 +83,7 @@
             </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-            <Button Content="_Enregistrer" MinWidth="120" IsDefault="True" Click="Save_Click" Margin="0,0,10,0" />
+            <Button Content="_Enregistrer" MinWidth="120" IsDefault="True" Click="Save_Click" Margin="0,0,10,0" AutomationProperties.AutomationId="SaveSettings" />
             <Button Content="_Annuler" MinWidth="110" IsCancel="True" />
         </StackPanel>
     </Grid>

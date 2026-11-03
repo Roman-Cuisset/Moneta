@@ -35,4 +35,5 @@ public static class WindowCommands
     public static RoutedUICommand Reconcile { get; } = new("Rapprochement bancaire", nameof(Reconcile), typeof(WindowCommands));
     public static RoutedUICommand ReleaseLegacyReconciliation { get; } = new("Réexaminer un état rapproché hérité", nameof(ReleaseLegacyReconciliation), typeof(WindowCommands));
     public static RoutedUICommand RefreshRates { get; } = new("Actualiser les cours", nameof(RefreshRates), typeof(WindowCommands));
+    public static RoutedUICommand ShowRates { get; } = new("Cours de change", nameof(ShowRates), typeof(WindowCommands));
 }

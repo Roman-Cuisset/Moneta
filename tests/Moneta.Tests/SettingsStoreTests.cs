@@ -60,4 +60,40 @@ public sealed class SettingsStoreTests
         Assert.ThrowsException<SettingsException>(() => store.Save(new LocalSettings { Theme = "Dark" }));
         Assert.AreEqual("Light", store.Current.Theme); Assert.AreEqual("not a directory", File.ReadAllText(parent));
     }
+    [TestMethod]
+    public void CompleteLegacyPreferencesUpgradeWithoutLosingChoices()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(FilePath, """{"SchemaVersion":1,"Theme":"Dark","CheckUpdatesAtStartup":true,"RefreshRatesAtStartup":true}""");
+        var store = new SettingsStore(FilePath); store.Load();
+        Assert.AreEqual("NBRB", store.Current.RateSource);
+        store.Save(store.Current with { RateSource = "CBR" });
+        var reopened = new SettingsStore(FilePath); reopened.Load();
+        Assert.AreEqual("CBR", reopened.Current.RateSource);
+        Assert.AreEqual("Dark", reopened.Current.Theme);
+        Assert.IsTrue(reopened.Current.RefreshRatesAtStartup && reopened.Current.CheckUpdatesAtStartup);
+    }
+
+    [DataTestMethod]
+    [DataRow("""{"SchemaVersion":2,"Theme":"Light","CheckUpdatesAtStartup":false,"RefreshRatesAtStartup":false}""")]
+    [DataRow("""{"SchemaVersion":2,"Theme":"Light","CheckUpdatesAtStartup":false,"RefreshRatesAtStartup":false,"RateSource":"UNKNOWN"}""")]
+    public void MissingOrUnknownRateProviderPreservesPreferences(string contents)
+    {
+        Directory.CreateDirectory(_directory); File.WriteAllText(FilePath, contents);
+        var store = new SettingsStore(FilePath);
+        Assert.ThrowsException<SettingsException>(store.Load);
+        Assert.ThrowsException<SettingsException>(() => store.Save(new LocalSettings()));
+        Assert.AreEqual(contents, File.ReadAllText(FilePath));
+    }
+
+    [TestMethod]
+    public void InvalidProviderCannotReplaceCommittedSettings()
+    {
+        var store = new SettingsStore(FilePath); store.Load();
+        store.Save(new LocalSettings { RateSource = "CBR" });
+        var before = File.ReadAllBytes(FilePath);
+        Assert.ThrowsException<SettingsException>(() => store.Save(store.Current with { RateSource = "Other" }));
+        CollectionAssert.AreEqual(before, File.ReadAllBytes(FilePath));
+        Assert.AreEqual("CBR", store.Current.RateSource);
+    }
 }

@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Markup;
 using Moneta.Core.Presentation;
 using Moneta.Infrastructure;
+using Moneta.Core;
+using Moneta.Infrastructure.ExchangeRates;
 
 namespace Moneta.App;
 
@@ -10,12 +12,17 @@ public partial class App : Application
 {
     public static ThemeController ThemeController { get; } = new();
     public static SettingsStore Settings { get; } = new();
+    private static readonly OfficialRateClient[] RateClients =
+        [new(RateProvider.Nbrb), new(RateProvider.Cbr)];
+    public static ExchangeRateSession Rates { get; } = new(new SqliteRateCache(), RateClients);
+    public static RateProvider SelectedRateProvider => Settings.Current.RateSource == "CBR" ? RateProvider.Cbr : RateProvider.Nbrb;
 
     public static bool ChangeTheme(string mode) =>
         SaveSettings(Settings.Current with { Theme = mode });
 
     public static bool SaveSettings(LocalSettings settings, Window? owner = null)
     {
+        var previousSource = Settings.Current.RateSource;
         try
         {
             Settings.Save(settings);
@@ -27,6 +34,8 @@ public partial class App : Application
         }
 
         ThemeController.Apply(settings.Theme);
+        if (previousSource != settings.RateSource)
+            _ = Rates.SelectAsync(SelectedRateProvider, Rates.State.Date);
         return true;
     }
 
@@ -72,6 +81,7 @@ public partial class App : Application
 
         MainWindow = new MainWindow();
         MainWindow.Show();
+        _ = Rates.InitializeAsync(SelectedRateProvider, Settings.Current.RefreshRatesAtStartup);
         if (settingsError is not null)
         {
             ShowSettingsError(settingsError, MainWindow);
@@ -80,6 +90,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Rates.Dispose();
+        foreach (var client in RateClients) client.Dispose();
         ThemeController.Dispose();
         base.OnExit(e);
     }
