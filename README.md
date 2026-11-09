@@ -6,6 +6,17 @@ Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. 
 
 **Consolidation 6.1 :** 97 tests Debug/Release, contrôles SQLite/sauvegardes revus et erreur de source verrouillé corrigée. Un pic CPU capturé est attribué à la compilation étagée .NET, sans boucle de layout démontrée ; aucun contournement graphique/runtime livré. [Audit, mesures et réserves avant mission 7](docs/AUDIT_MISSION_6_1.md).
 
+## Consolidation de mission 9
+
+- Profilage CPU OS/EventPipe : pic corrélé au **même thread de compilation étagée .NET**, sans boucle de layout permanente démontrée. Reprises tardives et limites d'attribution conservées ; **aucun contournement runtime ou gain CPU artificiellement annoncé**.
+- Corrections ciblées : texte du contenu d'onglet clair, défilement du rapprochement à petite hauteur, noms accessibles des champs et ComboBox. Aucune refonte, dépendance ou modification du moteur financier.
+- Builds Debug/Release : zéro erreur/avertissement ; **516 tests réussis par configuration**, aucun échec/ignoré. Huit surfaces WPF, clair/sombre, quatre DPI contrôlés : 64 combinaisons ; poste natif 125 %, autres DPI simulés, pas de qualification multi-écrans/lecteur d'écran.
+- Parcours Windows synthétiques clair/sombre : comptes, recette/dépense/correction/suppression, virement avec frais, P/R, protection R, échec d'écriture et nouvelle tentative, annulation de fermeture, réouverture, sauvegarde/restauration avec comparaison intégrale. Les sondes temporaires ne sont pas comptées comme tests MSTest permanents.
+- Nouvelle piste primaire : **BankPerfect 9 public MIT**, avec description/lecteur V5. Aucun fichier natif synthétique disponible dans la référence, aucun code tiers repris, aucun BankPerfect exécuté ; pas d'import implémenté.
+
+Preuves, matrice des mesures et réserves : [PERFORMANCE_AUDIT](docs/PERFORMANCE_AUDIT.md). Préparation native : [recherche du format](docs/BANKPERFECT_FORMAT_RESEARCH.md), [mapping vers le schéma 5](docs/BANKPERFECT_MAPPING.md), [stratégie d'import](docs/BANKPERFECT_IMPORT_STRATEGY.md). `tools/Measure-MonetaIdle.ps1` permet de reproduire les mesures sur sa propre instance vide ou de démonstration sans ouvrir de données financières.
+
+
 ## Objectifs
 
 - Retrouver les fonctions BankPerfect identifiées dans la matrice de parité, sans réduire le produit à un suivi bancaire générique.
@@ -26,7 +37,7 @@ Moneta/
 ├── src/Moneta.Infrastructure/ # SQLite, sauvegarde/restauration et jeu fictif séparé
 ├── tests/Moneta.Tests/      # Tests MSTest indépendants de WPF
 ├── docs/
-├── tools/                  # Aucun outil applicatif
+├── tools/                  # Diagnostic CPU natif reproductible, sans entrée financière
 ├── .gitignore
 └── README.md
 ```
@@ -425,4 +436,4 @@ Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
 ## Prochaine mission proposée
 
-Après la mission 8, qualifier avec l’utilisateur les conventions de virements et NP/P/R, l’accessibilité et le rendu composé multi-DPI/moniteurs ; compléter les réserves documentaires des fournisseurs sans confondre un GET réussi avec un contrat complet de disponibilité. Les cours/cache et l’estimation du compte sélectionné sont opérationnels ; total multicomptes dans l’interface, saisie de taux manuel, import `.bp`, filtres, récupération individuelle et automatisation des sauvegardes restent des lots séparés. Le corpus `.bp` strictement fictif et sa spécification demeurent nécessaires ; les UUID Moneta prépareront une future correspondance de provenance, sans fabriquer aujourd’hui de données BankPerfect. Voir [ROADMAP](docs/ROADMAP.md).
+**Mission 10 proposée :** obtenir un corpus `.bp` intégralement fictif et fermé, confronter la description publique V5 à BankPerfect 8.0.0.373, puis valider monnaies/précisions, solde initial, sémantique de date historique, identités et R héritées. Seulement après ces preuves et l'autorisation du lot : lecteur C# passif/borné, modèle intermédiaire de provenance et rapport d'analyse, avant conversion complète vers un nouveau `.moneta`. Aucun fichier personnel ni contournement de protection. Rendu composé, moniteurs physiques, lecteur d'écran, endurance CPU et frontières matérielles de durabilité restent à qualifier. Les autres fonctions absentes restent dans la [ROADMAP](docs/ROADMAP.md), sans commencer budgets ou échéanciers.

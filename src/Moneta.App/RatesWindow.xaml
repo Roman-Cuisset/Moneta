@@ -30,7 +30,7 @@
                 </StackPanel>
                 <StackPanel Margin="0,0,12,0">
                     <Label Content="_Date demandée (jj/mm/aaaa)" Target="{Binding ElementName=QueryDate}" />
-                    <TextBox x:Name="QueryDate" Width="190" MaxLength="10" AutomationProperties.AutomationId="RatesDate" />
+                    <TextBox x:Name="QueryDate" Width="190" MaxLength="10" AutomationProperties.AutomationId="RatesDate" AutomationProperties.Name="Date demandée des cotations, jour mois année" />
                 </StackPanel>
                 <Button Content="_Consulter le cache" Click="LoadDate_Click" VerticalAlignment="Bottom" Margin="0,0,8,0"
                         AutomationProperties.AutomationId="LoadRatesDate" />
@@ -85,9 +85,9 @@
             <WrapPanel Margin="0,6,0,0">
                 <TextBox x:Name="ConvertInput" Width="150" Text="1000,00" TextAlignment="Right" Margin="0,0,8,0"
                          AutomationProperties.AutomationId="RateConvertAmount" AutomationProperties.Name="Montant à convertir, format français" />
-                <ComboBox x:Name="ConvertSource" Width="90" DisplayMemberPath="Code" Margin="0,0,8,0" AutomationProperties.AutomationId="RateConvertSource" />
+                <ComboBox x:Name="ConvertSource" Width="90" DisplayMemberPath="Code" Margin="0,0,8,0" AutomationProperties.AutomationId="RateConvertSource" AutomationProperties.Name="Devise du montant à convertir" />
                 <TextBlock Text="→" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <ComboBox x:Name="ConvertTarget" Width="90" DisplayMemberPath="Code" Margin="0,0,8,0" AutomationProperties.AutomationId="RateConvertTarget" />
+                <ComboBox x:Name="ConvertTarget" Width="90" DisplayMemberPath="Code" Margin="0,0,8,0" AutomationProperties.AutomationId="RateConvertTarget" AutomationProperties.Name="Devise de destination de la conversion" />
                 <Button Content="C_onvertir" Click="Convert_Click" AutomationProperties.AutomationId="ConvertRateAmount" />
             </WrapPanel>
             <TextBlock x:Name="ConversionResult" Margin="0,6,0,0" TextWrapping="Wrap" AutomationProperties.AutomationId="RateConversionResult" />

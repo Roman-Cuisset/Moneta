@@ -9,7 +9,7 @@
 /backups/
 /screenshots-private/
 *.bp
-*.bp[0-9]
+*.bp[0-9]*
 *.bpa
 *.moneta
 *.moneta-*

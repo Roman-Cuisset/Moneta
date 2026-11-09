@@ -10,6 +10,19 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Consolidation et préparation — mission 9
+
+| Résultat | Validation / réserve |
+|---|---|
+| Diagnostic CPU | Même PID/TID pour CPU et JIT ; compilation étagée transitoire démontrée, contre-vérification layout/GC et contrôles natifs répétés. Une reprise tardive non entièrement attribuée reste signalée ; pas de commutateur runtime livré |
+| Démarrage et volumes | Sans dossier, vide, 12/10 000 opérations et démonstration ; deux thèmes, visibilité/minimisation, réseau isolé et actualisation. Objectif interactif <2 s non garanti ; HWND/UIA distincts du premier pixel composé |
+| Corrections WPF | Contenu d'onglet clair lisible, rapprochement défilant à petite hauteur, champs nommés pour UIA ; 64 combinaisons contrôlées, 125 % matériel seulement |
+| Fiabilité | 516 tests Debug/Release conservés ; parcours Windows clair/sombre, erreur d'écriture/brouillon/reprise, P/R et virements/frais, sauvegarde/restauration comparées ; aucun changement financier ou de schéma |
+| Préparation native | [Source publique BankPerfect 9 MIT et V5](BANKPERFECT_FORMAT_RESEARCH.md) identifiée, [mapping et décisions](BANKPERFECT_MAPPING.md) documentés ; aucun corpus local, lecteur ou conversion réalisé |
+
+[Mesures, méthode et limites](PERFORMANCE_AUDIT.md). B01 progresse grâce à la description publique pertinente ; **B02/B03 ne sont pas clos** : corpus légitime, preuve de version et conventions restent indispensables. La suite Mission 10 doit commencer par BP-F00/F01/F02/F03 et extensions réellement utilisées, puis confronter V5 et données aux attentes. Un lecteur passif futur ne sera pas présenté comme un import complet ; provenance, inconnus et pertes doivent rester explicites. Aucun budget, échéancier ni redesign lancé.
+
+
 ### Livraison des cours et valorisations — mission 8
 
 | Résultat livré | Portée / limite |

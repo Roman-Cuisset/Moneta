@@ -2,6 +2,9 @@
 
 **État mission 8 : schéma financier courant 5 inchangé**, dossiers/comptes, registre, pointages, rapprochements/historique et virements liés avec frais persistants ; sauvegarde/restauration du graphe complet. Les cours officiels et leur historique public sont dans un **cache SQLite séparé, schéma 1** ; les préférences locales passent au schéma JSON 2. Aucun cours ni choix de valorisation n’est ajouté au `.moneta`. Cycle manuel Enregistrer ; pas de ventilations, automatisation financière ou lecture `.bp`. Voir [README](../README.md) et [ARCHITECTURE](ARCHITECTURE.md).
 
+**Consolidation mission 9 : aucun changement de format ni migration supplémentaire.** Revue des contrôles d'identité, transactions, références, montants exacts, historique et graphes de virements ; les tests existants de corruption, concurrence, sauvegarde/restauration et migrations restent verts. Une publication de sauvegarde interrompue sans manifeste final n'est pas certifiée ; un échec d'écriture conserve les brouillons et l'ancien snapshot. La garantie SHA-256 est un contrôle d'intégrité, pas une signature d'authenticité. Preuves et limites : [audit mission 9](PERFORMANCE_AUDIT.md).
+
+
 Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. « Doit » exprime une exigence Moneta ; une propriété documentée de SQLite n'est pas une garantie d'implémentation Moneta.
 
 ## FMT-01 — Format natif retenu et frontières

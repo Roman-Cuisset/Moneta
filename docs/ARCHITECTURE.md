@@ -23,6 +23,17 @@ Les références et modèles sont indépendants de WPF. La sélection d'un compt
 
 **Choix graphique et limites :** [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) compare WPF natif, WPF UI et ModernWpf. Pas d’API `ThemeMode` expérimentale ni de suppression d’avertissement. Solde progressif, pointé et non pointé consultables à gauche ; aucun prévisionnel fictif. Styles d’onglets partagés entre Options et rapprochement, sans nouveau framework. [README](../README.md) distingue les parcours, mesures, captures de l’arbre visuel et limites du rendu composé natif.
 
+### Consolidation ciblée — mission 9
+
+Architecture et schéma 5 conservés, aucune dépendance applicative ajoutée. Le profilage corrèle CPU OS, identifiants de threads et événements JIT du même processus : un pic est attribué à la compilation étagée ; aucune boucle WPF permanente n'est démontrée. Aucun commutateur runtime d'optimisation n'est livré. Les coûts de vérification/empreinte du registre restent O(N), distincts de la matérialisation paginée des objets.
+
+Trois corrections de présentation seulement : couleur sélectionnée limitée à l'en-tête d'onglet (ne plus blanchir le contenu en clair), défilement du rapprochement à hauteur réduite avec DataGrid toujours fini/virtualisé, noms accessibles explicites et propagation vers les champs des ComboBox éditables. Ressources partagées et commandes existantes conservées. [Méthode, mesures et limites de qualification](PERFORMANCE_AUDIT.md).
+
+Revue financière : validation de l'état disque dans la transaction d'écriture ; lots complets de jambes/frais ; protection de toutes les R ; snapshots/événements et tombstones inclus dans l'empreinte ; sauvegarde SQLite et réouverture comparée, pas simple copie du principal. Les 516 tests Debug/Release incluent verrous, rollback, mutations externes à solde identique, restauration et migrations sur copie. Aucun défaut financier nouveau démontré ; pas de réécriture du moteur ni de nouveau schéma pour cet audit.
+
+Ces preuves ne qualifient pas une coupure électrique, tous les supports/ACL, le disque plein, les alias de chemin ni les accès parallèles à une même session. Le cache officiel reste distinct du financier ; ses échecs et refus de mélange de sources ne réécrivent pas les mouvements. La future importation devra comparer chaque entité et relation, pas seulement les soldes.
+
+
 ### Ajouts de mission 5 et frontières maintenues
 
 - Core : `CurrencyRegistry` extensible, métadonnées d'affichage, monnaie native de compte get-only et collection observable readonly. Aucun plafond produit du nombre de comptes ; précision et bornes monétaires explicites. La mission 8 ajoute une collection observable de présentation séparée (devises financières + EUR/BYN/RUB), sans enrichissement du catalogue financier par un choix d’affichage.

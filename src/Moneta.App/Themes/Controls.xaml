@@ -29,13 +29,13 @@
                         <Border x:Name="Chrome" Background="{TemplateBinding Background}"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                 Padding="{TemplateBinding Padding}" Margin="0,0,3,0" CornerRadius="4,4,0,0">
-                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                            <ContentPresenter x:Name="HeaderContent" ContentSource="Header" RecognizesAccessKey="True"
                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SelectionBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
+                                <Setter TargetName="HeaderContent" Property="TextElement.Foreground" Value="{DynamicResource SelectionTextBrush}" />
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
@@ -202,7 +202,8 @@
                         <TextBox x:Name="PART_EditableTextBox" Style="{StaticResource {x:Type TextBox}}"
                                  Visibility="Collapsed" Margin="3,1,25,1" MinHeight="0" Padding="5,3"
                                  Background="{TemplateBinding Background}" Foreground="{TemplateBinding Foreground}"
-                                 BorderThickness="0" IsReadOnly="{TemplateBinding IsReadOnly}" />
+                                 BorderThickness="0" IsReadOnly="{TemplateBinding IsReadOnly}"
+                                 AutomationProperties.Name="{Binding Path=(AutomationProperties.Name), RelativeSource={RelativeSource TemplatedParent}}" />
                         <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
                             <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="{TemplateBinding MaxDropDownHeight}"
                                     Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="3">

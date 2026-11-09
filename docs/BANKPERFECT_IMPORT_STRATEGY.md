@@ -1,6 +1,6 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
-Stratégie native issue de la mission documentaire 2. Le prototype WPF mission 3 **n'implémente aucun lecteur/conversion `.bp`**, ne produit aucun fichier BankPerfect synthétique et n'ajoute aucune donnée réelle. Aucun BankPerfect, script BP, EXE/DLL/PYC ou installateur propriétaire n'est exécuté, décompilé ou désassemblé ; aucun contenu de `identity.dat`, secret ou compte réel n'est consulté. La référence reste immuable, hors Git. Voir [README](../README.md) pour les seuls parcours Moneta opérationnels.
+Stratégie native issue de la mission documentaire 2, complétée par la **recherche publique de mission 9**. Aucun lecteur/conversion `.bp` Moneta, fichier BankPerfect synthétique ou donnée réelle ajouté. Aucun BankPerfect, script BP, EXE/DLL/PYC ou installateur propriétaire exécuté, décompilé ou désassemblé ; aucun contenu de `identity.dat`, secret ou compte réel consulté. La référence reste immuable, hors Git. Voir [README](../README.md) pour les parcours Moneta opérationnels.
 
 Documents de départ lus : [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md), notamment sections 5–7 ; [ARCHITECTURE.md](ARCHITECTURE.md), modèle et persistance ; [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md), toutes les fonctions et ajouts demandés. Il ne s'agit pas d'un nouvel audit. Le format cible indépendant est décrit dans [FILE_FORMATS.md](FILE_FORMATS.md). Identifiants de contrats `IMP-*`, de couverture `COV-*`, de corpus `BP-Fxx` et de preuves `BP-Pxx` stables.
 
@@ -10,9 +10,9 @@ Documents de départ lus : [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md), notamme
 
 **La lecture native `.bp` est prioritaire.** CSV/XML/QIF ne la remplacent pas sous un autre nom. Les exports sont utiles à la comparaison, à l'établissement de valeurs de référence et, si l'utilisateur choisit explicitement une reprise limitée, à un parcours de secours distinct signalant ses pertes. Ils ne satisfont pas l'objectif de conversion native complète.
 
-**État actuel : bloqué pour démontrer un lecteur natif**, pas impossible par principe. Aucun fichier de comptes `.bp`/`.bp0` synthétique n'a été fourni ; aucun schéma, signature native, algorithme, version d'enregistrement, compression ou protection n'a été établi sur un fichier de comptes. La présence d'une API de scripts BP ne fournit pas la structure des octets. Ni taille ni résultat d'import n'est inventé ici.
+**État mission 9 : lecteur Moneta non implémenté, qualification native bloquée faute de corpus fictif local.** Aucun fichier de comptes `.bp`/`.bp0` synthétique fourni ni octet de compte analysé. En revanche, le site de l'auteur renvoie désormais vers **BankPerfect 9, dépôt public MIT**, avec une description et un lecteur du conteneur historique V5 : [recherche figée et limites](BANKPERFECT_FORMAT_RESEARCH.md), [correspondance métier](BANKPERFECT_MAPPING.md). Cela ne valide pas encore notre copie 8.0.0.373 ni toutes les anciennes versions.
 
-La recherche publique ci-dessous n'a pas identifié, dans les pages et résultats consultés, de spécification native exploitable ni de lecteur BankPerfect complet. **Ce n'est pas une conclusion d'absence sur tout Internet.** La poursuite native dépend d'informations supplémentaires, de fichiers légitimement produits et du cadre IMP-08. Un éventuel obstacle de protection doit être exposé, pas contourné au prétexte de l'interopérabilité.
+La recherche d'octobre ci-dessous n'avait pas identifié de spécification exploitable dans son périmètre ; elle est conservée comme historique. La piste publique nouvelle ne remplace ni les fixtures indépendantes, ni la validation des droits/méthodes, ni les contrôles de complétude. Aucun décodage ou contournement de protection n'est réalisé ; IMP-08 reste applicable.
 
 ## IMP-02 — Recherche publique effectuée, puis approfondissement ciblé
 
@@ -30,6 +30,7 @@ Consultations du **28 octobre 2026**, lectures HTTP et recherches textuelles pub
 | BP-P06 | [Historique officiel](https://chelly.net/bankperfect/?page=bp_history), entrées 3.5, 6.0, 7.0–8.0 | Déclarations historiques : format 3.5 « clé codée sur 8192 bits », format 6 « cryptage plus efficace », incompatibilité descendante, intégration de données de scripts, identifiants stables puis champs de transferts. **Ce ne sont ni l'identification d'un chiffrement ni des propriétés cryptographiques vérifiées sur un `.bp`**. Aucun ancien convertisseur n'est téléchargé ou lancé |
 | BP-P07 | [Licence BXP](https://raw.githubusercontent.com/zaxified/bxp/HEAD/LICENSE.md), [licence Banksheet](https://raw.githubusercontent.com/tio-ze-rj/banksheet/main/LICENSE) | Textes publics lus : Apache-2.0 et MIT respectivement. Premier chemin BXP sur branche `main` en 404, lecture `HEAD` réussie. Licences de projets non pertinents pour le natif BP, pas autorisation sur BankPerfect ; aucun apport de code retenu |
 | BP-P08 | [Directive 2009/24/CE](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32009L0024), texte français intégral ; recherche `site:legifrance.gouv.fr L122-6-1 observer étudier tester décompilation interopérabilité` | Art. 5(3) et 6 lus directement sur EUR-Lex. [CPI L122-6-1](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044365559) trouvé et extrait indexé consulté ; lecture directe refusée HTTP 403. Ne pas prétendre avoir lu le texte intégral actuel sur Légifrance |
+| BP-P09 | Mission 9 : [site de l'auteur](https://chelly.net/bankperfect9/), [dépôt et licence figés](https://github.com/fabiochelly/bankperfect/tree/ea0624c408797acea6cdd58d59a0bb19560908fa), description `docs/inventaire/02-format-fichier-bp.md` et sources V5 | Source primaire pertinente vérifiée par lecture statique. V5 décrit, pas exercé sur fichiers locaux ; aucun code intégré ni binaire lancé. Les remplacements silencieux du parseur public ne sont pas des règles Moneta ; voir la recherche mission 9 |
 
 La recherche est bornée à ces requêtes/pages, pas exhaustive des forums, archives, dépôts privés et anciennes versions. Un nouveau candidat interop doit être examiné pour sa pertinence réelle, ses versions couvertes, la provenance de sa spécification, sa licence et ses dépendances avant toute décision. Une licence libre ne prouve ni justesse du lecteur ni droit d'exécuter le logiciel propriétaire. Obtenir d'abord, si possible, une spécification ou une autorisation du titulaire ; ne pas présumer une réponse ou un accord obtenu.
 
@@ -48,8 +49,8 @@ La recherche est bornée à ces requêtes/pages, pas exhaustive des forums, arch
 
 | Étape | Travail autorisé ou futur requis | Critère de passage / état actuel |
 | --- | --- | --- |
-| 1. Documentation publique | Chercher spécification, API, historique, implémentations d'interop et droits ; demander au titulaire si utile | Recherche initiale consignée en IMP-02 ; aucune spécification native suffisante identifiée dans ce périmètre |
-| 2. Scripts lisibles | Comprendre uniquement les données logiques/API et limites utiles, sans code recopié ni exécution | Domaines/espaces mieux distingués ; schéma `.bp` toujours inconnu |
+| 1. Documentation publique | Chercher spécification, API, historique, implémentations d'interop et droits ; demander au titulaire si utile | Recherche initiale IMP-02 conservée ; BP-P09 fournit maintenant description et lecteur V5 publics, à confronter à 8.0.0.373 et au corpus |
+| 2. Scripts lisibles | Comprendre uniquement les données logiques/API et limites utiles, sans code recopié ni exécution | Domaines/espaces distingués ; piste V5 publiée, représentation effectivement écrite par l'installation locale non démontrée |
 | 3. Exports documentés | Établir leurs champs et pertes ; demander ensuite des exports synthétiques pour comparaison | Confrontation statique IMP-04 ; aucun export produit/observé dans cette mission |
 | 4. Comparaison de cas fictifs | Comparer saisie attendue, captures et exports du corpus utilisateur, un changement à la fois | **Non effectuée**, aucun corpus reçu |
 | 5. Observation binaire non destructive de fichiers de données synthétiques seulement | Après réception et validation du cadre : tailles, signatures éventuelles, plages de différences, répétitions ; copies en lecture seule, jamais les exécutables | **Non effectuée et impossible actuellement faute de fixtures**. Pas de supposition de signature, offset, compression ou algorithme |
@@ -140,6 +141,9 @@ Ces cas repartent de BP-F01 ou du parent explicitement indiqué. Ils ne supposen
 
 **Tous les nombres de ce corpus sont des attentes de saisie ou calculs arithmétiques déclarés, jamais des résultats BankPerfect.** Les cas conditionnels ne justifient pas un succès inventé si l'interface refuse un caractère, une monnaie, un titre ou une ventilation. Adapter une saisie refusée exige de documenter la différence et de garder le cas original comme non représentable, pas de changer silencieusement l'attendu.
 
+**Précaution mission 9 :** la documentation publique nouvelle décrit `MarkDate` comme date de valeur, initialisée à la date d'opération. Les variantes F06 doivent relever séparément création, pointage et modification de cette date ; ne pas la déclarer automatiquement date de vérification Moneta. L'ouverture peut aussi être une opération dédiée plutôt qu'un champ de compte : vérifier F01 sans compter son montant deux fois.
+
+
 ### Manifeste et protocole de comparaison à remplir seulement après réception
 
 Pour chaque `moneta.bp-study.v1/BP-Fxx/variante/rN`, demander un manifeste neutre indiquant :
@@ -229,13 +233,16 @@ Rapport de décodage : version reconnue et méthode, enregistrements/blocs compr
 | **Partiel** | Certaines données sont comprises mais des domaines restent manquants/rejetés/ambigus. Rapport de diagnostic ou de reprise limitée explicitement choisie dans un autre parcours ; **jamais « conversion native complète réussie »** |
 | **Complet / vérifié** | Version explicitement couverte, chaque domaine applicable inventorié et repris sans perte non déclarée, absence démontrée des domaines non présents, aucun record inconnu susceptible de porter des données, contrôles financiers/relationnels et réouverture de la cible réussis, source inchangée et publication achevée |
 
-Aucune exception utilisateur n'autorise à qualifier « complet » un fichier qui perd des notes, des champs, un échéancier ou des paramètres applicables. Une fonction UI N/A ne compte pas comme donnée perdue ; une donnée persistée inconnue ne devient pas N/A pour faciliter le verdict. **Aujourd'hui aucun de ces statuts n'est un résultat d'import exercé : l'état d'étude est bloqué faute de preuve native et de corpus.**
+Aucun de ces statuts n'est un résultat d'import exercé : la description V5 publique est maintenant identifiée, mais la qualification d'un lecteur Moneta reste bloquée faute de corpus et de correspondances validées.
 
 ## IMP-08 — Cadre légal et conditions d'arrêt
 
 Ce document **n'est pas un avis juridique**. Juridiction applicable, contrat/licence de la copie utilisée, droits du fournisseur de fixtures et éventuelles protections techniques sont inconnus. La gratuité annoncée de BP ne vaut ni licence libre du noyau ni autorisation générale de réutilisation. Lire une page publique ou du source lisible n'autorise pas à redistribuer le programme, les scripts, le manuel, les images ou les logos. Moneta reste une implémentation originale ; aucun code source propriétaire n'est copié dans le projet.
 
-La [directive 2009/24/CE](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32009L0024), **art. 5(3)**, distingue l'observation/l'étude/le test d'une copie par une personne habilitée à l'utiliser, lors d'opérations qu'elle a le droit d'effectuer. Cela n'est pas une permission d'exécuter BP dans la présente mission : **l'autorisation utilisateur d'exécution manque et aucune exécution n'a lieu**.
+La licence MIT du dépôt public BankPerfect 9 a été lue en mission 9 ; sa portée ne requalifie pas automatiquement l'installation historique ou ses ressources. Aucune réutilisation de code n'a lieu. Un futur choix de réutilisation devrait contrôler droits et notices, et ne dispense pas du consentement pour traiter un fichier protégé.
+
+
+La [directive 2009/24/CE](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32009L0024), **art. 5(3)**, distingue l'observation/l'étude/le test d'une copie par une personne habilitée à l'utiliser, lors d'opérations qu'elle a le droit d'effectuer. La mission 9 conditionne une éventuelle production de fixtures à un usage légitime et isolé ; **aucun environnement isolé qualifié ni exécution BankPerfect dans cette mission**. La présence de l'installation locale ne suffit pas à autoriser son lancement avec un profil potentiellement personnel.
 
 Son **art. 6** encadre séparément la reproduction/traduction de code indispensable à l'interopérabilité d'un programme indépendant : personne habilitée ou agissant pour son compte, informations non déjà facilement et rapidement accessibles, limitation aux seules parties nécessaires. Les informations ainsi obtenues ne peuvent servir à d'autres fins, être communiquées au-delà du nécessaire ou permettre une expression substantiellement similaire/une atteinte au droit d'auteur ; l'exploitation normale et les intérêts légitimes restent protégés. Un simple objectif « interop » ne satisfait pas automatiquement ces conditions et ne confère pas un droit général au contournement. L'article 8 maintient d'autres dispositions légales pertinentes.
 

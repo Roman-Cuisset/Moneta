@@ -13,17 +13,18 @@
         </StackPanel>
         <TabControl Grid.Row="1" x:Name="ReconciliationTabs" AutomationProperties.AutomationId="ReconciliationTabs">
             <TabItem Header="Nouveau relevé" AutomationProperties.AutomationId="ReconciliationStatementTab">
-                <Grid Margin="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
+                <Grid MinHeight="480" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,12,0"><Label Content="_Date du relevé (jj/mm/aaaa)" Target="{Binding ElementName=StatementDate}" /><TextBox x:Name="StatementDate" MaxLength="10" TextChanged="StatementDate_Changed" AutomationProperties.AutomationId="StatementDate" /></StackPanel>
-                        <StackPanel Grid.Column="1" Margin="0,0,12,0"><Label Content="_Numéro (facultatif)" Target="{Binding ElementName=StatementNumber}" /><TextBox x:Name="StatementNumber" MaxLength="120" AutomationProperties.AutomationId="StatementNumber" /></StackPanel>
-                        <StackPanel Grid.Column="2"><Label Content="Solde _final signé du relevé" Target="{Binding ElementName=StatementClosingBalance}" /><TextBox x:Name="StatementClosingBalance" MaxLength="128" TextAlignment="Right" TextChanged="ClosingBalance_Changed" AutomationProperties.AutomationId="StatementClosingBalance" /></StackPanel>
+                        <StackPanel Margin="0,0,12,0"><Label Content="_Date du relevé (jj/mm/aaaa)" Target="{Binding ElementName=StatementDate}" /><TextBox x:Name="StatementDate" MaxLength="10" TextChanged="StatementDate_Changed" AutomationProperties.AutomationId="StatementDate" AutomationProperties.Name="Date de fin du relevé bancaire, jour mois année" /></StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,12,0"><Label Content="_Numéro (facultatif)" Target="{Binding ElementName=StatementNumber}" /><TextBox x:Name="StatementNumber" MaxLength="120" AutomationProperties.AutomationId="StatementNumber" AutomationProperties.Name="Numéro du relevé, facultatif" /></StackPanel>
+                        <StackPanel Grid.Column="2"><Label Content="Solde _final signé du relevé" Target="{Binding ElementName=StatementClosingBalance}" /><TextBox x:Name="StatementClosingBalance" MaxLength="128" TextAlignment="Right" TextChanged="ClosingBalance_Changed" AutomationProperties.AutomationId="StatementClosingBalance" AutomationProperties.Name="Solde final signé indiqué par la banque, dans la devise native" /></StackPanel>
                     </Grid>
                     <StackPanel Grid.Row="1" Margin="0,8,0,6">
                         <Label Content="Solde d’ouverture (non modifiable)" Target="{Binding ElementName=StatementOpeningBalance}" />
-                        <TextBox x:Name="StatementOpeningBalance" IsReadOnly="True" IsTabStop="False" AutomationProperties.AutomationId="StatementOpeningBalance" />
+                        <TextBox x:Name="StatementOpeningBalance" IsReadOnly="True" IsTabStop="False" AutomationProperties.AutomationId="StatementOpeningBalance" AutomationProperties.Name="Solde d'ouverture du rapprochement, non modifiable" />
                         <TextBlock Text="Dernier solde final validé encore actif, sinon solde initial du compte. Sélectionnez les opérations effectivement portées au relevé (NP ou P), même anciennes. Double-clic ou Espace dans le tableau : sélectionner / désélectionner."
                                    TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" AutomationProperties.AutomationId="ReconciliationOpeningNotice" />
                     </StackPanel>
@@ -62,9 +63,11 @@
                         <Button Grid.Column="3" x:Name="ValidateReconciliation" Content="Valider au brouillon" IsEnabled="False" Click="Validate_Click" AutomationProperties.AutomationId="ValidateReconciliation" AutomationProperties.Name="Valider au brouillon, Ctrl S pour enregistrer" />
                     </Grid>
                 </Grid>
+                </ScrollViewer>
             </TabItem>
             <TabItem Header="Historique et réouverture" AutomationProperties.AutomationId="ReconciliationHistoryTab">
-                <Grid Margin="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
+                <Grid MinHeight="480" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                     <Grid.RowDefinitions><RowDefinition Height="2*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="3*" /></Grid.RowDefinitions>
                     <DataGrid x:Name="ReconciliationHistory" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" CanUserAddRows="False" CanUserDeleteRows="False"
                               EnableRowVirtualization="True" EnableColumnVirtualization="True" SelectionChanged="History_SelectionChanged" AutomationProperties.AutomationId="ReconciliationHistory">
@@ -119,6 +122,7 @@
                         </TabItem>
                     </TabControl>
                 </Grid>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
         <TextBlock Grid.Row="2" x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,10,0,0"
