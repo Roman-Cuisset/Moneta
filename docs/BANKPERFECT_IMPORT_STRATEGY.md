@@ -1,6 +1,14 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
-Stratégie native issue de la mission documentaire 2, complétée par la **recherche publique de mission 9**. Aucun lecteur/conversion `.bp` Moneta, fichier BankPerfect synthétique ou donnée réelle ajouté. Aucun BankPerfect, script BP, EXE/DLL/PYC ou installateur propriétaire exécuté, décompilé ou désassemblé ; aucun contenu de `identity.dat`, secret ou compte réel consulté. La référence reste immuable, hors Git. Voir [README](../README.md) pour les parcours Moneta opérationnels.
+## État courant — mission 10A
+
+**Étude réalisée, lecture BP8 qualifiée sur quatre fixtures, aucun importeur Moneta livré.** BankPerfect 9.13.0 MIT, révision `990f5c7f712dab07c7fefc2921cbf60beee7f6b1`, étudié séparément ; onze tests amont ciblés réussis. Réparations permissives et deux panics démontrées sur texte synthétique : aucune adoption aveugle de ce lecteur comme moteur de migration.
+
+V5 décrit par code et **F00..F03 réellement produits dans BP8 8.0.0.373**, comparés sans écriture Rust : [recherche](BANKPERFECT_FORMAT_RESEARCH.md), [fiches](BANKPERFECT_FIXTURES.md), [matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md). Après les échecs initiaux, le paquet officiel a été installé interactivement dans le seul invité, fournissant une identité de distribution propre ; identité privée et référence intactes. Le pointage/date et les liens sont observés ; **0,0001 EUR réellement conservé exige un blocage explicite dans le modèle en centimes actuel**. Compatibilité générale BP8 non présumée.
+
+Les contrats IMP-01..IMP-09 et la matrice exhaustive COV restent applicables. **IMP-10 ci-dessous** compare les trois stratégies et précise le pipeline futur et la porte 10B. Les méthodes envisagées ne sont pas des fonctions déjà implémentées ; SQLite financier schéma 5 inchangé.
+
+**Historique à l'issue des missions 2/9 :** stratégie documentaire, sans lecteur/conversion `.bp` Moneta ni fichier BankPerfect synthétique ; aucun binaire historique n'avait alors été exécuté. Les essais isolés et les tests amont de **10A** sont décrits ci-dessus et dans la recherche, sans modification de la référence ni consultation du `identity.dat` privé. Voir [README](../README.md) pour les fonctions Moneta existantes.
 
 Documents de départ lus : [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md), notamment sections 5–7 ; [ARCHITECTURE.md](ARCHITECTURE.md), modèle et persistance ; [FUNCTIONAL_PARITY.md](FUNCTIONAL_PARITY.md), toutes les fonctions et ajouts demandés. Il ne s'agit pas d'un nouvel audit. Le format cible indépendant est décrit dans [FILE_FORMATS.md](FILE_FORMATS.md). Identifiants de contrats `IMP-*`, de couverture `COV-*`, de corpus `BP-Fxx` et de preuves `BP-Pxx` stables.
 
@@ -12,7 +20,7 @@ Documents de départ lus : [BANKPERFECT_AUDIT.md](BANKPERFECT_AUDIT.md), notamme
 
 **État mission 9 : lecteur Moneta non implémenté, qualification native bloquée faute de corpus fictif local.** Aucun fichier de comptes `.bp`/`.bp0` synthétique fourni ni octet de compte analysé. En revanche, le site de l'auteur renvoie désormais vers **BankPerfect 9, dépôt public MIT**, avec une description et un lecteur du conteneur historique V5 : [recherche figée et limites](BANKPERFECT_FORMAT_RESEARCH.md), [correspondance métier](BANKPERFECT_MAPPING.md). Cela ne valide pas encore notre copie 8.0.0.373 ni toutes les anciennes versions.
 
-La recherche d'octobre ci-dessous n'avait pas identifié de spécification exploitable dans son périmètre ; elle est conservée comme historique. La piste publique nouvelle ne remplace ni les fixtures indépendantes, ni la validation des droits/méthodes, ni les contrôles de complétude. Aucun décodage ou contournement de protection n'est réalisé ; IMP-08 reste applicable.
+La recherche d'octobre ci-dessous reste historique. La piste publique ne remplace ni corpus indépendant ni contrôle de complétude. En 10A, seul V5 non protégé de nos quatre fichiers fictifs a été décodé par la façade Rust ; aucun contournement de protection, décompilation ou exécution de payload à la lecture. IMP-08 reste applicable.
 
 ## IMP-02 — Recherche publique effectuée, puis approfondissement ciblé
 
@@ -50,10 +58,10 @@ La recherche est bornée à ces requêtes/pages, pas exhaustive des forums, arch
 | Étape | Travail autorisé ou futur requis | Critère de passage / état actuel |
 | --- | --- | --- |
 | 1. Documentation publique | Chercher spécification, API, historique, implémentations d'interop et droits ; demander au titulaire si utile | Recherche initiale IMP-02 conservée ; BP-P09 fournit maintenant description et lecteur V5 publics, à confronter à 8.0.0.373 et au corpus |
-| 2. Scripts lisibles | Comprendre uniquement les données logiques/API et limites utiles, sans code recopié ni exécution | Domaines/espaces distingués ; piste V5 publiée, représentation effectivement écrite par l'installation locale non démontrée |
+| 2. Scripts lisibles | Distinguer données logiques/API et limites utiles, sans recopier le code ; exécution seulement si rôle et isolation vérifiés | Audit statique conservé ; représentation locale désormais confrontée sur F00..F03, avec le seul transfert historique examiné pour F02 |
 | 3. Exports documentés | Établir leurs champs et pertes ; demander ensuite des exports synthétiques pour comparaison | Confrontation statique IMP-04 ; aucun export produit/observé dans cette mission |
-| 4. Comparaison de cas fictifs | Comparer saisie attendue, captures et exports du corpus utilisateur, un changement à la fois | **Non effectuée**, aucun corpus reçu |
-| 5. Observation binaire non destructive de fichiers de données synthétiques seulement | Après réception et validation du cadre : tailles, signatures éventuelles, plages de différences, répétitions ; copies en lecture seule, jamais les exécutables | **Non effectuée et impossible actuellement faute de fixtures**. Pas de supposition de signature, offset, compression ou algorithme |
+| 4. Comparaison de cas fictifs | Saisies, captures et états intermédiaires de BP8, puis lecture structurée indépendante | **Effectuée sur F00..F03**, limites et écarts dans les fiches ; pas tout F00..F22 |
+| 5. Observation non destructive de fichiers synthétiques | Octets/tailles/hashes, V5, champs/dates/montants/références ; jamais les exécutables | **Effectuée sur quatre fichiers**, hashes identiques après lecture ; campagne complète d'offsets, répétitions et formats anciens non réalisée |
 
 Le but de l'étape 5 est d'établir des faits de données, non de promettre qu'un lecteur sera réalisable sans autre méthode. Toute suspicion de protection, besoin de déchiffrement, décompilation ou autre méthode intrusive déclenche IMP-08 : **arrêt et validation préalable**, pas escalade automatique. Les futures étapes lecteur/conversion/qualification de [ROADMAP.md](ROADMAP.md) restent conditionnées par ces preuves. Les étapes documentaires ne valent pas autorisation d'exécution.
 
@@ -99,6 +107,8 @@ Un export non filtré peut être utile mais n'est pas automatiquement exhaustif 
 **Tous les scénarios ci-dessous sont des valeurs ATTENDUES à saisir ultérieurement ; aucun fichier, export, hash, offset ou comportement BP correspondant n'a été produit ou observé.** Ne pas créer de faux binaire `.bp` avec des octets inventés. Seul le propriétaire utilisant légitimement BP peut fournir les fichiers effectivement enregistrés, ou une exécution future doit recevoir une nouvelle autorisation explicite en contexte isolé.
 
 Namespace documentaire du corpus : `moneta.bp-study.v1`. Comptes fictifs `A`, `B`, `C`, `D` ; aucun titulaire, RIB/IBAN, adresse, numéro de carte ou identifiant réel. Les noms `A — Étude`, `B — Réserve`, tiers `Café Démo` et `Тестовый магазин` sont fictifs. Pas de mot de passe dans le corpus initial ; ne pas fournir `identity.dat`. Les numéros de chèques fictifs sont de simples libellés, pas des coordonnées bancaires.
+
+**Extension de protocole 10A :** F00/F01/F02/F03 désignent des cas différents des anciens F01/F02/F03. Employer **`moneta.bp-study.10a.v1`**, avec [fiches, hashes et crosswalk](BANKPERFECT_FIXTURES.md). **Quatre cas 10A produits et comparés** ; l'ancien `moneta.bp-study.v1/F00..F22` reste un protocole plus large non entièrement réalisé.
 
 Chaque variante destinée à identifier un champ repart du parent indiqué et ne change **qu'une variable**. Un cas fonctionnel comportant plusieurs actions (ajouter plusieurs opérations, créer puis ventiler, débit puis crédit) exige un snapshot intermédiaire après **chaque action** : ne pas attribuer toutes les différences du cas composé à un seul champ. À chaque état, faire trois sauvegardes répétées sans modification dans des fichiers distincts (`r1`, `r2`, `r3`), puis répéter la variante depuis le même parent pour distinguer données métier, horodatages, identifiants et autres nondéterminismes. Toute ouverture susceptible d'appliquer une échéance doit être consignée ; aucune action automatique durant l'analyse immuable.
 
@@ -155,7 +165,7 @@ Pour chaque `moneta.bp-study.v1/BP-Fxx/variante/rN`, demander un manifeste neutr
 - après autorisation d'analyse non destructive : signature/en-tête réellement observé si pertinent, longueurs comparées, liste des plages différentes avec offsets début/fin et convention explicite (base zéro, fin exclusive), nombre d'octets modifiés et contexte minimal uniquement synthétique ; comparaison parent→variante puis r1→r2→r3 et répétition indépendante ;
 - hypothèse et degré de preuve distincts : un offset corrélé à un changement n'est pas encore un champ identifié ; longueur changeante n'est pas preuve de compression, contenu illisible n'est pas preuve de chiffrement. Nondéterminisme, checksums et données générées restent inconnus jusqu'à expériences discriminantes ; aucune inférence publiée comme constat.
 
-**Manifeste actuel : aucun fichier reçu ; tailles, SHA-256, offsets, résultats comparatifs et observations BP tous non produits/non observés.** Ce texte n'est pas un manifeste de données fabriquées.
+**Manifeste courant 10A : quatre fichiers BP8 fictifs, tailles et SHA-256 mesurés, comptes/lignes/soldes/relations/dates confrontés.** Voir [vérités terrain](BANKPERFECT_FIXTURES.md). L'ancien protocole étendu reste prévu ; ne pas prétendre avoir mesuré tous ses offsets, répétitions, exports ou domaines avancés.
 
 ## IMP-07 — Matrice de couverture et rapport sans faux succès
 
@@ -242,7 +252,7 @@ Ce document **n'est pas un avis juridique**. Juridiction applicable, contrat/lic
 La licence MIT du dépôt public BankPerfect 9 a été lue en mission 9 ; sa portée ne requalifie pas automatiquement l'installation historique ou ses ressources. Aucune réutilisation de code n'a lieu. Un futur choix de réutilisation devrait contrôler droits et notices, et ne dispense pas du consentement pour traiter un fichier protégé.
 
 
-La [directive 2009/24/CE](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32009L0024), **art. 5(3)**, distingue l'observation/l'étude/le test d'une copie par une personne habilitée à l'utiliser, lors d'opérations qu'elle a le droit d'effectuer. La mission 9 conditionne une éventuelle production de fixtures à un usage légitime et isolé ; **aucun environnement isolé qualifié ni exécution BankPerfect dans cette mission**. La présence de l'installation locale ne suffit pas à autoriser son lancement avec un profil potentiellement personnel.
+La [directive 2009/24/CE](https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32009L0024), **art. 5(3)**, distingue observation/étude/test par une personne habilitée dans les opérations qu'elle peut effectuer. **Historique : aucune exécution en mission 9.** La demande 10A a permis la production fictive après vérification d'une isolation réelle : BP8 et un plugin de transfert examiné, réseau désactivé, aucune donnée/identité privée exposée. Cela ne constitue ni avis juridique ni autorisation générale d'exécuter une installation/profil utilisateur.
 
 Son **art. 6** encadre séparément la reproduction/traduction de code indispensable à l'interopérabilité d'un programme indépendant : personne habilitée ou agissant pour son compte, informations non déjà facilement et rapidement accessibles, limitation aux seules parties nécessaires. Les informations ainsi obtenues ne peuvent servir à d'autres fins, être communiquées au-delà du nécessaire ou permettre une expression substantiellement similaire/une atteinte au droit d'auteur ; l'exploitation normale et les intérêts légitimes restent protégés. Un simple objectif « interop » ne satisfait pas automatiquement ces conditions et ne confère pas un droit général au contournement. L'article 8 maintient d'autres dispositions légales pertinentes.
 
@@ -260,6 +270,54 @@ Option recommandée : **l'utilisateur crée lui-même**, dans son usage légitim
 4. Exports XML/CSV/QIF correspondants sans filtre, paramètres d'export et comptes couverts, captures des valeurs pertinentes ; pour les exports filtrés expérimentaux, indiquer volontairement leur sous-périmètre. Annexes uniquement synthétiques effectivement produites et seulement pour les fonctions utilisées.
 5. Confirmation de provenance légitime, de caractère intégralement fictif et d'autorisation de lecture non destructive des fichiers remis. Indiquer toute protection et **s'arrêter sans chercher à la lever**.
 
-Alternative : demander **une nouvelle autorisation future** précisant copie légitime, version, contexte isolé sans données réelles, sans réseau ni automatisme incontrôlé, opérations exactes de production des fixtures et limites d'exécution. Ce n'est pas l'autorisation actuelle et ne permet ni décompilation ni contournement. Aucun lancement n'est effectué maintenant.
+La production autorisée de 10A est décrite dans les fiches : quatre fichiers exclusivement fictifs, environnement isolé vérifié, original et référence intacts. Tout élargissement à des données personnelles, une protection, un autre composant non examiné ou une méthode plus intrusive exige un cadre/accord distinct ; aucune autorisation de décompilation ou de contournement déduite.
 
-Les fichiers restent hors Git, de même que les annexes, exports et captures sensibles éventuelles. La documentation peut conserver des faits abstraits et résultats synthétiques explicitement observés après leur obtention, pas des valeurs privées ni une copie des scripts. L'absence actuelle de fixtures laisse les comparaisons et l'analyse des données binaires **non réalisées** ; elle n'empêche pas le présent contrat documentaire complet, mais interdit de promettre un lecteur natif déjà faisable ou une migration certifiée.
+Les fichiers, snapshots, annexes, captures et binaires restent hors Git. Seuls faits abstraits et résultats synthétiques observés sont documentés, jamais secrets ou code propriétaire. **La qualification actuelle couvre quatre cas** ; elle ne prouve ni tous les BP8 ni la migration complète des domaines encore absents de Moneta.
+
+## IMP-10 — Choix d'implémentation et passage vers 10B
+
+### Trois voies comparées
+
+Analyse d'ingénierie, pas benchmark ni composants ajoutés. La licence du lecteur public est MIT à la révision figée ; toute reprise substantielle de code/tables doit conserver les notices, et toute distribution Rust doit vérifier aussi les licences des dépendances.
+
+| Critère | A — Lecteur C# indépendant | B — Bibliothèque Rust interopérable | C — Convertisseur externe contrôlé |
+|---|---|---|---|
+| Intégration | Même .NET/C#, modèles neutres et erreurs explicites, pas de runtime Rust livré | ABI C à concevoir, DLL Windows/architectures et versions à maintenir | Exécutable séparé, protocole de sortie versionné, distribution/validation de son identité |
+| Exactitude | Parsing strict `decimal`/coefficients entiers, brut conservé avant toute normalisation | `Amount(i64)` utile, mais taux `f64`, identités réparées et replis actuels doivent être évités/corrigés | Exiger montant exact canonique et données brutes ; un JSON provenant d'un modèle déjà réparé ne suffit pas |
+| Fichiers malformés | Quotas et erreurs contrôlées à concevoir/tester ; pas de récupération silencieuse | Les panics UTF-8/UID démontrées interdisent une FFI naïve ; aucun unwind au travers de l'ABI, ownership/libération de chaque buffer explicites | Processus isolable et arrêtable, limites mémoire/temps/sortie ; sortie non fiable à revalider |
+| Maintenance | Une chaîne d'outils de production, convention cohérente avec les quatre projets existants | Double chaîne de compilation, FFI/mémoire/packaging et revue du graphe de dépendances | Double versionnement, gestion des erreurs/annulations et disponibilité de l'outil |
+| Licence/indépendance | Code original, sources citées ; ne pas considérer une transposition substantielle comme dispensée de notice | MIT et licences transitives à auditer avant redistribution | Mêmes droits du programme redistribué ; pas de distribution de BP8 propriétaire |
+| Couverture | Définie explicitement par nos fixtures et contrats, pas par le nom BankPerfect | Même périmètre du lecteur, pas de garantie automatique pour tous les BP8 ou anciens UCL/Shuffle | Même limite ; succès du processus ≠ migration complète |
+| Usage recommandé | **Voie de production proposée**, après validation du format/règles | Non retenue à ce stade : coût et risques non justifiés | **Outil de qualification indépendant**, possible oracle comparatif figé, pas une dépendance produit décidée |
+
+**Recommandation : A**, lecteur V5 C# passif, strict et borné, mapping distinct ; Rust comme contre-vérification de recherche. Ses réparations ne deviennent pas des règles Moneta. Les petits appelants Rust exécutés sont des sondes externes, **pas un importeur ou CLI distribué dans le produit**. Aucun projet, package, installateur ou décodeur Moneta ajouté.
+
+Une future organisation possible garde les quatre projets : lecture technique et provenance dans une zone BankPerfect d'Infrastructure, structures neutres/invariants financiers dans Core, aperçu/consentement dans App, fixtures et régressions dans Tests. Les données sources ne doivent pas passer directement dans les entités financières en contournant la validation. Le besoin éventuel d'isoler la lecture dans un processus est à évaluer sur les limites/paniques et les quotas, pas à présupposer par une couche supplémentaire.
+
+### Pipeline futur — aucune écriture dans le BP
+
+1. **Sélection et acquisition stable en lecture seule.** Existence, taille bornée, extension non considérée comme preuve, empreinte de la copie stable ; original conservé. Pas de chargement par BP9 UI susceptible de réenregistrer en V6.
+2. **Reconnaissance précise du conteneur.** V5 qualifié seulement ; refus distinct de version inconnue/format hors périmètre/protection. Aucun déchiffrement forcé ni appel à un ancien outil de récupération.
+3. **Décodage et extraction neutres bornés.** Octets, encodage déclaré/qualifié, lignes et valeurs brutes conservés avec positions ; dates/montants invalides restent erreurs, pas aujourd'hui/zéro. Données de scripts, règles et annexes restent inertes ; aucun chemin fourni par le fichier n'est exécuté/ouvert automatiquement.
+4. **Validation source exhaustive.** Comptes/blocs, cardinalités, doublons, UID, catégories, monnaies/échelles, dates, transferts réciproques, états et données avancées. Les identités de staging générées sont distinctes d'un UID historique absent ; pas de relation reconstruite par similitude.
+5. **Aperçu et rapport avant mutation.** Par domaine : détecté/reconnu/interprété/représentable, nombre, transformation envisagée, données inconnues/pertes/ambiguïtés, soldes et relations ; original et destination explicités.
+6. **Consentement explicite.** Annulation sans changement financier. Une information essentielle incomprise bloque la conversion ; accepter une perte ne transforme pas une reprise partielle en import complet. Maintenir la règle IMP-07 sur publication d'un résultat natif vérifié, sans fallback CSV silencieux.
+7. **Destination neuve exclusive.** Nouveau UUID Moneta, schéma reconnu, contrat de provenance approuvé ; jamais le chemin `.bp`, jamais écrasement silencieux d'un `.moneta`. Pas de conversion « sur place ».
+8. **Import atomique du graphe.** Comptes/référentiels/lignes/liens/provenance dans une transaction contrôlée ; échec ou annulation avant publication ne laisse pas de demi-virement ni de lot partiel annoncé comme valide.
+9. **Vérifications métier et techniques.** Intégrité/FK, dates/devises/états, cardinalités et lignes exactes, ouvertures/crédits/débits/soldes, liens et payloads. Ne pas se contenter d'une différence de solde nulle.
+10. **Fermeture/réouverture et publication.** Destination fermée/rouverte et comparée, sauvegarde/restauration future qualifiée ; publication exclusive après réussite. Un échec conserve le BP et n'efface pas de données utilisateur ; original recontrôlé inchangé.
+11. **Rapport final versionné.** Complet-vérifié/partiel/bloqué, attendus/observés/importés/rejetés et raisons, conversions de cardinalité, provenance, inconnus et preuves de contrôles. Rapports privés par défaut ; pas de secret, ancien chemin/coordonnée bancaire dans les journaux partageables.
+
+**Limites des exports inchangées :** le XML local omet notamment UID/liens/Extra, date supplémentaire et données de scripts ; QIF/CSV peuvent limiter le périmètre aux lignes visibles et perdre sémantique/références. Ils restent des contrôles/voies secondaires explicitement partielles, pas une solution de remplacement prétendument équivalente au natif.
+
+### Portes de sortie proposées pour la mission 10B, non commencée
+
+| Lot futur | Prérequis / résultat exigé |
+|---|---|
+| 10B-0 — revue du corpus 10A | Quatre cas produits/comparés, F00 avec génération d'UID signalée ; revoir les fiches et étendre aux variantes manquantes, ne pas reconstituer le corpus depuis zéro |
+| 10B-1 — décisions de données | Approuver ouverture zéro/lignes conservées ou extraction prouvée, dates valeur/pointage, monnaies/précisions, libellé, UID/collisions, R héritées et limites de couverture |
+| 10B-2 — lecteur diagnostic | Autorisation explicite, parsing V5 C# passif et borné, provenance/staging versionnés, aucune écriture financière ; tests négatifs de la matrice et différentiels sur corpus |
+| 10B-3 — préparation du mapping | Représentation des champs absents du schéma 5, contrat d'erreur/rapport ; tout domaine présent non représentable identifié avant création d'un convertisseur |
+| Conversion financière ultérieure | Seulement après acceptation des lots précédents : transaction vers nouveau `.moneta`, contrôle exhaustif, réouverture/sauvegarde/restauration et validation utilisateur ; pas de promesse de complétude avant couverture réelle |
+
+Les [épreuves futures](BANKPERFECT_COMPATIBILITY_MATRIX.md#épreuves-futures-obligatoires--non-exécutées-dans-moneta) restent non exécutées dans Moneta. Le corpus et le geste de date de pointage sont désormais étayés **par BP8**, pas par les 516 tests Moneta. Fraction EUR non représentable, provenance et complétude restent des portes. **Pas de début de 10B ni d'import complet par cette étude.**

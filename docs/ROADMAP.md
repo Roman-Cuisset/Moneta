@@ -10,6 +10,22 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Étude du format et qualification — mission 10A
+
+| Résultat | Validation / réserve |
+|---|---|
+| Source amont figée | BankPerfect **9.13.0**, MIT, commit `990f5c7f712dab07c7fefc2921cbf60beee7f6b1`, copie séparée ; aucun code tiers intégré |
+| Spécification V5 | Codec/substitution, encodage, en-tête, comptes, opérations, Extra et identités documentés avec symboles/lignes et niveaux de preuve ; V6/UCL/Shuffle distingués |
+| Épreuves amont | **11 tests ciblés réussis**, séparés de la confrontation native ; sonde fictive montrant replis/renumérotation et panics Unicode/UID maximal |
+| Référence BP8 | **8.0.0.373**, EXE public identique ; installation interactive propre dans l'invité après échecs initiaux, identité privée non lue ; aucune modification de la référence |
+| Corpus | **F00..F03 produits et comparés**, hashes inchangés après lecture ; ouverture R, recette/dépense, liens réciproques, NP/P/R/date manuelle, hiérarchie et **0,0001 EUR** ; namespace 10A distinct de F00..F22 |
+| Décisions proposées | C# strict/borné, Rust contre-vérification ; ouverture zéro/toutes lignes proposée. Pointage étayé pour ce build ; **fraction sous centime, provenance, autres devises/versions et domaines absents** à arbitrer |
+| Non-régression | Builds Debug/Release : zéro erreur/avertissement ; **516 tests réussis par configuration**, aucun échec/ignoré ; moteur financier et SQLite schéma 5 inchangés |
+
+Documents : [recherche](BANKPERFECT_FORMAT_RESEARCH.md), [mapping](BANKPERFECT_MAPPING.md), [matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md), [fiches](BANKPERFECT_FIXTURES.md), [stratégie et trois options](BANKPERFECT_IMPORT_STRATEGY.md#imp-10--choix-dimplémentation-et-passage-vers-10b).
+
+**B02/B03 progressent sur le sous-corpus 10A, sans être clos pour toute la parité. Mission 10B non commencée :** revue des fiches existantes, puis règles ouverture/date/monnaie/identités/R héritées/provenance et refus des valeurs non représentables. Autorisation explicite avant lecteur diagnostic C# et tests négatifs ; conversion financière dans un lot ultérieur accepté. Aucun import complet, budget ou échéancier commencé.
+
 ### Consolidation et préparation — mission 9
 
 | Résultat | Validation / réserve |
@@ -166,7 +182,7 @@ Les sources de ces portes sont le [fichier multi-comptes](https://chelly.net/ban
 | B05 / P0 | Réaliser Fichier > Ouvrir `.bp`, proposition de conversion, rapport puis création protégée d'un nouveau `.moneta`. | B04 ; U01–U02 ; S01–S03 ; T01 pour transferts. | Empreintes originales inchangées, stabilité source démontrée, destination sans écrasement ; rapport comptes/opérations/soldes/relations/inconnus, états complet/partiel/bloqué ; annulation/erreur ne publie pas de fausse réussite. Les données dont le module cible manque interdisent un résultat « complet ». |
 | B06 / P0 | Qualifier la conversion native de bout en bout sur versions ciblées et jeux indépendants. | B05 ; S04 ; P01–P05 pour toutes les données transportables. | Toutes les rubriques du rapport et de la matrice de données confrontées aux valeurs attendues ; exactitude des soldes et des relations vérifiée ; sauvegarde/restauration et réouverture du `.moneta` réconciliées ; aucune information perdue déclarée reprise. Version non couverte explicitement refusée. |
 
-La préparation documentaire B01 et le protocole sont livrables de cette mission ; **B02/B03 attendent des fichiers fictifs non disponibles**, et B04–B06 une autorisation de programmation. Ni l'existence du protocole ni un export multicomptes ne prouvent la compatibilité native.
+État 10A : B01 et la spécification sourcée progressent ; **B02/B03 disposent de quatre fixtures comparées**, mais budgets/échéances/ventilation/devises/protections, répétitions et autres versions restent à qualifier. B04–B06 attendent autorisation et règles acceptées. Ni ces quatre succès de lecture ni un export multicomptes ne certifient la migration complète.
 
 ### Identité originale, validation séparée
 
