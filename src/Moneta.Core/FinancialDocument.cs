@@ -21,6 +21,7 @@ public sealed record FinancialDocument(
     public long ReconciliationCount { get; init; }
     public long ReconciliationEventCount { get; init; }
     public long TransferCount { get; init; }
+    public string? BankPerfectProvenanceHash { get; init; }
 
     public static FinancialDocument New(string name)
     {

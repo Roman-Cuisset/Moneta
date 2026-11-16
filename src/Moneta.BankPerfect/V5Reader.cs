@@ -1,4 +1,5 @@
 using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Moneta.BankPerfect;
@@ -31,7 +32,7 @@ public static class V5Reader
         {
             return Failed(length, "source-io", "Fichier inaccessible ou lecture interrompue.");
         }
-        return Read(bytes);
+        return Read(bytes) with { SourceSha256 = Convert.ToHexString(SHA256.HashData(bytes)) };
     }
 
     public static V5ReadResult Read(ReadOnlySpan<byte> raw)

@@ -28,7 +28,11 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
     }
 
     /// <summary>Creates a document without reconciliation history; formal reconciliation requires an already saved source.</summary>
-    public static MonetaFile Create(string path, FinancialDocument snapshot, IReadOnlyCollection<TransactionChange>? changes = null, IReadOnlyCollection<TransferChange>? transfers = null)
+    public static MonetaFile Create(string path, FinancialDocument snapshot, IReadOnlyCollection<TransactionChange>? changes = null,
+        IReadOnlyCollection<TransferChange>? transfers = null) => Create(path, snapshot, changes, transfers, null);
+
+    internal static MonetaFile Create(string path, FinancialDocument snapshot, IReadOnlyCollection<TransactionChange>? changes,
+        IReadOnlyCollection<TransferChange>? transfers, byte[]? provenance)
     {
         path = ValidatePath(path, false);
         ValidateSnapshot(snapshot);
@@ -53,7 +57,9 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
                 WriteCatalog(connection, snapshot, transaction);
                 ApplyChanges(connection, snapshot, changes, transaction, creating: true);
                 WriteTransferChanges(connection, transfers, transaction);
-                InsertHistory(connection, transaction, 5, 0, "create-v5", "native-accounts-v5");
+                if (provenance is not null) WriteBankPerfectProvenance(connection, transaction, provenance);
+                InsertHistory(connection, transaction, 5, 0, "create-v5",
+                    provenance is null ? "native-accounts-v5" : "native-accounts-v5+bankperfect-v1");
                 snapshot = ReadWithinTransaction(connection, false, transaction);
                 transaction.Commit();
                 Checkpoint(connection);
@@ -202,7 +208,8 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
         expected.PaymentMethods.OrderBy(value => value.Id).SequenceEqual(actual.PaymentMethods.OrderBy(value => value.Id)) &&
         expected.LedgerDigest == actual.LedgerDigest && expected.OperationCount == actual.OperationCount &&
         expected.ReconciliationCount == actual.ReconciliationCount && expected.ReconciliationEventCount == actual.ReconciliationEventCount &&
-        expected.TransferCount == actual.TransferCount;
+        expected.TransferCount == actual.TransferCount &&
+        expected.BankPerfectProvenanceHash == actual.BankPerfectProvenanceHash;
 
     private static void VerifySnapshot(FinancialDocument expected, FinancialDocument actual)
     {

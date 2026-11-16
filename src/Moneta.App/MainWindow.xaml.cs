@@ -147,11 +147,11 @@ public partial class MainWindow : Window
 
     private async void Open_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Title = "Ouvrir un dossier financier", Filter = "Dossiers Moneta (*.moneta)|*.moneta|Fichiers BankPerfect — import futur (*.bp)|*.bp", CheckFileExists = true };
+        var dialog = new OpenFileDialog { Title = "Ouvrir un dossier financier", Filter = "Dossiers Moneta (*.moneta)|*.moneta|Fichiers BankPerfect (*.bp)|*.bp", CheckFileExists = true };
         if (dialog.ShowDialog(this) != true) return;
         if (string.Equals(Path.GetExtension(dialog.FileName), ".bp", StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(this, "L’importation des fichiers BankPerfect .bp sera ajoutée ultérieurement. Aucun accès en écriture n’a été effectué.", "Moneta — importation indisponible", MessageBoxButton.OK, MessageBoxImage.Information);
+            await ShowBankPerfectImportAsync(dialog.FileName);
             return;
         }
         if (string.Equals(dialog.FileName, _workspace.FilePath, StringComparison.OrdinalIgnoreCase) || !await ConfirmReplacement()) return;
@@ -167,6 +167,16 @@ public partial class MainWindow : Window
         var target = Destination("Copie migrée", "Dossier migré.moneta");
         if (target.ShowDialog(this) == true)
             await RunIo(() => _workspace.OpenMigratedCopy(dialog.FileName, target.FileName), "Migration sur une nouvelle copie…");
+    }
+
+    private async void ImportBankPerfect_Executed(object sender, ExecutedRoutedEventArgs e)
+        => await ShowBankPerfectImportAsync();
+
+    private async Task ShowBankPerfectImportAsync(string? source = null)
+    {
+        var dialog = new BankPerfectImportWindow(source) { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.Result is { } result && await ConfirmReplacement())
+            await RunIo(() => _workspace.Open(result.Destination), "Ouverture du dossier importé…");
     }
 
     private async void Save_Executed(object sender, ExecutedRoutedEventArgs e) => await SaveAsync();

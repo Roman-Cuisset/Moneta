@@ -177,7 +177,7 @@ public static class MonetaBackup
         return snapshot;
     }
 
-    private static void MakeStandalone(SqliteConnection connection)
+    internal static void MakeStandalone(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
         command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
@@ -336,6 +336,8 @@ public static class MonetaBackup
             }
             if (snapshot.SchemaVersion >= 5)
                 writer.WriteNumber("transferCount", snapshot.TransferCount);
+            if (snapshot.BankPerfectProvenanceHash is { } provenance)
+                writer.WriteString("bankPerfectProvenance", provenance);
             writer.WriteEndObject();
         }
         return Convert.ToHexString(SHA256.HashData(buffer.GetBuffer().AsSpan(0, checked((int)buffer.Length))));

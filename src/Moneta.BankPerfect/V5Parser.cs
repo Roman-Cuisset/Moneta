@@ -31,7 +31,7 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
         var categories = new V5References(diagnostics);
         categories.Parse(_firstHeader.GetValueOrDefault("categ"), _firstHeader.GetValueOrDefault("modes"));
         var payees = ParsePayees(categories);
-        CheckAccountPreferences(accounts.Count);
+        var (order, defaultAccount) = ReadAccountPreferences(accounts.Count);
         CheckUnconsumedHeader(accounts.Count, payees.Count);
 
         var block = 0;
@@ -58,8 +58,12 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
         } while (separator >= 0);
 
         var transfers = V5Validation.Validate(accounts, diagnostics);
-        return new(_headers.AsReadOnly(), accounts.AsReadOnly(), categories.Categories, categories.Modes,
-            payees.AsReadOnly(), _extensions.AsReadOnly(), transfers, _unparsed.AsReadOnly());
+        return new V5Document(_headers.AsReadOnly(), accounts.AsReadOnly(), categories.Categories, categories.Modes,
+            payees.AsReadOnly(), _extensions.AsReadOnly(), transfers, _unparsed.AsReadOnly())
+        {
+            AccountOrder = order,
+            DefaultAccountIndex = defaultAccount
+        };
     }
 
     private void CheckPhysicalLines()
@@ -186,19 +190,28 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
         return payees;
     }
 
-    private void CheckAccountPreferences(int count)
+    private (IReadOnlyList<int> Order, int? DefaultAccount) ReadAccountPreferences(int count)
     {
-        if (_firstHeader.TryGetValue("compte_defaut", out var preferred) &&
-            (!V5Values.TryUInt(preferred.Value, out var index) || index >= count))
-            diagnostics.Add("default-account", V5Finding.Uncertain, "Compte par défaut source hors de la liste positionnelle.", preferred.Source);
-        if (!_firstHeader.TryGetValue("accounts_order", out var order) || string.IsNullOrEmpty(order.Value))
-            return;
-        var seen = new HashSet<uint>();
-        foreach (var item in V5Fields.Split(order.Value, V5Limits.Accounts, order.Source))
+        int? defaultAccount = null;
+        if (_firstHeader.TryGetValue("compte_defaut", out var preferred))
         {
-            if (!V5Values.TryUInt(item, out var indexInOrder) || indexInOrder >= count || !seen.Add(indexInOrder))
-                diagnostics.Add("account-order", V5Finding.Uncertain, "Ordre des comptes source incohérent.", order.Source);
+            if (V5Values.TryUInt(preferred.Value, out var index) && index < count)
+                defaultAccount = (int)index;
+            else
+                diagnostics.Add("default-account", V5Finding.Uncertain, "Compte par défaut source hors de la liste positionnelle.", preferred.Source);
         }
+        var seen = new HashSet<int>();
+        var indices = new List<int>(count);
+        if (_firstHeader.TryGetValue("accounts_order", out var order) && !string.IsNullOrEmpty(order.Value))
+            foreach (var item in V5Fields.Split(order.Value, V5Limits.Accounts, order.Source))
+            {
+                if (V5Values.TryUInt(item, out var index) && index < count && seen.Add((int)index))
+                    indices.Add((int)index);
+                else
+                    diagnostics.Add("account-order", V5Finding.Uncertain, "Ordre des comptes source incohérent.", order.Source);
+            }
+        indices.AddRange(Enumerable.Range(0, count).Where(index => !seen.Contains(index)));
+        return (indices.AsReadOnly(), defaultAccount);
     }
 
     private void CheckUnconsumedHeader(int accounts, int payees)

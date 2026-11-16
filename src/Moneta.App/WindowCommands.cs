@@ -9,6 +9,7 @@ public static class WindowCommands
     public static RoutedUICommand AddAccount { get; } = new("Ajouter un compte", nameof(AddAccount), typeof(WindowCommands));
     public static RoutedUICommand Theme { get; } = new("Thème", nameof(Theme), typeof(WindowCommands));
     public static RoutedUICommand Open { get; } = new("Ouvrir", nameof(Open), typeof(WindowCommands), [new KeyGesture(Key.O, ModifierKeys.Control)]);
+    public static RoutedUICommand ImportBankPerfect { get; } = new("Importer BankPerfect", nameof(ImportBankPerfect), typeof(WindowCommands));
     public static RoutedUICommand Save { get; } = new("Enregistrer", nameof(Save), typeof(WindowCommands), [new KeyGesture(Key.S, ModifierKeys.Control)]);
     public static RoutedUICommand New { get; } = new("Nouveau dossier", nameof(New), typeof(WindowCommands), [new KeyGesture(Key.N, ModifierKeys.Control)]);
     public static RoutedUICommand SaveAs { get; } = new("Enregistrer sous", nameof(SaveAs), typeof(WindowCommands), [new KeyGesture(Key.F12)]);

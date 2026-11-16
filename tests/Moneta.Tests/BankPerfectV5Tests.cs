@@ -358,7 +358,7 @@ public sealed class BankPerfectV5Tests
     private static void AssertFinding(V5ReadResult result, string code) =>
         Assert.IsTrue(result.Report.Diagnostics.Any(item => item.Code == code), $"Diagnostic attendu : {code}");
 
-    private static byte[] Encode(string body, char version = '5')
+    internal static byte[] Encode(string body, char version = '5')
     {
         var encoding = CodePagesEncodingProvider.Instance.GetEncoding(1252)!;
         var bytes = encoding.GetBytes($"BP-FILE-{version}" + body);

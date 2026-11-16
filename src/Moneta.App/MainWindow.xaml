@@ -15,6 +15,7 @@
         <CommandBinding Command="{x:Static local:WindowCommands.Theme}" Executed="Theme_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.New}" Executed="New_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Open}" Executed="Open_Executed" CanExecute="Available_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ImportBankPerfect}" Executed="ImportBankPerfect_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Save}" Executed="Save_Executed" CanExecute="Save_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.SaveAs}" Executed="SaveAs_Executed" CanExecute="Save_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Backup}" Executed="Backup_Executed" CanExecute="Backup_CanExecute" />
@@ -110,6 +111,7 @@
                         <MenuItem Header="Mode _démonstration" Command="{x:Static local:WindowCommands.Demo}" ToolTip="Données fictives en mémoire, sans possibilité d’enregistrement financier." AutomationProperties.AutomationId="DemoDocumentCommand" />
                         <Separator />
                         <MenuItem Header="_Importer">
+                            <MenuItem Header="_BankPerfect (.bp)…" Command="{x:Static local:WindowCommands.ImportBankPerfect}" AutomationProperties.AutomationId="ImportBankPerfectCommand" />
                             <MenuItem Header="CSV…" Style="{StaticResource UnavailableMenuItem}" />
                             <MenuItem Header="QIF…" InputGestureText="Ctrl+Alt+Q" Style="{StaticResource UnavailableMenuItem}" />
                         </MenuItem>

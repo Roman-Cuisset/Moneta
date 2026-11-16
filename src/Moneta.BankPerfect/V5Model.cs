@@ -85,7 +85,11 @@ public sealed record V5Unparsed(string Raw, V5Location Source);
 public sealed record V5Document(IReadOnlyList<V5Header> Header, IReadOnlyList<V5Account> Accounts,
     IReadOnlyList<V5Category> Categories, IReadOnlyList<V5Mode> Modes, IReadOnlyList<V5Payee> PayeeTemplates,
     IReadOnlyList<V5Extension> Extensions, IReadOnlyList<V5Transfer> Transfers,
-    IReadOnlyList<V5Unparsed> Unparsed);
+    IReadOnlyList<V5Unparsed> Unparsed)
+{
+    public IReadOnlyList<int> AccountOrder { get; init; } = [];
+    public int? DefaultAccountIndex { get; init; }
+}
 
 /// <summary>Localisation et résultats sans valeurs brutes, noms, chemins ou secrets.</summary>
 public sealed record V5Report(int ReportVersion, string? Format, long? ByteLength, V5LineRecovery Recovery,
@@ -96,4 +100,7 @@ public sealed record V5Report(int ReportVersion, string? Format, long? ByteLengt
     IReadOnlyDictionary<V5Finding, int> Findings, IReadOnlyDictionary<V5Severity, int> Severities,
     IReadOnlyList<V5Diagnostic> Diagnostics);
 
-public sealed record V5ReadResult(V5Report Report, V5Document? Document);
+public sealed record V5ReadResult(V5Report Report, V5Document? Document)
+{
+    public string? SourceSha256 { get; init; }
+}
