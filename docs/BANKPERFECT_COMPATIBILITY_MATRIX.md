@@ -1,4 +1,4 @@
-# Compatibilité BankPerfect — qualification mission 10A
+# Compatibilité BankPerfect — qualification missions 10A et 10B
 
 ## Contrat de lecture
 
@@ -8,13 +8,13 @@ Référence amont : **BankPerfect 9.13.0**, commit **`990f5c7f712dab07c7fefc2921
 
 | Famille / version | Preuve actuelle | Capacité du lecteur étudié | Qualification locale / Moneta |
 |---|---|---|---|
-| V5, marqueur décodé `BP-FILE-5` | Code, 6 tests codec/texte et quatre fichiers natifs BP8 | Décodage CP1252, grammaire à 7/9 champs, montants, références et réparations identifiées | **Qualifié sur F00..F03**, pas tous les fichiers historiques ; lecteur Moneta absent |
+| V5, marqueur décodé `BP-FILE-5` | Code, 6 tests codec/texte et quatre fichiers natifs BP8 | Décodage CP1252, grammaire à 7/9 champs, montants, références et réparations identifiées | **Lecteur C# confronté à F00..F03** et aux entrées négatives synthétiques. Portée limitée à ces preuves |
 | BankPerfect **8.0.0.373**, produit 8.0 | Métadonnées/hash identiques entre référence et EXE officiel, exécution isolée | Quatre fixtures créées/sauvées par BP8 et comparées au lecteur figé | **Compatibilité de lecture partielle démontrée**, différences/limites documentées ; aucun import vers Moneta |
 | Autres builds BP5/BP6/BP7/BP8 | Mention/commentaires et inventaire Delphi 2019 | Chemin V5 susceptible de s'appliquer si format correspondant | Aucune de ces versions réellement testée ; ne pas annoncer « tous les BP8 » |
 | `.bp0` / rotations `.bp01`… | Nommage historique documenté, tests `legacy_files` filtrant `.bp`/`.bp0` | Extension seule non suffisante ; contenu à détecter | Aucun exemplaire testé ; les rotations ne sont pas toutes énumérées par le filtre amont |
 | Vieux UCL/NRV2E « BPXENCODE » | Inventaire public §11, pas `detect_format` V5/V6 | Aucun chemin de détection correspondant dans la façade étudiée | Non pris en charge par le périmètre de lecteur proposé pour 10B |
 | Vieux Shuffle/ISAAC | Inventaire public §11 | Même limite | Non qualifié ; aucune tentative de récupération ou contournement |
-| BP9 V6, `BPFILE6` + octet NUL | Code `format_v6`, `file::open_bytes` | Conteneur zstd/chiffrement, payload MessagePack distinct | **Hors import V5 proposé** ; aucune compatibilité descendante BP8 déduite |
+| BP9 V6, `BPFILE6` + octet NUL | Code `format_v6`, `file::open_bytes` | Conteneur zstd/chiffrement, payload MessagePack distinct | **Signature reconnue et refusée par le chemin V5** |
 | `.moneta` SQLite schéma 5 | Contrat Moneta existant, 516 tests par configuration | Ni V5 ni V6, pas de renommage/conversion implicite | Debug/Release conservés ; aucun changement de format financier en 10A |
 
 ## Couverture sémantique du lecteur versus cible
@@ -54,9 +54,9 @@ Statuts de la **cible et des transformations possibles**, pas certification d'un
 
 TRX locaux ignorés : `tests/Moneta.Tests/TestResults/mission10a-debug.trx` et `mission10a-release.trx`. Les 516 cas sont la suite existante conservée ; les 11 cas Rust ne sont pas ajoutés au compteur Moneta.
 
-## Épreuves futures obligatoires — non exécutées dans Moneta
+## Épreuves de lecture et épreuves restantes
 
-Sans parseur Moneta livré, **toutes** les lignes ci-dessous sont des critères 10B, pas des résultats obtenus :
+La mission 10B exerce les signatures et versions, quotas, encodage, troncatures, champs invalides, dates non représentables, limites décimales, UID maximum et doublons, références cassées, réciprocité et conservation des champs inconnus. Les autres épreuves du tableau restent à qualifier sur leurs cas natifs ou au stade financier. [Cas et résultats 10B](BANKPERFECT_FIXTURES.md#qualification-c--mission-10b)
 
 | Entrée / événement | Attendu du futur lecteur/importeur |
 |---|---|
@@ -73,4 +73,4 @@ Sans parseur Moneta livré, **toutes** les lignes ci-dessous sont des critères 
 | Échec/annulation/interruption de conversion, destination existante, import répété | Original inchangé, destination exclusive, pas de lot partiel publié ni doublons cachés |
 | Sauvegarde/restauration du résultat futur | Comparaison exhaustive des lignes/référentiels/liens/provenance, pas seulement solde final |
 
-**Décision de passage :** quatre cas BP8 réels qualifiés pour la lecture, pas une compatibilité universelle ou un import financier. Le choix d'ouverture, la provenance, les domaines manquants et la fraction EUR 0,0001 restent des portes de conception/validation. Lecteur diagnostic C# proposé seulement après accord utilisateur ; aucun démarrage automatique de 10B.
+**Décision de passage :** le diagnostic C# est qualifié sur quatre cas BP8 réels. La portée financière dépend encore des règles d'ouverture, de provenance, des domaines manquants et du traitement des fractions EUR.

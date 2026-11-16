@@ -2,7 +2,9 @@
 
 ## Statut et limites de cette étude
 
-**Mission 8 : cours officiels NBRB/CBR, cache public indépendant et valorisation indicative, sur le socle financier 7C inchangé (schéma SQLite 5).** Enregistrement financier manuel maintenu ; montants natifs, virements et rapprochements protégés contre toute réécriture par les cours. Aucun lecteur `.bp`, mise à jour/installation automatique ou historique général de toutes les corrections.
+**Mission 8 : cours officiels NBRB/CBR, cache public indépendant et valorisation indicative, sur le socle financier 7C inchangé (schéma SQLite 5).** Enregistrement financier manuel maintenu ; montants natifs, virements et rapprochements protégés contre toute réécriture par les cours. Aucun import `.bp`, mise à jour/installation automatique ou historique général de toutes les corrections.
+
+Le [lecteur BankPerfect 10B](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) est une bibliothèque de diagnostic appelée par une CLI indépendante. Il consulte les règles de représentabilité de Moneta.Core et n'a aucune référence à WPF ou au stockage.
 
 La fidélité vise les usages de BankPerfect Windows, pas la reproduction de son code. Le [sommaire officiel](https://chelly.net/bankperfect/wiki/manuel.html) annonce BankPerfect 8.0.0.373 du 22 novembre 2015 ; les pages sont de dates différentes. Elles ne prouvent pas à elles seules le comportement du binaire local. Notamment, la page [Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) a été actualisée le 10 mars 2016 et décrit un changement de rétention à 200 copies le 7 mars 2016 : ce nombre ne doit pas être attribué sans preuve à une version antérieure.
 

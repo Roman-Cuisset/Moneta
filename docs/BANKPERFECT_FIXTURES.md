@@ -119,4 +119,27 @@ Façade Rust appelée par une sonde externe, sans `file::save`, conversion V6, U
 
 **Non exercés :** relevé bancaire formel, échéances, budgets, ventilation, modèles de tiers, transferts BP multidevises, autres pages ANSI, protections/UCL/Shuffle, fichiers natifs malformés, sauvegardes répétées r1/r2/r3 d'un même état. Les snapshots ne couvrent ni tout F00..F22 ni tous les BP8.
 
-Suite : compléter ces cas, approuver ouverture/date/monnaie/provenance et le traitement bloquant de F03 avant conversion financière. **Aucun importeur Moneta ni début de mission 10B.**
+## Qualification C# — mission 10B
+
+Même corpus, mêmes SHA-256. Les lectures C# et Rust ont été rejouées. Le tableau compte les tiers distincts présents dans les lignes, ouverture comprise. Les quatre fichiers contiennent zéro modèle `whoN`.
+
+| Fixture | Octets | Comptes | Lignes | Catégories | Tiers distincts | NP / P / R | Virements liés | Sommes sources et réserves |
+|---|---:|---:|---:|---:|---:|---|---:|---|
+| BP-F00 | 609 | 1 | 1 | 33 | 1 | 0 / 0 / 1 | 0 | 0,00 EUR. UID de dossier, compte, ligne et date supplémentaire absents. Catégories à position historique sans ID explicite |
+| BP-F01 | 1 015 | 1 | 3 | 34 | 3 | 2 / 0 / 1 | 0 | 1 087,67 EUR. Accents, signe de la dépense et références de catégorie concordants |
+| BP-F02 | 1 517 | 2 | 4 | 33 | 4 | 2 / 0 / 2 | 1 | 850,00 et 350,00 EUR. UID 3 ↔ 4 réciproques. Extension de 117 octets conservée encodée et opaque |
+| BP-F03 | 1 099 | 1 | 4 | 35 | 4 | 2 / 1 / 1 | 0 | 1 087,6701 EUR. Opération UID 4 à 0,0001 EUR non représentable en centimes |
+
+La comparaison couvre les comptes, devises, lignes et états, montants en unités de 10⁻⁴, textes, modes, dates, catégories et liens. En F00, Rust génère les identifiants manquants et reprend la date d’opération comme date de pointage. C# expose leur absence ainsi que les positions distinctes des catégories de l’ancien format. En F03, UID 2 conserve **2024-01-15** et **2024-01-31**. La ligne UID 4 conserve **2000-02-29**, et la catégorie Énergie (34) reste enfant de Salaire (30). Les ouvertures sont établies par les gestes suivis dans les fiches. Le lecteur qualifie les candidates comme probables à partir des seules lignes, y compris celle qui apparaît après les mouvements.
+
+La sonde négative Rust figée a également été rejouée. En Debug elle substitue la date du jour et zéro, interprète `1-2` comme 12, régénère le doublon `7` en `8` et panique sur la clé `compté0` et l’UID `UInt64.MaxValue`. Les tests C# couvrent ces entrées ou leurs équivalents encodés, refusent les valeurs illisibles, conservent les doublons et l’UID maximal, et acceptent la clé inconnue en tant que donnée brute. Ils couvrent aussi troncature, encodage, version incompatible, limites de collections et références cassées.
+
+Le Rust sondé refuse également `-922337203685477.5808`. C# conserve la valeur exacte qui correspond à la borne minimale signée du type historique à l’échelle 10 000 et diagnostique sa précision excessive en centimes EUR. Ce résultat concerne une épreuve synthétique.
+
+Les builds Debug et Release se terminent sans erreur ni avertissement, et chaque configuration exécute **561 tests réussis**, dont les 516 existants et 45 nouveaux cas. Le moteur financier, l’application WPF et le schéma SQLite 5 sont identiques à leur état de départ.
+
+Pour rejouer la qualification locale après génération de la CLI, fournir le dossier des quatre fichiers fictifs et, pour la comparaison, la sonde `moneta10a_fixture_dump.exe` construite sur la révision figée. Le script vérifie les SHA-256 et affiche uniquement les résultats d’assertion.
+
+```powershell
+./tools/Test-BankPerfectV5Corpus.ps1 -CorpusDirectory $corpus -RustProbe $sonde
+```

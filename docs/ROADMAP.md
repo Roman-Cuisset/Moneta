@@ -8,7 +8,13 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
-La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacité démontrée. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) priment sur toute hypothèse de reprise complète par CSV/XML. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+La conversion native `.bp` reste un objectif prioritaire. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent son périmètre. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Lecteur diagnostique C# — mission 10B
+
+B02/B03 disposent d’une bibliothèque .NET 10 et d’une CLI interne. Lecture seule des quatre fixtures BP8 V5, provenance source, décimaux exacts, liens réciproques, diagnostics bornés et couverture JSON. [Résultats](BANKPERFECT_FIXTURES.md#qualification-c--mission-10b)
+
+B04–B06 restent à traiter lors d’une mission ultérieure. Approuver les règles d’ouverture, UID, pointage, monnaies et provenance puis étendre le corpus aux domaines manquants avant de décider d'une conversion. Le cas `0,0001 EUR` exige une décision explicite.
 
 ### Étude du format et qualification — mission 10A
 
@@ -24,7 +30,7 @@ La compatibilité **native `.bp`** est un objectif prioritaire, pas une capacit�
 
 Documents : [recherche](BANKPERFECT_FORMAT_RESEARCH.md), [mapping](BANKPERFECT_MAPPING.md), [matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md), [fiches](BANKPERFECT_FIXTURES.md), [stratégie et trois options](BANKPERFECT_IMPORT_STRATEGY.md#imp-10--choix-dimplémentation-et-passage-vers-10b).
 
-**B02/B03 progressent sur le sous-corpus 10A, sans être clos pour toute la parité. Mission 10B non commencée :** revue des fiches existantes, puis règles ouverture/date/monnaie/identités/R héritées/provenance et refus des valeurs non représentables. Autorisation explicite avant lecteur diagnostic C# et tests négatifs ; conversion financière dans un lot ultérieur accepté. Aucun import complet, budget ou échéancier commencé.
+Ce sous-corpus fonde la qualification diagnostique de 10B. Budgets, échéances, ventilation, autres devises et variantes historiques restent à éprouver.
 
 ### Consolidation et préparation — mission 9
 

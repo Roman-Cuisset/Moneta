@@ -11,6 +11,13 @@ Références abrégées, avec liens complets et lignes dans la [recherche](BANKP
 - **S** = `split.rs:293-309`, liens réciproques. **D** = inventaire public `docs/inventaire/02-format-fichier-bp.md`, descriptions Delphi 2019, **non vérifiées sur le binaire BP8**.
 - Cible lue : `src/Moneta.Core/Models.cs`, `FinancialDocument.cs` et contrat [FILE_FORMATS.md](FILE_FORMATS.md). SQLite **schéma 5**, aucune extension de provenance ajoutée ici.
 
+### Données disponibles à l’issue de 10B
+
+- Les comptes, lignes et référentiels portent une position physique. L'UID de compte reste opaque et l'UID de ligne est un entier positif `UInt64` unique à l'échelle du fichier. Un UID absent reste absent. Dans le format de catégories sans `id=`, la position historique est exposée séparément de l'identifiant explicite.
+- Le lecteur conserve texte signé, échelle constatée et valeur décimale exacte. Le registre Moneta permet de qualifier les unités mineures, notamment `€` → `EUR`. Le seul montant incompatible de BP-F03 est `0,0001 EUR`. La somme du registre source reste `1 087,6701 EUR`.
+- La date d’opération et la date supplémentaire ont chacune un brut, un indicateur de présence, un jour Delphi et une date décodée quand elle est valide. La preuve de date de pointage s'applique au geste vérifié dans BP-F03. Une date supplémentaire NP est conservée avec son état source. Les R héritées restent des états de ligne.
+- Les références sœurs des virements gardent leur identité et leur statut. Les ouvertures candidates restent des opérations avec une qualification probable ou indéterminée. Les champs inconnus sont conservés avec une mention de leur couverture, et le mot de passe est occulté. [Contrat de lecture 10B](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b)
+
 Statut = capacité de représentation actuelle : **compatible** sous conditions explicites, **partiel**, **absent**, **inconnu**. Il ne désigne jamais un import déjà disponible. Provenance, mapping d'identités et staging restent absents pour **toutes** les lignes. Les domaines COV-01..COV-40 de [la stratégie](BANKPERFECT_IMPORT_STRATEGY.md) demeurent le contrôle de complétude.
 
 | Élément / structure source | Preuve disponible | Cible Moneta actuelle | Transformation envisagée, non programmée | Risque de perte / condition | Tests nécessaires | Statut |

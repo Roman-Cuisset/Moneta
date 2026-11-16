@@ -1,6 +1,12 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
-## État courant — mission 10A
+## État courant — mission 10B
+
+Le lecteur diagnostique C# V5 est disponible dans la CLI interne et dans une bibliothèque indépendante du stockage. Il produit un modèle intermédiaire en mémoire et un rapport JSON de couverture versionné. Les quatre fixtures natives ont été lues en C# et par la sonde Rust figée. Le fichier original est ouvert en lecture seule. [Architecture](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) · [Qualification](BANKPERFECT_FIXTURES.md#qualification-c--mission-10b)
+
+Les étapes financières restent à spécifier. Valider la politique pour les fractions d’EUR non représentables, la provenance et les UID manquants, l’ouverture, le pointage et les R héritées. Étendre les épreuves aux domaines présents mais encore opaques, notamment les transferts multidevises, la ventilation, les échéances, les budgets et les modèles de tiers natifs. Définir les contrôles de soldes, d'identité et de graphe sur ces preuves avant d'intégrer une conversion.
+
+## Historique — mission 10A
 
 **Étude réalisée, lecture BP8 qualifiée sur quatre fixtures, aucun importeur Moneta livré.** BankPerfect 9.13.0 MIT, révision `990f5c7f712dab07c7fefc2921cbf60beee7f6b1`, étudié séparément ; onze tests amont ciblés réussis. Réparations permissives et deux panics démontrées sur texte synthétique : aucune adoption aveugle de ce lecteur comme moteur de migration.
 
@@ -310,7 +316,7 @@ Une future organisation possible garde les quatre projets : lecture technique et
 
 **Limites des exports inchangées :** le XML local omet notamment UID/liens/Extra, date supplémentaire et données de scripts ; QIF/CSV peuvent limiter le périmètre aux lignes visibles et perdre sémantique/références. Ils restent des contrôles/voies secondaires explicitement partielles, pas une solution de remplacement prétendument équivalente au natif.
 
-### Portes de sortie proposées pour la mission 10B, non commencée
+### Portes de sortie décrites à la fin de 10A
 
 | Lot futur | Prérequis / résultat exigé |
 |---|---|
@@ -320,4 +326,4 @@ Une future organisation possible garde les quatre projets : lecture technique et
 | 10B-3 — préparation du mapping | Représentation des champs absents du schéma 5, contrat d'erreur/rapport ; tout domaine présent non représentable identifié avant création d'un convertisseur |
 | Conversion financière ultérieure | Seulement après acceptation des lots précédents : transaction vers nouveau `.moneta`, contrôle exhaustif, réouverture/sauvegarde/restauration et validation utilisateur ; pas de promesse de complétude avant couverture réelle |
 
-Les [épreuves futures](BANKPERFECT_COMPATIBILITY_MATRIX.md#épreuves-futures-obligatoires--non-exécutées-dans-moneta) restent non exécutées dans Moneta. Le corpus et le geste de date de pointage sont désormais étayés **par BP8**, pas par les 516 tests Moneta. Fraction EUR non représentable, provenance et complétude restent des portes. **Pas de début de 10B ni d'import complet par cette étude.**
+Les [épreuves de la matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md#épreuves-de-lecture-et-épreuves-restantes) distinguent la lecture 10B des essais à faire pour une conversion. Le geste de date de pointage est étayé par BP8. La fraction EUR non représentable, la provenance et la complétude restent des décisions de conversion.

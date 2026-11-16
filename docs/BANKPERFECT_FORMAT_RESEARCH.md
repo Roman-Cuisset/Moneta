@@ -1,6 +1,27 @@
 # Recherche du format BankPerfect — mission 10A
 
-## Conclusion et portée
+## Lecteur diagnostique Moneta — mission 10B
+
+`Moneta.BankPerfect` est une bibliothèque .NET 10 utilisable indépendamment de WPF et de SQLite. `V5Reader.ReadFile` ouvre une source en lecture seule et retourne un rapport et, si la structure le permet, un modèle intermédiaire. `V5Reader.Read` accepte des octets en mémoire. Le registre de devises Moneta et `ExactMoney` servent uniquement à vérifier la représentabilité. La bibliothèque est appelée par les tests et la CLI interne.
+
+| Composant | Rôle |
+|---|---|
+| `V5Codec` et `V5Reader` | Détection, désobfuscation avec longueur et position, récupération CR/LF bornée, décodage Windows-1252 et signalement des octets de contrôle |
+| `V5Parser`, `V5Fields`, `V5References` | En-tête, comptes et blocs positionnels, catégories racines/enfants, modes standard et personnalisés, modèles `whoN`, opérations et métadonnées Extra |
+| `V5Values` et `V5Validation` | Montants décimaux exacts, dates Delphi, UID, collisions, références réciproques et somme des lignes sources |
+| `V5Model` et `V5Diagnostics` | Modèle neutre, provenance et couverture structurée |
+
+La source Rust reste figée à `990f5c7f712dab07c7fefc2921cbf60beee7f6b1`. Les tables de substitution reprises sont attribuées dans la [notice MIT](../src/Moneta.BankPerfect/THIRD-PARTY-NOTICE.md). Deux essais au plus sur le conteneur. Le marqueur V6 déclenche un diagnostic de version. Les anciennes compressions UCL, Shuffle/ISAAC, les autres pages ANSI et les variantes protégées restent hors qualification. La substitution ne fournit pas de contrôle d'intégrité. Une coupure conservant une grammaire valide peut être indétectable.
+
+Quotas **par fichier** : 16 Mio source ou après récupération des fins de ligne, 200 000 lignes physiques, 65 536 caractères par ligne, 100 000 opérations, 512 comptes/blocs, 8 192 entrées d’en-tête, 4 096 entrées par référentiel, 128 champs par ligne/Extra, 256 caractères par UID de compte ou de ligne et 64 par nombre. Les catégories ont deux niveaux physiques. Les dates doivent tenir dans `DateOnly`. Les montants dépassant la capacité décimale exacte conservent leur texte et produisent un diagnostic. La somme est bornée par le domaine historique signé à quatre décimales et n’est calculée que si toutes les lignes du bloc y satisfont. Le rapport compte tous les diagnostics et conserve jusqu’à 4 096 entrées individuelles, plus la mention d’omission et l’erreur fatale éventuelle.
+
+```powershell
+dotnet run --project tools/Moneta.BankPerfect.Diagnose -c Release -- "C:\chemin\fichier.bp"
+```
+
+JSON local sur stdout, `reportVersion: 1`. Codes de sortie 0 pour une lecture sans réserve détectée, 1 pour une lecture partielle et 2 pour un fichier rejeté ou hors périmètre. Le rapport par défaut fournit taille, format, comptes, opérations, référentiels, états, ouvertures par degré de certitude, liens et anomalies par gravité et par nature, avec des positions de ligne (base 1), bloc/champ/entrée (base 0). Il masque les noms, chemins et valeurs financières brutes. `--details` inclut le modèle sensible pour une analyse locale. Les chaînes `raw` sont la référence pour l’échelle monétaire et les UID, même lorsque le client JSON limite la précision de ses nombres. La valeur du champ `pass` est occultée. Les données de script restent inertes, sous forme encodée, avec un décompte après interprétation des séquences `_hh`. La couverture décrit la lecture de la source et les écarts observés avec la cible. Voir les [résultats différentiels](BANKPERFECT_FIXTURES.md#qualification-c--mission-10b).
+
+## Conclusion et portée de la mission 10A
 
 **Le lecteur V5 public est étudié, compilé et confronté à quatre fixtures réellement produites par notre BankPerfect 8.0.0.373.** Qualification limitée à ces cas, pas à tous les BP8. Aucun importeur Moneta, décodeur Moneta, changement de schéma ou traitement de fichier personnel ajouté.
 
@@ -149,9 +170,9 @@ Paquet 8.0 du [site officiel](https://chelly.net/bankperfect/), [téléchargemen
 
 **Quatre fixtures produites et comparées**, enregistrements natifs uniquement. F00 : 1 compte/1 ouverture nulle, aucun mouvement métier ; F01 : ouverture + recette/dépense, 1 087,67 EUR ; F02 : deux comptes, virement et liens réciproques, 850/350 EUR ; F03 : NP/P/R, date manuelle, hiérarchie et 0,0001 EUR, solde 1 087,6701. Tailles/hashes, étapes, écarts de noms/parent réellement observés et limites : [fiches](BANKPERFECT_FIXTURES.md), [matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md). Les quatre empreintes sont inchangées après lecture Rust et fermeture de BP8 ; invité propriétaire arrêté. Aucun fichier/capture/binaire ajouté au dépôt.
 
-## Passage vers 10B
+## Passage de l’étude 10A à la lecture diagnostique
 
 1. Revoir les quatre fiches et élargir le corpus aux autres domaines/versions nécessaires ; les cas budgets/échéances/ventilations, protections et BP multidevise restent non exercés.
 2. Garder les fixtures closes/stables, leurs hashes et la lecture Rust **sans réenregistrement V6** ; compléter les épreuves négatives, répétitions et variantes encore absentes.
 3. Approuver ouverture, dates, monnaies, identités et provenance ; décider explicitement le **blocage de la fraction EUR 0,0001 non représentable en centimes**.
-4. Après validation utilisateur seulement : lecteur C# diagnostic borné/passif puis mapping représentable. **Mission 10B non commencée ; aucun import complet ni conversion financière livré.**
+4. La mission 10B livre le lecteur C# borné. Les règles de transformation financière restent à valider avant une mission de conversion.
