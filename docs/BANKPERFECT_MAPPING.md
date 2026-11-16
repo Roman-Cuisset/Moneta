@@ -1,8 +1,23 @@
-# Correspondance BankPerfect → Moneta — mission 10A
+# Correspondance BankPerfect → Moneta
+
+## Correspondances appliquées en mission 10C
+
+| Objet | Représentation financière et trace |
+|---|---|
+| Dossier et comptes | Nouvel UUID, nom source et sélection/ordre qualifiés. Les champs bancaires, taux historiques, devise secondaire et nom du logo sont conservés dans le rapport privé. Les comptes ordinaires EUR partent d’une ouverture technique nulle. |
+| Ouverture | Le plan exige une seule candidate compatible avec les signatures BP8 établies. Il recoupe état R, libellé, code, signe, absence de catégorie, de détail et de lien, puis signale toute ambiguïté. La ligne source garde son UUID propre, son montant et son pointage. Le rapport repère la ligne d’ouverture. |
+| Lignes | Le montant signé est séparé en magnitude exacte et direction. Le tiers historique fournit le libellé quand il est renseigné, suivi du détail ou du mode. Le détail est conservé. Les UID source et leur absence restent dans la provenance. Les horodatages techniques départagent les lignes du même jour dans l’ordre physique source. |
+| Dates et pointage | Date Delphi décodée et état NP/P/R en clair. Les R sont héritées et protégées. Leur libération réutilise le service Moneta et son historique. Le champ supplémentaire reste dans la provenance car le conteneur ne certifie pas sa sémantique. Le geste de BP-F03 documente le pointage pour son build. |
+| Référentiels | Catégories et sous-catégories conservent ordre et parent physiques. L’ID explicite et la position historique restent distincts. Le tiers de ligne et les modes sont référencés. Les autres champs des modèles de tiers et indications propres aux modes restent dans la provenance. Les collisions de noms entre objets distincts bloquent. |
+| Virement | Références réciproques, comptes distincts, devise EUR, dates et notes compatibles, signes opposés et magnitudes égales. L’entité et ses deux jambes sont enregistrées atomiquement. Les références d’origine sont conservées. |
+
+Un plan repris sur les mêmes octets donne les mêmes constats. Chaque exécution génère des UUID cible distincts et un horodatage technique propre. Ces identifiants n’attestent aucune identité BankPerfect.
+
+## Spécification historique de la mission 10A
 
 ## Portée, preuves et statuts
 
-**Spécification de transformation proposée, aucun import exécuté.** Quatre fixtures BP8 ont été produites et comparées : [vérités terrain](BANKPERFECT_FIXTURES.md). C désigne le lecteur Rust figé **`990f5c7f712dab07c7fefc2921cbf60beee7f6b1`** ; F les cas observés sur 8.0.0.373. Les transformations restent à approuver et programmer, sans extrapoler la compatibilité à tous les fichiers.
+Quatre fixtures BP8 ont été produites et comparées pendant 10A. C désigne le lecteur Rust figé **`990f5c7f712dab07c7fefc2921cbf60beee7f6b1`** et F les cas observés sur 8.0.0.373. Le tableau historique décrit les capacités et les propositions à cette date. [Vérités terrain](BANKPERFECT_FIXTURES.md)
 
 Références abrégées, avec liens complets et lignes dans la [recherche](BANKPERFECT_FORMAT_RESEARCH.md#sources-figées-et-symboles-étudiés) :
 

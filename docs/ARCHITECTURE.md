@@ -6,6 +6,8 @@
 
 Le [lecteur BankPerfect 10B](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) est une bibliothèque de diagnostic appelée par une CLI indépendante. Il consulte les règles de représentabilité de Moneta.Core et n'a aucune référence à WPF ou au stockage.
 
+La conversion 10C ajoute `Moneta.Infrastructure.BankPerfect` entre ce lecteur et les API de création et de sauvegarde existantes. `BankPerfectPlan` valide sur données en mémoire, `BankPerfectImporter` exécute le plan confirmé et `BankPerfectAudit` consigne les correspondances dans le fichier cible. La fenêtre WPF affiche l’aperçu et le résultat, les phases de lecture et d’écriture tournent en arrière-plan. [Contrat de conversion](BANKPERFECT_IMPORT_STRATEGY.md#état-courant--mission-10c)
+
 La fidélité vise les usages de BankPerfect Windows, pas la reproduction de son code. Le [sommaire officiel](https://chelly.net/bankperfect/wiki/manuel.html) annonce BankPerfect 8.0.0.373 du 22 novembre 2015 ; les pages sont de dates différentes. Elles ne prouvent pas à elles seules le comportement du binaire local. Notamment, la page [Sauvegardes](https://chelly.net/bankperfect/wiki/Les%20sauvegardes.html) a été actualisée le 10 mars 2016 et décrit un changement de rétention à 200 copies le 7 mars 2016 : ce nombre ne doit pas être attribué sans preuve à une version antérieure.
 
 La capture privée fournie en mission 4 confirme l'ordre principal des menus et l'organisation outils / panneau gauche / registre à deux lignes / filtres d'en-tête / saisie compacte. Elle ne confirme ni les sous-menus fermés ni les comportements non visibles. Aucune donnée de cette capture n'est transcrite dans le code, les tests ou les rapports ; aucun BankPerfect n'est exécuté.

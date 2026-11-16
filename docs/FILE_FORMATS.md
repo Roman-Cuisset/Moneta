@@ -4,6 +4,14 @@
 
 Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) utilise un modèle en mémoire et une CLI indépendante du format financier.
 
+## Provenance des imports BankPerfect
+
+Les dossiers créés par la mission 10C utilisent les mêmes tables financières, la même précision et `user_version=5`. Ils possèdent une table optionnelle non financière `BankPerfectProvenance`, associée au marqueur d’origine `native-accounts-v5+bankperfect-v1`. Ce marqueur exige la table lors d’une ouverture. Son schéma exact et son unique rapport JSON v1 en BLOB sont validés, avec SHA-256 et limite de 64 Mio. Les dossiers ordinaires et leurs manifestes existants gardent leur format. Les versions de Moneta antérieures à 10C rejettent cette extension.
+
+Le rapport contient l’empreinte des octets BankPerfect, les positions décodées, les UID historiques y compris leur absence, les UUID Moneta, les règles de correspondance, les champs bruts et les avertissements. `MonetaFile.ReadBankPerfectProvenance` permet une consultation locale. Le digest des copies inclut l’empreinte de la provenance si elle existe. L’empreinte contrôle l’intégrité des données et ne signe pas leur origine. Le rapport peut contenir des données privées, comme le dossier qui l’héberge.
+
+La prévalidation refuse aussi les registres dont le nombre de lignes multiplié par la taille des référentiels dépasse cinquante millions, pour borner le coût des contrôles des API de stockage. Les plafonds du lecteur s’appliquent à la source. Le candidat autonome est vérifié avant le renommage sans écrasement.
+
 **Consolidation mission 9 : aucun changement de format ni migration supplémentaire.** Revue des contrôles d'identité, transactions, références, montants exacts, historique et graphes de virements ; les tests existants de corruption, concurrence, sauvegarde/restauration et migrations restent verts. Une publication de sauvegarde interrompue sans manifeste final n'est pas certifiée ; un échec d'écriture conserve les brouillons et l'ancien snapshot. La garantie SHA-256 est un contrôle d'intégrité, pas une signature d'authenticité. Preuves et limites : [audit mission 9](PERFORMANCE_AUDIT.md).
 
 

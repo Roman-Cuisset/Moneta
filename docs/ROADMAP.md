@@ -8,7 +8,13 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
-La conversion native `.bp` reste un objectif prioritaire. La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent son périmètre. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Première conversion financière — mission 10C
+
+Import V5 EUR borné avec aperçu, consentement et vérification exhaustive avant publication. BP-F00 à F02 constituent le périmètre positif de référence. BP-F03 qualifie le refus pour précision excessive. [Matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md#périmètre-de-conversion-10c)
+
+Pour 10D, qualifier l’identification du build et la sémantique des dates supplémentaires sur davantage de fichiers, incluant des opérations P convertibles. Étendre le corpus pour les variantes d’ouverture et les données supplémentaires avant d’élargir le périmètre financier. Vérifier ensuite les limites de volume et la reprise des fichiers de travail après interruption du processus.
 
 ### Lecteur diagnostique C# — mission 10B
 

@@ -1,4 +1,21 @@
-# Compatibilité BankPerfect — qualification missions 10A et 10B
+# Compatibilité BankPerfect — qualification missions 10A à 10C
+
+## Périmètre de conversion 10C
+
+| Corpus BP8 8.0.0.373 | Décision | Contrôles observés |
+|---|---|---|
+| BP-F00 | Conversion du registre minimal | Une ligne R héritée à zéro, UID de ligne et de compte absents en provenance |
+| BP-F01 | Conversion du registre EUR | Trois lignes, solde 1 087,67 EUR, recette et dépense exactes et textes accentués |
+| BP-F02 | Conversion multicomptes EUR | Quatre lignes, soldes 850,00 et 350,00 EUR, lien réciproque UID 3 et 4 et extension conservée |
+| BP-F03 | Blocage de la conversion | Diagnostic V5 exploitable, aucun dossier cible pour le montant à 0,0001 EUR |
+
+Refus probants : V6, fichiers tronqués détectables, comptes ou monnaies hors périmètre, date obligatoire invalide, UID et catégories ambigus, jambes cassées, ouverture indéterminée, protection ou extensions et champs inconnus de portée financière. Le V5 étant dépourvu de contrôle d’intégrité, une altération qui produit une structure valide et cohérente peut passer la détection. [Politique et vérification](BANKPERFECT_IMPORT_STRATEGY.md#état-courant--mission-10c)
+
+Les trois dossiers convertis ont été rouverts via `MonetaFile.Open`. La sauvegarde et la restauration de contrôle ont vérifié leurs lignes, référentiels, virements et provenance. Les quatre SHA-256 d’origine concordent avant et après l’épreuve native. Les builds Debug et Release ont réussi sans avertissement, avec **585 tests réussis chacun** dont 24 nouveaux cas, sans fichiers BankPerfect suivis dans Git.
+
+Parcours Windows observé sur le registre et la fenêtre d’import en rendu logiciel : commande Fichier → Importer → BankPerfect, BP-F01 converti en clair, instance fermée puis relancée et dossier rouvert en sombre, BP-F02 converti en sombre et navigation entre les deux jambes, refus de BP-F03 sans bouton de création. Les deux conversions WPF ont exécuté la sauvegarde et la restauration de contrôle avant affichage du résultat. Il s’agit d’un parcours sur les deux thèmes, avec un seul poste et une seule échelle d’affichage.
+
+Une seconde sauvegarde de BP-F02 après publication a été restaurée au moyen des API normales. L’ouverture de cette copie dans la build WPF finale a confirmé l’ordre des lignes à date égale, le passage entre les jambes et les soldes de 350,00 et 850,00 EUR.
 
 ## Contrat de lecture
 
@@ -17,7 +34,7 @@ Référence amont : **BankPerfect 9.13.0**, commit **`990f5c7f712dab07c7fefc2921
 | BP9 V6, `BPFILE6` + octet NUL | Code `format_v6`, `file::open_bytes` | Conteneur zstd/chiffrement, payload MessagePack distinct | **Signature reconnue et refusée par le chemin V5** |
 | `.moneta` SQLite schéma 5 | Contrat Moneta existant, 516 tests par configuration | Ni V5 ni V6, pas de renommage/conversion implicite | Debug/Release conservés ; aucun changement de format financier en 10A |
 
-## Couverture sémantique du lecteur versus cible
+## Matrice sémantique historique des missions 10A et 10B
 
 Statuts de la **cible et des transformations possibles**, pas certification d'un import : compatible = représentation disponible sous conditions ; partiel = informations/règles manquantes ; absent = modèle/fonction non livré ; inconnu = preuve source insuffisante. **L'import est absent pour toutes les lignes.**
 

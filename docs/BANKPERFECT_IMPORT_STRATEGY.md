@@ -1,6 +1,16 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
-## État courant — mission 10B
+## État courant — mission 10C
+
+Le menu **Fichier → Importer → BankPerfect (.bp)…** et l’ouverture d’un `.bp` mènent au même aperçu. Il affiche comptes, soldes, pointage et causes de refus. Le choix confirmé d’une destination neuve lance la conversion en arrière-plan. Le dossier courant ne change que si l’utilisateur ouvre le résultat. L’annulation est possible jusqu’à la publication.
+
+Le lecteur `V5Reader` reste seul interprète du conteneur. Le plan déterministe valide le modèle et les règles financières. Au consentement, une nouvelle identité Moneta est allouée et le SHA-256 de la source relue est vérifié. `MonetaFile.Create` écrit le registre, les référentiels, les virements et la provenance en une transaction de travail. Le candidat est fermé et réouvert. Le contrôle couvre intégrité et clés étrangères SQLite, chaque ligne, tous les référentiels, les jambes, soldes, pointage et provenance. Une sauvegarde et une restauration privées de contrôle sont également vérifiées. Le candidat autonome est publié par renommage sur le même volume. En cas de collision, la destination est préservée.
+
+Le périmètre qualifié couvre les comptes ordinaires EUR, les montants entiers en centimes, le registre et ses référentiels, les ouvertures identifiables et les virements internes EUR à deux jambes attestées. Un blocage interdit toute création. Les structures inconnues pouvant porter des données financières, les devises non qualifiées, les collisions de références et les montants hors précision y compris **0,0001 EUR** sont refusés. L’extension `fabiobptransfer` est connue comme mémoire de saisie du formulaire et reste inerte. Les jambes et leurs références proviennent des lignes.
+
+Le rapport privé versionné est intégré au dossier. Les sauvegardes, restaurations et copies Moneta conservent sa charge et son empreinte. [Correspondances](BANKPERFECT_MAPPING.md#correspondances-appliquées-en-mission-10c) · [Stockage](FILE_FORMATS.md#provenance-des-imports-bankperfect)
+
+## Historique — mission 10B
 
 Le lecteur diagnostique C# V5 est disponible dans la CLI interne et dans une bibliothèque indépendante du stockage. Il produit un modèle intermédiaire en mémoire et un rapport JSON de couverture versionné. Les quatre fixtures natives ont été lues en C# et par la sonde Rust figée. Le fichier original est ouvert en lecture seule. [Architecture](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) · [Qualification](BANKPERFECT_FIXTURES.md#qualification-c--mission-10b)
 
