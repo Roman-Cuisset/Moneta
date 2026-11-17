@@ -10,6 +10,8 @@
 
 **Mission 10C.** Le parcours natif V5 qualifié permet de créer un dossier Moneta séparé, avec aperçu, veto sur les anomalies bloquantes, provenance intégrée et vérification de sauvegarde/restauration. [Périmètre](BANKPERFECT_COMPATIBILITY_MATRIX.md#périmètre-de-conversion-10c)
 
+**Mission 10D.** La conversion EUR est qualifiée sur une ouverture négative, une date de pointage saisie avant la date comptable et des virements distincts de même montant le même jour. L’audit local lie chaque jambe à son mouvement et à son compte cible. La valorisation des budgets et rapports par cours historiques fait l’objet d’une proposition. [Qualification 10D](BANKPERFECT_COMPATIBILITY_MATRIX.md#extension-qualifiée-en-mission-10d) · [Règles de valorisation proposées](HISTORICAL_FX_VALUATION.md)
+
 
 - **Vérifié — local** : présence ou déclaration dans les fichiers lisibles de la référence ; ne prouve pas le bon fonctionnement à l'exécution.
 - **Vérifié — manuel** : comportement ou chemin explicitement décrit par le manuel officiel ; présence exacte dans l'installation locale encore à confirmer visuellement.

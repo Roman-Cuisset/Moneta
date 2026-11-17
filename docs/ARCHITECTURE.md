@@ -143,6 +143,8 @@ Les rapports, budgets et éventuelles représentations graphiques doivent utilis
 
 ## 4. Exactitude monétaire et temporelle
 
+La mission 10D compare le refus actuel des fractions sous le centime, l’extension du registre à une échelle de comptabilisation plus fine et un registre historique séparé. La proposition dissocie échelle du registre, précision de saisie et précision affichée. Elle demande une qualification de bout en bout avant toute évolution de format. [Étude sur la précision historique](HISTORICAL_MONEY_PRECISION.md)
+
 ### 4.1 Calcul C# et stockage SQLite ne sont pas la même garantie
 
 **Faits.** C# `decimal` possède 28–29 chiffres significatifs et représente exactement certaines fractions décimales comme 0,1, contrairement à `double` ; il n'a pas une précision illimitée ([Microsoft, types numériques](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/floating-point-numeric-types)). SQLite `REAL` est du flottant binaire ; une déclaration `DECIMAL(10,2)` n'impose pas l'exactitude ni cette échelle ([SQLite, types et affinités](https://www.sqlite.org/datatype3.html)). Le fournisseur Microsoft indique que `decimal` se conserve en `TEXT`, car `REAL` serait perdant ([types Microsoft.Data.Sqlite](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/types)).
@@ -171,6 +173,8 @@ Proposition : dates d'opération, de valeur si utilisée, de pointage, de relev�
 L'heure locale d'une machine ne doit pas faire glisser une opération d'un jour. La date NBRB s'interprète comme date de cours, pas comme un instant UTC prouvé. Les règles de récurrence (dernier jour du mois, 29 février, rattrapage, insertion anticipée) nécessitent des exemples validés.
 
 ## 5. Devises officielles, historique et fonctionnement hors ligne
+
+La politique proposée pour les futurs budgets et rapports valorise les flux au jour de l’opération et les positions à la date d’arrêté du rapport. Les deux montants réellement comptabilisés d’un virement restent la référence du transfert. Le calcul d’un rapport reproductible doit conserver ses publications et ses règles de valorisation. [Étude sur les cours historiques](HISTORICAL_FX_VALUATION.md)
 
 ### 5.1 Preuves historiques et acquisition réelle de mission 8
 

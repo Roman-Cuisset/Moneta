@@ -1,4 +1,19 @@
-# Compatibilité BankPerfect — qualification missions 10A à 10C
+# Compatibilité BankPerfect — qualification missions 10A à 10D
+
+## Extension qualifiée en mission 10D
+
+| Cas testé | Décision | Étendue de la preuve |
+|---|---|---|
+| BP-F04 native | Conversion | Ouverture négative R, même montant qu’un débit NP daté antérieurement, chaque ligne reprise une fois et solde exact de −500 EUR |
+| BP-F05 native | Conversion avec avertissement historique | P sur la recette du 15/01/2024, date du 31/12/2023 conservée en provenance, solde 1 087,67 EUR |
+| BP-F06 native | Conversion | Trois virements distincts du même montant, dont deux à la même date, leurs références réciproques et leurs UUID cibles |
+| BP-F07 native | Conversion | 37 catégories, trois homonymes dans des emplacements distincts, accents et parents conservés |
+| Variantes synthétiques | Conversion ou blocage selon les invariants | Date comptable future, bissextile, états P/R distincts, protection d’une paire par une jambe R, références ambiguës ou cassées, mutation du candidat avant publication |
+| BP-F03 native | Refus confirmé | Fraction de 0,0001 EUR, cible absente |
+
+Builds Debug et Release réussis, sans avertissement ni erreur. **594 tests réussis** par configuration, dont neuf cas supplémentaires. Les 78 cas ciblés BankPerfect ont réussi. Sous Windows, les aperçus de F05 et de F03 ont été vérifiés en clair et en sombre dans la vraie fenêtre WPF, sur un poste et une échelle. La création et la vérification de chaque cible native ont été exercées par les API de conversion utilisées par WPF.
+
+Le champ de date supplémentaire reste réservé à la provenance. Le résultat F05 atteste une saisie manuelle du pointage sur ce build. Les autres formats historiques, les comptes non EUR, les dates de valeur, les ouvertures de signature inconnue et les virements non attestés restent hors du périmètre qualifié. [Production native, empreintes et variantes restantes](BANKPERFECT_FIXTURES.md#qualification-native--mission-10d)
 
 ## Périmètre de conversion 10C
 

@@ -1,5 +1,13 @@
 # Correspondance BankPerfect → Moneta
 
+## Précisions appliquées en mission 10D
+
+- Le geste de création dans BP8 prouve l’origine d’une ligne d’ouverture pour le corpus. Un fichier V5 isolé permet seulement une classification probable par signature. Le plan garde chaque mouvement et crée les comptes à zéro technique. Une erreur de classification probable peut modifier le repérage de l’ouverture dans l’audit. Le nombre de lignes, les états et les soldes découlent de la reprise intégrale du registre. Une situation sans candidate suffisamment distincte bloque la conversion. La position physique sert à départager l’affichage à date égale.
+- Le jour comptable et l’état NP/P/R alimentent le registre. Une date supplémentaire antérieure devient un avertissement d’incertitude historique et reste dans les champs bruts. Une opération planifiée peut être datée dans le futur. Une date comptable illisible bloque. La date Moneta de pointage et la référence de relevé restent nulles pour les imports actuels.
+- Chaque virement du rapport d’audit contient la position physique, l’UID brut et les références sœurs brutes de ses deux jambes, ainsi que les UUID de compte et d’opération cible. Les mêmes montants ou libellés peuvent figurer dans plusieurs paires distinctes. Les deux jambes conservent leur état et une jambe R protège le groupe.
+- Le rapport sépare les données conservées uniquement en provenance des incertitudes historiques et des blocages. Les réglages connus du formulaire Transfert et le nom du logo restent inertes. Les champs Extra de portée financière inconnue déclenchent toujours un refus.
+- Les catégories homonymes de parents distincts restent des entrées distinctes du registre. BP-F07 le vérifie pour un même nom en racine et dans deux branches.
+
 ## Correspondances appliquées en mission 10C
 
 | Objet | Représentation financière et trace |

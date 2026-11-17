@@ -1,5 +1,9 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
+## Qualification de la conversion — mission 10D
+
+Le rapport préalable différencie les blocages, les incertitudes historiques, les éléments conservés en provenance et les informations. La décision de convertir repose toujours sur les contrôles financiers. Une date de pointage antérieure au jour comptable est possible dans BP8 et la date supplémentaire demeure consultable en provenance. Les réciproques de virements sont vérifiées avant création et les deux jambes sont accessibles dans le rapport d’audit via leurs correspondances source et cible. Les cas de refus incluent les réciproques manquantes, asymétriques, dupliquées ou visant le mauvais compte et les jambes dépourvues d’UID. [Matrice de qualification](BANKPERFECT_COMPATIBILITY_MATRIX.md)
+
 ## État courant — mission 10C
 
 Le menu **Fichier → Importer → BankPerfect (.bp)…** et l’ouverture d’un `.bp` mènent au même aperçu. Il affiche comptes, soldes, pointage et causes de refus. Le choix confirmé d’une destination neuve lance la conversion en arrière-plan. Le dossier courant ne change que si l’utilisateur ouvre le résultat. L’annulation est possible jusqu’à la publication.

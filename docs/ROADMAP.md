@@ -14,7 +14,11 @@ La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.mo
 
 Import V5 EUR borné avec aperçu, consentement et vérification exhaustive avant publication. BP-F00 à F02 constituent le périmètre positif de référence. BP-F03 qualifie le refus pour précision excessive. [Matrice](BANKPERFECT_COMPATIBILITY_MATRIX.md#périmètre-de-conversion-10c)
 
-Pour 10D, qualifier l’identification du build et la sémantique des dates supplémentaires sur davantage de fichiers, incluant des opérations P convertibles. Étendre le corpus pour les variantes d’ouverture et les données supplémentaires avant d’élargir le périmètre financier. Vérifier ensuite les limites de volume et la reprise des fichiers de travail après interruption du processus.
+### Qualification complémentaire — mission 10D
+
+Le corpus BP8 fictif couvre désormais une ouverture négative R, une date de pointage antérieure au jour comptable et plusieurs virements pouvant partager date, comptes et montant. Suivre les limites par cas avant d’élargir la conversion à d’autres builds ou devises. [Matrice de qualification](BANKPERFECT_COMPATIBILITY_MATRIX.md#extension-qualifiée-en-mission-10d)
+
+Pour une mission suivante, compléter les variantes natives encore ouvertes et qualifier les limites de volume et la reprise après interruption. L’évolution pour les montants sous le centime et la valorisation historique des futurs rapports ont des études séparées. [Précision historique](HISTORICAL_MONEY_PRECISION.md) · [Valorisation historique](HISTORICAL_FX_VALUATION.md)
 
 ### Lecteur diagnostique C# — mission 10B
 

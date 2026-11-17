@@ -1,5 +1,15 @@
 # Recherche du format BankPerfect — mission 10A
 
+## Observations natives complémentaires — mission 10D
+
+La campagne 10D utilise le même exécutable BP8 8.0.0.373, dans un bac à sable Windows hors réseau avec données fictives. BP-F04 confirme que la création d’un compte accepte une ouverture négative et l’enregistre comme mouvement R. Cette ligne peut suivre physiquement un débit NP du même montant daté d’une année antérieure. Le montant et la première position physique ne suffisent donc pas à déduire la nature d’une ligne.
+
+Sur BP-F05, la commande **Date de pointage** a enregistré le 31/12/2023 sur une opération P du 15/01/2024. Le champ supplémentaire, à l’indice 7, passe à `45291` et la date d’opération reste `45306`. Les instantanés précédents du même parcours avaient enregistré une date automatique puis le 31/01/2024. L’usage du champ est attesté pour cette manipulation sur ce build. La signification générale, la date de valeur et une éventuelle échéance restent à établir.
+
+Sur BP-F06, le formulaire Transfert a écrit deux nouvelles paires de 150 EUR le même jour entre les mêmes comptes. Chaque paire a ses propres réciproques `#sisterAccUid` et `#sisterLineUid`. Le paramètre du formulaire dans l’en-tête est indépendant du graphe des mouvements. [Actions, mesures et limites](BANKPERFECT_FIXTURES.md#qualification-native--mission-10d)
+
+BP-F07 donne trois identifiants de catégorie pour le même libellé accentué, dont deux sous des parents distincts. La hiérarchie encodée par l’ordre et l’indentation reste interprétable dans Moneta.
+
 ## Lecteur diagnostique Moneta — mission 10B
 
 `Moneta.BankPerfect` est une bibliothèque .NET 10 utilisable indépendamment de WPF et de SQLite. `V5Reader.ReadFile` ouvre une source en lecture seule et retourne un rapport et, si la structure le permet, un modèle intermédiaire. `V5Reader.Read` accepte des octets en mémoire. Le registre de devises Moneta et `ExactMoney` servent uniquement à vérifier la représentabilité. La bibliothèque est appelée par les tests et la CLI interne.

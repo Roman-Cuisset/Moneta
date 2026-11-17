@@ -1,4 +1,23 @@
-# Corpus BankPerfect — fixtures réellement produites en mission 10A
+# Corpus BankPerfect — fixtures natives et qualification
+
+## Qualification native — mission 10D
+
+Les quatre sources F00 à F03 de la campagne historique ont été relues sans écriture. Leurs empreintes ci-dessous concordent avant et après les essais 10D. F00 à F02 ont de nouveau été converties et restaurées. F03 a donné un aperçu bloqué à cause de `0,0001 EUR`. Les deux instantanés précédant l’ajout de cette fraction, `BP-F03-P-auto.bp` et `BP-F03-P-manual-date.bp`, sont convertibles à 1 087,67 EUR et gardent les dates supplémentaires distinctes de la date comptable.
+
+Les nouveaux fichiers fictifs sont sous `private/mission10d-bp8/output/Native`, répertoire local ignoré par Git. Création ou enregistrement avec BankPerfect 8.0.0.373 dans un bac à sable hors réseau. SHA-256 de l’exécutable `E81FA1973C2DC26C70DD596181B00208711917144B13D9DBD43AB2BF8216A0C6`.
+
+| Fichier | Actions et attentes dans BP8 | Résultat Moneta | SHA-256 de qualification |
+|---|---|---|---|
+| BP-F04 | Créer le compte avec −250 EUR. Saisir un prélèvement NP de −250 EUR le 31/12/2024. Le débit NP précède physiquement l’ouverture R du 17/11/2026 | Deux lignes, solde −500 EUR, pointé −250 EUR, ouverture technique zéro | `ECAFE0FE4D56728A9D6F82C147CD29566A1247BEF586CF1357107C48014CCB09` |
+| BP-F05 | Ouvrir une copie du pointage manuel historique, sélectionner la recette P de 100,01 EUR datée du 15/01/2024. Choisir **Date de pointage**, saisir 31/12/2023, enregistrer | Trois lignes NP/P/R, solde 1 087,67 EUR, pointé 1 100,01 EUR, champs bruts `45306` et `45291`, date de pointage cible vide | `D79BB048736EBBD20FAAF9BE890A991AE5AE4792C5B5B9D9684A2DE44E48C52E` |
+| BP-F06 | Ouvrir une copie de F02. Avec le formulaire Transfert, ajouter deux virements de 150 EUR de Courant à A — Étude le 17/11/2026 | Huit lignes, trois virements, soldes 550 et 650 EUR, paires réciproques 3/4, 5/6 et 7/8. Les six jambes restent NP | `E475AD82783E123AA4C5AB3069EAA6A9A3743CA4121A92496F3BAD4A0A147E84` |
+| BP-F07 | Ouvrir une copie de F05. Dans **Gestion des catégories**, insérer Énergie en racine et sous Salaire et Alimentation. Conserver les lignes avec tiers et modes intégrés | 37 catégories dont trois Énergie, trois UUID distincts, parents d’origine, trois lignes, 1 087,67 EUR | `912D865E8417C478A75B370B2C7F6638EFD52CE91F4B191EB513FF77E70390F6` |
+
+Les comparaisons du lecteur C# au Rust figé couvrent comptes, UID, valeurs exactes (coefficient Rust à quatre décimales), dates, états, tiers, modes, catégories de ligne et réciproques sur F04 à F07. Aucune divergence sur ces champs. La qualification du dossier Moneta contrôle chaque mouvement et les soldes. Les quatre conversions ont passé la réouverture, la vérification de provenance, la sauvegarde et la restauration. Les UUID et parents des 37 catégories ont également été comparés aux positions et parents de F07.
+
+Variantes encore à produire dans BP8. Modifier le libellé d’une ouverture sur une copie et tenter de retirer son pointage, puis vérifier si l’identité de nature reste attestée. Sur une copie de F06, créer des comptes aux noms proches, modifier ou supprimer une paire dans BP8, et enregistrer une paire dont les jambes ont des états distincts. Les cas synthétiques d’UID cassés, d’états P/R indépendants et de protection d’une paire ont une preuve automatisée distincte. La date bissextile du 29/02/2000 est présente dans F03, bloqué pour précision. Un cas bissextile convertible et une date d’opération future sont exercés sur des données synthétiques.
+
+Pour compléter F07, enregistrer sur une copie une opération dans chacune des branches homonymes, un mode de paiement personnalisé et un modèle de tiers utilisé par une opération. La conversion de modes et la conservation brute de modèles de tiers ont des épreuves synthétiques. Les champs Extra de transfert de F06 servent à établir les liens. Les Extra inconnus de portée financière font l’objet de refus synthétiques.
 
 ## Provenance et conservation
 
