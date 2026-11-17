@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Moneta.BankPerfect;
 using Moneta.Core;
 using Moneta.Infrastructure.Storage;
@@ -7,7 +8,10 @@ namespace Moneta.Infrastructure.BankPerfect;
 
 internal static class BankPerfectAudit
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     internal static byte[] Encode(BankPerfectTarget plan, V5Document source, BankPerfectImportReport report)
     {
@@ -27,7 +31,7 @@ internal static class BankPerfectAudit
                 ["document"] = "Nom de groupe source ou libellé technique, nouveau UUID et horodatages d’import.",
                 ["account"] = "Nom et devise natifs, ordre et compte par défaut, ouverture technique nulle. Coordonnées et taux historiques en provenance.",
                 ["operation"] = "Date, détail, tiers, mode, catégorie, état et montant exact. Signe séparé de la magnitude. Libellé issu du tiers, du détail ou du mode. Date supplémentaire et Extra en provenance.",
-                ["opening"] = "La ligne qualifiée est conservée une fois et repérée par opening. Elle garde son état de pointage hérité.",
+                ["opening"] = "La ligne d’ouverture probable est conservée une fois et repérée par opening et openingConfidence. Elle garde son état de pointage hérité.",
                 ["category"] = "Nom et parent physiques. Identifiant explicite ou position historique. Aucune fusion de catégories.",
                 ["payee-template"] = "Le tiers a une référence Moneta. Les autres champs du modèle restent en provenance.",
                 ["payment-method"] = "Mode rattaché au catalogue. Définition et code bruts conservés.",

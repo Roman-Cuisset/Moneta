@@ -117,7 +117,13 @@ public partial class BankPerfectImportWindow : Window
         if (report.Issues.Count != 0) text.AppendLine();
         foreach (var issue in report.Issues.OrderByDescending(issue => issue.Blocking))
         {
-            text.Append(issue.Blocking ? "Bloquant · " : "Information · ");
+            text.Append(issue.Kind switch
+            {
+                BankPerfectImportIssueKind.Blocker => "Bloquant · ",
+                BankPerfectImportIssueKind.HistoricalUncertainty => "Historique incertain · ",
+                BankPerfectImportIssueKind.ProvenanceOnly => "Provenance · ",
+                _ => "Information · "
+            });
             if (issue.Source is { } source) text.Append($"ligne {source.Line} · ");
             text.AppendLine(issue.Message);
         }

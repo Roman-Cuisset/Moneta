@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Moneta.BankPerfect;
@@ -14,8 +13,7 @@ internal static class BankPerfectPlan
         var source = read.Document;
         var issues = read.Report.Diagnostics
             .Where(diagnostic => diagnostic.Finding != V5Finding.Read)
-            .Select(diagnostic => new BankPerfectImportIssue(diagnostic.Code, diagnostic.Message,
-                IsBlocking(diagnostic, source), diagnostic.Source)).ToList();
+            .Select(diagnostic => ToImportIssue(diagnostic, source)).ToList();
         var accounts = new List<BankPerfectImportAccount>();
         if (source is not null)
         {
@@ -32,6 +30,10 @@ internal static class BankPerfectPlan
                 var opening = FindOpening(account);
                 if (account.Operations.Count != 0 && opening is null)
                     issues.Add(new("opening-uncertain", "L’ouverture historique de ce registre ne peut pas être distinguée avec suffisamment de certitude.", true, account.Source));
+                else if (opening is not null)
+                    issues.Add(new("opening-probable",
+                        "Une ligne correspond à une ouverture historique probable. Le solde de départ Moneta est nul et chaque ligne est reprise une seule fois.",
+                        false, opening) { Kind = BankPerfectImportIssueKind.HistoricalUncertainty });
                 foreach (var row in account.Operations)
                     if (!linkedRows.Contains(row.Source) && row.Payee is { } payee &&
                         (payee.StartsWith("Transfert vers le compte ", StringComparison.Ordinal) ||
@@ -44,7 +46,8 @@ internal static class BankPerfectPlan
                     opening));
                 if (account.Operations.Any(row => row.AdditionalDate.Present && row.AdditionalDate.Date.HasValue))
                     issues.Add(new("additional-date-provenance",
-                        "Les dates supplémentaires restent dans la provenance. Le conteneur V5 ne certifie pas leur usage pour le pointage.", false, account.Source));
+                        "Les dates supplémentaires restent dans la provenance. Leur rôle peut dépendre de la version de BankPerfect.",
+                        false, account.Source) { Kind = BankPerfectImportIssueKind.ProvenanceOnly });
                 if (account.Operations.Any(row => row.Pointing == V5Pointing.R))
                     issues.Add(new("legacy-reconciliation", "Les états R sont repris comme états hérités protégés, sans session de rapprochement.", false, account.Source));
             }
@@ -71,13 +74,19 @@ internal static class BankPerfectPlan
         return new(path, source, report);
     }
 
-    private static bool IsBlocking(V5Diagnostic diagnostic, V5Document? source) => diagnostic.Code switch
+    private static BankPerfectImportIssue ToImportIssue(V5Diagnostic diagnostic, V5Document? source)
     {
-        "missing-document-id" or "missing-account-uid" or "missing-operation-uid" or "missing-additional-date" or "logo" => false,
-        "extension-data" => source?.Extensions.Any(extension => extension.Header.Source == diagnostic.Source &&
-            extension.Header.Key == "bp_script_data_fabiobptransfer") != true,
-        _ => true
-    };
+        var kind = diagnostic.Code switch
+        {
+            "missing-document-id" or "missing-account-uid" or "missing-operation-uid" or "missing-additional-date" or
+                "earlier-additional-date" => BankPerfectImportIssueKind.HistoricalUncertainty,
+            "logo" => BankPerfectImportIssueKind.ProvenanceOnly,
+            "extension-data" when source?.Extensions.Any(extension => extension.Header.Source == diagnostic.Source &&
+                extension.Header.Key == "bp_script_data_fabiobptransfer") == true => BankPerfectImportIssueKind.ProvenanceOnly,
+            _ => BankPerfectImportIssueKind.Blocker
+        };
+        return new(diagnostic.Code, diagnostic.Message, kind == BankPerfectImportIssueKind.Blocker, diagnostic.Source) { Kind = kind };
+    }
 
     private static V5Location? FindOpening(V5Account account)
     {
@@ -106,7 +115,7 @@ internal static class BankPerfectPlan
         var methods = new Dictionary<string, PaymentMethod>(StringComparer.Ordinal);
         var objects = new List<BankPerfectObjectMapping>();
         var accounts = new Account[source.Accounts.Count];
-        var operations = new Dictionary<V5Location, Transaction>();
+        var operations = new Dictionary<V5Location, (V5Operation Source, Transaction Target)>();
         var transfers = new List<TransferChange>();
         // Moneta resolves same-day ties with CreatedUtc. Preserve the physical source
         // order within each account using technical ticks up to the import time.
@@ -185,9 +194,12 @@ internal static class BankPerfectPlan
                     CategoryId = parent?.Id ?? category?.Id, SubcategoryId = parent is null ? null : category?.Id,
                     PaymentMode = method.Name, PaymentMethodId = method.Id
                 };
-                operations.Add(row.Source, value);
-                Add("operation", value.Id, row.Source, row.Extra.FirstOrDefault(extra => extra.Key == "UId")?.RawValue,
-                    row.Fields, row.Source == opening);
+                operations.Add(row.Source, (row, value));
+                var isOpening = row.Source == opening;
+                objects.Add(new("operation", value.Id, row.Source, RawUid(row), row.Fields, isOpening)
+                {
+                    OpeningConfidence = isOpening ? account.Opening : null
+                });
             }
         }
 
@@ -204,27 +216,31 @@ internal static class BankPerfectPlan
         foreach (var item in operations)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            try { FinancialRules.ValidateTransaction(item.Value, document); }
+            try { FinancialRules.ValidateTransaction(item.Value.Target, document); }
             catch (ArgumentException error) { throw new PlanException("operation-invariant", error.Message, item.Key); }
         }
 
+        var links = source.Transfers.ToDictionary(link => link.Source);
         foreach (var link in source.Transfers)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var debit = operations[link.Source];
+            var (debitRow, debit) = operations[link.Source];
             if (debit.Direction != TransactionDirection.Debit) continue;
-            var credit = operations[link.Target!];
+            var (creditRow, credit) = operations[link.Target!];
             var transfer = new Transfer(Id(FormattableString.Invariant($"transfer/{link.Source.Block}/{link.Source.Line}")),
                 debit.Id, credit.Id, null, debit.Date, "", debit.Details, null, null, timestamp, timestamp);
             try { TransferRules.Validate(new(transfer, debit, credit, null), document); }
             catch (ArgumentException error) { throw new PlanException("transfer-invariant", error.Message, link.Source); }
             transfers.Add(new(transfer, 0));
-            Add("transfer", transfer.Id, link.Source, link.SourceOperationUid?.ToString(CultureInfo.InvariantCulture),
-                [link.SourceAccountUid, link.RawTargetAccountUid, link.RawTargetOperationUid]);
+            objects.Add(new("transfer", transfer.Id, link.Source, RawUid(debitRow),
+                [link.SourceAccountUid, link.RawTargetAccountUid, link.RawTargetOperationUid])
+            {
+                Transfer = new(Leg(debit, debitRow, link), Leg(credit, creditRow, links[creditRow.Source]))
+            });
         }
         if (source.Transfers.Count != 2 * transfers.Count)
             throw new PlanException("transfer-count", "Les références de virement ne forment pas des paires attestées.", null);
-        return new(document, operations.Values.Select(value => new TransactionChange(value, 0)).ToArray(),
+        return new(document, operations.Values.Select(value => new TransactionChange(value.Target, 0)).ToArray(),
             transfers.AsReadOnly(), objects.AsReadOnly());
 
         LedgerPayee? Payee(string? value, V5Location location)
@@ -246,6 +262,12 @@ internal static class BankPerfectPlan
             return target;
         }
     }
+
+    private static string? RawUid(V5Operation row) => row.Extra.FirstOrDefault(extra => extra.Key == "UId")?.RawValue;
+
+    private static BankPerfectTransferLeg Leg(Transaction target, V5Operation source, V5Transfer link) =>
+        new(target.AccountId, target.Id, source.Source, link.SourceAccountUid, RawUid(source),
+            link.RawTargetAccountUid, link.RawTargetOperationUid);
 
     private static string? Header(V5Document source, string key) => source.Header
         .FirstOrDefault(entry => entry.Key.Equals(key, StringComparison.OrdinalIgnoreCase))?.Value;

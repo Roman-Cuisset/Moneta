@@ -300,6 +300,148 @@ public sealed class BankPerfectImportTests
         Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(Target));
     }
 
+    [TestMethod]
+    public void NegativeOpeningAndOrdinarySameAmountRemainTwoSeparateMovements()
+    {
+        const string negativeOpening = "46337;R;23;Création du compte courant;;-1;-250,00;46337;UId=12";
+        var preview = Prepare(Header, "45306;;23;Autre débit;;-1;-250,00;45306;UId=13\n" + negativeOpening);
+        Assert.IsTrue(preview.Report.CanImport, Describe(preview));
+        Assert.IsTrue(preview.Report.Issues.Any(issue => issue.Code == "opening-probable" &&
+            issue.Kind == BankPerfectImportIssueKind.HistoricalUncertainty));
+        BankPerfectImporter.Import(preview, Target);
+        using var file = MonetaFile.Open(Target);
+        var account = file.Snapshot.Accounts.Single();
+        Assert.AreEqual(0m, account.OpeningBalance);
+        Assert.AreEqual(-500m, file.Snapshot.AccountBalances![account.Id]);
+        Assert.AreEqual(-250m, file.Snapshot.AccountPointedBalances![account.Id]);
+        Assert.AreEqual(2, Operations(file, account).Count);
+        using var audit = JsonDocument.Parse(file.ReadBankPerfectProvenance()!);
+        var opening = audit.RootElement.GetProperty("objects").EnumerateArray().Single(entry => entry.GetProperty("opening").GetBoolean());
+        Assert.AreEqual("12", opening.GetProperty("sourceId").GetString());
+        Assert.AreEqual("Probable", opening.GetProperty("openingConfidence").GetString());
+    }
+
+    [TestMethod]
+    public void EarlierOptionalDateRemainsUnclassifiedAndFutureOperationIsReopenedExactly()
+    {
+        var booked = new DateOnly(2099, 1, 1);
+        var earlier = new DateOnly(2098, 12, 31);
+        var epoch = new DateOnly(1899, 12, 30);
+        var futureRow = FormattableString.Invariant($"{booked.DayNumber - epoch.DayNumber};P;40;Fin d’année;;-1;25,00;{earlier.DayNumber - epoch.DayNumber};UId=5");
+        var preview = Prepare(Header, Opening + "\n" + futureRow + "\n36585;;40;Bissextile;;-1;1,00");
+        Assert.IsTrue(preview.Report.CanImport, Describe(preview));
+        Assert.IsTrue(preview.Report.Issues.Any(issue => issue.Code == "earlier-additional-date" &&
+            issue.Kind == BankPerfectImportIssueKind.HistoricalUncertainty));
+        Assert.IsTrue(preview.Report.Issues.Any(issue => issue.Code == "additional-date-provenance" &&
+            issue.Kind == BankPerfectImportIssueKind.ProvenanceOnly));
+
+        BankPerfectImporter.Import(preview, Target);
+        using var file = MonetaFile.Open(Target);
+        var rows = Operations(file, file.Snapshot.Accounts.Single());
+        var pointed = rows.Single(row => row.Label == "Fin d’année");
+        Assert.AreEqual(booked, pointed.Date);
+        Assert.AreEqual(ReconciliationStatus.Marked, pointed.Status);
+        Assert.IsNull(pointed.MarkedOn);
+        Assert.AreEqual(new DateOnly(2000, 2, 29), rows.Single(row => row.Label == "Bissextile").Date);
+        using var audit = JsonDocument.Parse(file.ReadBankPerfectProvenance()!);
+        var raw = audit.RootElement.GetProperty("objects").EnumerateArray()
+            .Single(item => item.GetProperty("targetId").GetGuid() == pointed.Id).GetProperty("raw");
+        Assert.AreEqual(FormattableString.Invariant($"{earlier.DayNumber - epoch.DayNumber}"), raw[7].GetString());
+    }
+
+    [TestMethod]
+    public void EqualSameDayTransfersKeepTheirOwnSistersAndReconciledLegProtection()
+    {
+        const string thirdAccount = "compte2=;;;Épargne 2;;1;€;6,55957;F;;;;;;real;C;";
+        var preview = Prepare(Header + "\n" + SecondAccount + "\n" + thirdAccount,
+            Opening +
+            "\n46337;P;24;Transfert vers le compte Épargne;Identique;-1;-150,00;46337;UId=0003<||>#sisterAccUid=B<||>#sisterLineUid=0006" +
+            "\n46337;;24;Transfert vers le compte Épargne 2;Identique;-1;-150,00;46337;UId=4<||>#sisterAccUid=C<||>#sisterLineUid=7" +
+            Separator + "46337;R;42;Solde initial;;-1;200,00;46337;UId=2" +
+            "\n46337;R;42;Transfert depuis le compte Courant;Identique;-1;150,00;46337;UId=0006<||>#sisterAccUid=A<||>#sisterLineUid=0003" +
+            Separator + "46337;R;42;Solde initial;;-1;200,00;46337;UId=5" +
+            "\n46337;P;42;Transfert depuis le compte Courant;Identique;-1;150,00;46337;UId=7<||>#sisterAccUid=A<||>#sisterLineUid=4");
+        Assert.IsTrue(preview.Report.CanImport, Describe(preview));
+        BankPerfectImporter.Import(preview, Target);
+        using var file = MonetaFile.Open(Target);
+        Assert.AreEqual(2L, file.Snapshot.TransferCount);
+        var account = file.Snapshot.Accounts[0];
+        var legs = Operations(file, account).Where(row => row.Direction == TransactionDirection.Debit).ToArray();
+        var first = file.ReadTransfer(file.FindTransferId(legs[0].Id)!.Value);
+        var second = file.ReadTransfer(file.FindTransferId(legs[1].Id)!.Value);
+        Assert.AreNotEqual(first.Value.Id, second.Value.Id);
+        Assert.AreEqual(file.Snapshot.Accounts[1].Id, first.Credit.AccountId);
+        Assert.AreEqual(file.Snapshot.Accounts[2].Id, second.Credit.AccountId);
+        CollectionAssert.AreEqual(new[] { ReconciliationStatus.Marked, ReconciliationStatus.Reconciled,
+            ReconciliationStatus.Unmarked, ReconciliationStatus.Marked },
+            new[] { first.Debit.Status, first.Credit.Status, second.Debit.Status, second.Credit.Status });
+        Assert.ThrowsException<DocumentException>(() => file.Save(file.Snapshot,
+            [new(first.Debit with { Details = "Autre", Revision = 2 }, 1),
+             new(first.Credit with { Details = "Autre", Revision = 2 }, 1)],
+            transfers: [new(first.Value with { Notes = "Autre", Revision = 2 }, 1)]));
+
+        using var audit = JsonDocument.Parse(file.ReadBankPerfectProvenance()!);
+        var relation = audit.RootElement.GetProperty("objects").EnumerateArray()
+            .Single(item => item.GetProperty("targetId").GetGuid() == first.Value.Id).GetProperty("transfer");
+        var debit = relation.GetProperty("debit");
+        var credit = relation.GetProperty("credit");
+        Assert.AreEqual("0003", debit.GetProperty("sourceOperationId").GetString());
+        Assert.AreEqual("0006", debit.GetProperty("sisterOperationId").GetString());
+        Assert.AreEqual("0006", credit.GetProperty("sourceOperationId").GetString());
+        Assert.AreEqual("0003", credit.GetProperty("sisterOperationId").GetString());
+        Assert.AreEqual(first.Debit.Id, debit.GetProperty("targetOperationId").GetGuid());
+        Assert.AreEqual(first.Credit.Id, credit.GetProperty("targetOperationId").GetGuid());
+    }
+
+    [DataTestMethod]
+    [DataRow("missing-line", "transfer-incomplete")]
+    [DataRow("wrong-account", "transfer-wrong-account")]
+    [DataRow("wrong-return", "transfer-nonreciprocal")]
+    [DataRow("duplicate-reference", "transfer-ambiguous")]
+    [DataRow("missing-operation-id", "transfer-missing-source-id")]
+    public void AmbiguousSistersBlockTheWholePublication(string scenario, string expected)
+    {
+        var from = "46337;;24;Virement;Lien;-1;-15;46337;UId=3<||>#sisterAccUid=B<||>#sisterLineUid=4";
+        var to = "46337;;42;Virement;Lien;-1;15;46337;UId=4<||>#sisterAccUid=A<||>#sisterLineUid=3";
+        switch (scenario)
+        {
+            case "missing-line": from = from.Replace("<||>#sisterLineUid=4", ""); break;
+            case "wrong-account": from = from.Replace("#sisterAccUid=B", "#sisterAccUid=A"); break;
+            case "wrong-return": to = to.Replace("#sisterLineUid=3", "#sisterLineUid=1"); break;
+            case "duplicate-reference": from += "<||>#sisterAccUid=B"; break;
+            case "missing-operation-id": to = to.Replace("UId=4<||>", ""); break;
+        }
+        var preview = Prepare(Header + "\n" + SecondAccount, Opening + "\n" + from +
+            Separator + "46337;R;42;Solde initial;;-1;200,00;46337;UId=2\n" + to);
+        Assert.IsFalse(preview.Report.CanImport);
+        Assert.IsTrue(preview.Report.Issues.Any(issue => issue.Code == expected && issue.Blocking), Describe(preview));
+        Assert.ThrowsException<DocumentException>(() => BankPerfectImporter.Import(preview, Target));
+        Assert.IsFalse(File.Exists(Target));
+    }
+
+    [TestMethod]
+    public void ChangedCandidateAfterRestoreFailsTheLastCheckBeforePublication()
+    {
+        var preview = Prepare(Header, Opening);
+        var before = Hash(Source);
+        var progress = new InlineProgress(message =>
+        {
+            if (!message.StartsWith("Vérification de la source", StringComparison.Ordinal)) return;
+            var scratch = Directory.GetDirectories(directory, ".moneta-import-*").Single();
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+                { DataSource = Path.Combine(scratch, "candidate.moneta"), Pooling = false }.ToString());
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE Transactions SET label='Ligne altérée après contrôle';";
+            Assert.AreEqual(1, command.ExecuteNonQuery());
+        });
+        Assert.AreEqual(DocumentError.VerificationFailed,
+            Assert.ThrowsException<DocumentException>(() => BankPerfectImporter.Import(preview, Target, progress: progress)).Error);
+        Assert.IsFalse(File.Exists(Target));
+        Assert.AreEqual(before, Hash(Source));
+        NoScratch();
+    }
+
     private BankPerfectImportPreview TransferPreview(string creditDate = "46337") =>
         Prepare(Header + "\n" + SecondAccount + "\naccounts_order=1;0\ncompte_defaut=1\nbp_script_data_fabiobptransfer=_41_42",
             Opening + "\n46337;;24;Transfert vers le compte Épargne;Démo;-1;-150,00;46337;UId=3<||>#sisterAccUid=B<||>#sisterLineUid=4" +

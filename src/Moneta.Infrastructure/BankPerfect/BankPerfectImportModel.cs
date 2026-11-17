@@ -1,9 +1,16 @@
+using System.Text.Json.Serialization;
 using Moneta.BankPerfect;
 using Moneta.Core;
 
 namespace Moneta.Infrastructure.BankPerfect;
 
-public sealed record BankPerfectImportIssue(string Code, string Message, bool Blocking, V5Location? Source = null);
+public enum BankPerfectImportIssueKind { Information, HistoricalUncertainty, ProvenanceOnly, Blocker }
+
+public sealed record BankPerfectImportIssue(string Code, string Message, bool Blocking, V5Location? Source = null)
+{
+    public BankPerfectImportIssueKind Kind { get; init; } = Blocking
+        ? BankPerfectImportIssueKind.Blocker : BankPerfectImportIssueKind.Information;
+}
 public sealed record BankPerfectImportAccount(string Name, string? Currency, int OperationCount,
     decimal? Balance, decimal? PointedBalance, decimal? UnmarkedAmount, V5Location? Opening);
 
@@ -35,4 +42,16 @@ internal sealed record BankPerfectTarget(FinancialDocument Document, IReadOnlyLi
     IReadOnlyList<TransferChange> Transfers, IReadOnlyList<BankPerfectObjectMapping> Objects);
 
 internal sealed record BankPerfectObjectMapping(string Type, Guid TargetId, V5Location? Source, string? SourceId,
-    IReadOnlyList<string?> Raw, bool Opening = false);
+    IReadOnlyList<string?> Raw, bool Opening = false)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public V5OpeningConfidence? OpeningConfidence { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public BankPerfectTransferMapping? Transfer { get; init; }
+}
+
+internal sealed record BankPerfectTransferMapping(BankPerfectTransferLeg Debit, BankPerfectTransferLeg Credit);
+
+internal sealed record BankPerfectTransferLeg(Guid TargetAccountId, Guid TargetOperationId, V5Location Source,
+    string? SourceAccountId, string? SourceOperationId, string? SisterAccountId, string? SisterOperationId);
