@@ -358,17 +358,5 @@ public sealed class BankPerfectV5Tests
     private static void AssertFinding(V5ReadResult result, string code) =>
         Assert.IsTrue(result.Report.Diagnostics.Any(item => item.Code == code), $"Diagnostic attendu : {code}");
 
-    internal static byte[] Encode(string body, char version = '5')
-    {
-        var encoding = CodePagesEncodingProvider.Instance.GetEncoding(1252)!;
-        var bytes = encoding.GetBytes($"BP-FILE-{version}" + body);
-        for (var index = 0; index < bytes.Length; index++)
-        {
-            var position = V5Codec.Alphabet.IndexOf(bytes[index]);
-            if (position >= 0)
-                bytes[index] = V5Codec.Alphabet[(position + bytes.Length +
-                    V5Codec.Deltas[(index + 1) % V5Codec.Deltas.Length]) % V5Codec.Alphabet.Length];
-        }
-        return bytes;
-    }
+    internal static byte[] Encode(string body, char version = '5') => BankPerfectSyntheticCorpus.Encode(body, version);
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,23 +8,33 @@ namespace Moneta.BankPerfect;
 /// <summary>Lecteur local en lecture seule. Le document intermédiaire contient des données sensibles.</summary>
 public static class V5Reader
 {
+    internal static readonly ActivitySource Timings = new("Moneta.BankPerfect.V5");
     private static readonly Encoding Windows1252 = CodePagesEncodingProvider.Instance.GetEncoding(1252)!;
 
     public static V5Report Diagnose(string path) => ReadFile(path).Report;
 
-    public static V5ReadResult ReadFile(string path)
+    public static V5ReadResult ReadFile(string path) => ReadFile(path, CancellationToken.None);
+
+    public static V5ReadResult ReadFile(string path, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         long? length = null;
         byte[] bytes;
         try
         {
+            using var reading = Timings.StartActivity("read-file");
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
                 bufferSize: 4096, options: FileOptions.SequentialScan);
             length = stream.Length;
             if (length > V5Limits.Bytes)
                 return Failed(length, "limit", "Taille du fichier supérieure à la limite du lecteur.");
             bytes = new byte[(int)length];
-            stream.ReadExactly(bytes);
+            const int chunkSize = 64 * 1024;
+            for (var offset = 0; offset < bytes.Length; offset += chunkSize)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                stream.ReadExactly(bytes.AsSpan(offset, Math.Min(chunkSize, bytes.Length - offset)));
+            }
             if (stream.ReadByte() >= 0)
                 return Failed(length, "source-changed", "La taille du fichier a changé pendant la lecture.");
         }
@@ -32,11 +43,16 @@ public static class V5Reader
         {
             return Failed(length, "source-io", "Fichier inaccessible ou lecture interrompue.");
         }
-        return Read(bytes) with { SourceSha256 = Convert.ToHexString(SHA256.HashData(bytes)) };
+        var result = Read(bytes, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result with { SourceSha256 = Convert.ToHexString(SHA256.HashData(bytes)) };
     }
 
-    public static V5ReadResult Read(ReadOnlySpan<byte> raw)
+    public static V5ReadResult Read(ReadOnlySpan<byte> raw) => Read(raw, CancellationToken.None);
+
+    private static V5ReadResult Read(ReadOnlySpan<byte> raw, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var diagnostics = new V5Diagnostics();
         if (raw.IsEmpty)
             return Failed(0, "empty-file", "Le fichier est vide.");
@@ -48,7 +64,9 @@ public static class V5Reader
         V5Document? document = null;
         try
         {
-            (format, var bytes, recovery) = V5Codec.Decode(raw);
+            byte[]? bytes;
+            using (Timings.StartActivity("decode"))
+                (format, bytes, recovery) = V5Codec.Decode(raw, cancellationToken);
             if (bytes is null)
             {
                 if (format is null)
@@ -60,21 +78,24 @@ public static class V5Reader
             }
             if (recovery != V5LineRecovery.None)
                 diagnostics.Add("line-end-recovery", V5Finding.Read, "Marqueur V5 retrouvé après restauration des fins de ligne.");
-            if (CheckEncoding(bytes, diagnostics))
-                document = new V5Parser(Windows1252.GetString(bytes), diagnostics).Parse();
+            if (CheckEncoding(bytes, diagnostics, cancellationToken))
+                document = new V5Parser(Windows1252.GetString(bytes), diagnostics, cancellationToken).Parse();
         }
         catch (V5LimitException error)
         {
             diagnostics.Add("limit", V5Finding.Unreadable, "Quota de lecture V5 dépassé.", error.SourceLocation);
         }
+        cancellationToken.ThrowIfCancellationRequested();
         return Result(format, raw.Length, recovery, document, diagnostics);
     }
 
-    private static bool CheckEncoding(ReadOnlySpan<byte> bytes, V5Diagnostics diagnostics)
+    private static bool CheckEncoding(ReadOnlySpan<byte> bytes, V5Diagnostics diagnostics, CancellationToken cancellationToken)
     {
         var undefined = false;
-        foreach (var value in bytes)
+        for (var index = 0; index < bytes.Length; index++)
         {
+            if ((index & 0xffff) == 0) cancellationToken.ThrowIfCancellationRequested();
+            var value = bytes[index];
             if (value is < 32 and not (9 or 10 or 13) or 127)
             {
                 diagnostics.Add("control-byte", V5Finding.Unreadable,

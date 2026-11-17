@@ -55,18 +55,20 @@ public partial class BankPerfectImportWindow : Window
             CheckPathExists = true, OverwritePrompt = false,
             FileName = Path.GetFileNameWithoutExtension(SourceText.Text) + ".moneta"
         };
-        if (picker.ShowDialog(this) != true) return;
-        await RunAsync("Vérification du plan approuvé…", async token =>
+        if (picker.ShowDialog(this) == true) await ImportToAsync(approved, picker.FileName);
+    }
+
+    private Task ImportToAsync(BankPerfectImportPreview approved, string destination) =>
+        RunAsync("Vérification du plan approuvé…", async token =>
         {
             var progress = new Progress<string>(message => StatusText.Text = message);
-            var result = await Task.Run(() => BankPerfectImporter.Import(approved, picker.FileName, token, progress), token);
+            var result = await Task.Run(() => BankPerfectImporter.Import(approved, destination, token, progress), token);
             Result = result;
             ReportText.Text = $"Dossier créé et vérifié\r\n{result.Destination}\r\n" +
                 $"UUID Moneta {result.DocumentId:D}\r\nProvenance SHA-256 {result.ProvenanceSha256}\r\n" +
                 $"Sauvegarde et restauration de contrôle vérifiées.\r\n\r\n{Format(result.Report)}";
             StatusText.Text = "Importation terminée.";
         });
-    }
 
     private async Task RunAsync(string title, Func<CancellationToken, Task> action)
     {

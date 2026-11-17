@@ -12,10 +12,14 @@ internal static class V5Validation
         public string? TargetLine => TargetLines.FirstOrDefault()?.RawValue;
     }
 
-    public static IReadOnlyList<V5Transfer> Validate(List<V5Account> accounts, V5Diagnostics diagnostics)
+    public static IReadOnlyList<V5Transfer> Validate(List<V5Account> accounts, V5Diagnostics diagnostics,
+        CancellationToken cancellationToken)
     {
         for (var index = 0; index < accounts.Count; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             accounts[index] = CheckLedger(accounts[index], diagnostics);
+        }
 
         var byAccount = accounts.Where(account => !string.IsNullOrWhiteSpace(account.Fields.Uid))
             .ToLookup(account => account.Fields.Uid!, StringComparer.Ordinal);
@@ -24,7 +28,10 @@ internal static class V5Validation
             diagnostics.Add("duplicate-account-uid", V5Finding.Uncertain, "UID de compte présent plusieurs fois.", account.Source with { Field = 15 });
 
         var rows = accounts.SelectMany(account => account.Operations.Select(operation =>
-            new Row(account, operation, Other(operation, "#sisterAccUid"), Other(operation, "#sisterLineUid")))).ToArray();
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new Row(account, operation, Other(operation, "#sisterAccUid"), Other(operation, "#sisterLineUid"));
+        })).ToArray();
         var byUid = rows.Where(row => row.Uid.HasValue).ToLookup(row => row.Uid!.Value);
         foreach (var duplicate in byUid.Where(group => group.Count() > 1))
         foreach (var row in duplicate)
@@ -32,7 +39,11 @@ internal static class V5Validation
                 row.Operation.Extra.First(extra => extra.Key == "UId").Source);
 
         return rows.Where(row => row.HasReference)
-            .Select(row => Resolve(row, byAccount, byUid, diagnostics)).ToList().AsReadOnly();
+            .Select(row =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Resolve(row, byAccount, byUid, diagnostics);
+            }).ToList().AsReadOnly();
     }
 
     private static V5Extra[] Other(V5Operation operation, string key) =>

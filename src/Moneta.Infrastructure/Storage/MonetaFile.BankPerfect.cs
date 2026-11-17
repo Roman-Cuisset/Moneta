@@ -65,33 +65,25 @@ public sealed partial class MonetaFile
     internal static void PublishVerifiedImport(string candidate, string path, FinancialDocument expected, CancellationToken cancellationToken)
     {
         path = ValidatePath(path, false);
-        // The exclusive stream must be created by this attempt, so it is safe to remove on failure.
-        var lockPath = path + ".lock";
-        FileStream gate;
-        try { gate = new FileStream(lockPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None); }
-        catch (IOException exception) when (File.Exists(lockPath) || Directory.Exists(lockPath))
-        { throw new DocumentException(DocumentError.DestinationExists, "Un verrou de destination existe déjà.", exception); }
-        try
+        EnsureNewDestination(path);
+        using (var connection = OpenConnection(candidate, readOnly: false))
         {
-            EnsureNewDestination(path);
-            using (var connection = OpenConnection(candidate, readOnly: false))
-            {
-                VerifySnapshot(expected, ReadValidated(connection));
-                MonetaBackup.MakeStandalone(connection);
-            }
+            VerifySnapshot(expected, ReadValidated(connection));
+            MonetaBackup.MakeStandalone(connection);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        // Share the ordinary Moneta lock protocol. A released lock file is reusable after a crash.
+        FileStream gate;
+        try { gate = AcquireOwnership(path); }
+        catch (DocumentException error) when (error.Error == DocumentError.InUse)
+        { throw new DocumentException(DocumentError.DestinationExists, "La destination est réservée par une autre écriture ou son verrou est indisponible.", error); }
+        using (gate)
+        {
             EnsureNewDestination(path);
             cancellationToken.ThrowIfCancellationRequested();
-            File.Move(candidate, path, overwrite: false);
-        }
-        finally
-        {
-            gate.Dispose();
-            // A successful Moneta destination uses the ordinary persistent lock file.
-            // On failure leave the lock if another process has already acquired it.
-            if (!File.Exists(path))
-                try { File.Delete(lockPath); }
-                catch (IOException) { }
-                catch (UnauthorizedAccessException) { }
+            try { File.Move(candidate, path, overwrite: false); }
+            catch (IOException error) when (File.Exists(path) || Directory.Exists(path))
+            { throw new DocumentException(DocumentError.DestinationExists, "La destination a été créée entre-temps. Aucun dossier n’a été remplacé.", error); }
         }
     }
 }

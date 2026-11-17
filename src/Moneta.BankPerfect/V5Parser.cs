@@ -2,7 +2,7 @@ using Moneta.Core;
 
 namespace Moneta.BankPerfect;
 
-internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
+internal sealed class V5Parser(string text, V5Diagnostics diagnostics, CancellationToken cancellationToken)
 {
     private const string Separator = "TNSLPPBNTSOGPTQBC280673";
     private const string ScriptPrefix = "bp_script_data_";
@@ -15,6 +15,7 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
 
     public V5Document? Parse()
     {
+        using var parsing = V5Reader.Timings.StartActivity("parse");
         CheckPhysicalLines();
         var separator = text.IndexOf(Separator, StringComparison.Ordinal);
         if (separator < 0)
@@ -57,7 +58,10 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
             block++;
         } while (separator >= 0);
 
-        var transfers = V5Validation.Validate(accounts, diagnostics);
+        parsing?.Stop();
+        IReadOnlyList<V5Transfer> transfers;
+        using (V5Reader.Timings.StartActivity("validate-v5"))
+            transfers = V5Validation.Validate(accounts, diagnostics, cancellationToken);
         return new V5Document(_headers.AsReadOnly(), accounts.AsReadOnly(), categories.Categories, categories.Modes,
             payees.AsReadOnly(), _extensions.AsReadOnly(), transfers, _unparsed.AsReadOnly())
         {
@@ -72,6 +76,7 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
         var count = 1;
         while (start < text.Length)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var length = text.AsSpan(start).IndexOfAny('\r', '\n');
             V5Limits.Check(count <= V5Limits.Lines, new(count));
             V5Limits.Check((length < 0 ? text.Length - start : length) <= V5Limits.LineLength, new(count));
@@ -86,6 +91,7 @@ internal sealed class V5Parser(string text, V5Diagnostics diagnostics)
     {
         while (start < end)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var length = text.AsSpan(start, end - start).IndexOfAny('\r', '\n');
             if (length < 0)
             {

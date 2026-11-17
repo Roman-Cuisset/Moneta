@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using Moneta.BankPerfect;
 using Moneta.Core;
@@ -8,16 +9,21 @@ namespace Moneta.Infrastructure.BankPerfect;
 /// <summary>Builds and verifies a new local Moneta document after a caller confirms a prepared preview.</summary>
 public static class BankPerfectImporter
 {
+    private static readonly ActivitySource Timings = new("Moneta.BankPerfect.Import");
+
     public static BankPerfectImportPreview Prepare(string source, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var fullPath = Path.GetFullPath(source);
-        return BankPerfectPlan.Prepare(fullPath, V5Reader.ReadFile(fullPath), cancellationToken);
+        var read = V5Reader.ReadFile(fullPath, cancellationToken);
+        using var planning = Timings.StartActivity("preview-plan");
+        return BankPerfectPlan.Prepare(fullPath, read, cancellationToken);
     }
 
     public static BankPerfectImportResult Import(BankPerfectImportPreview preview, string destination,
         CancellationToken cancellationToken = default, IProgress<string>? progress = null)
     {
+        using var importing = Timings.StartActivity("import");
         ArgumentNullException.ThrowIfNull(preview);
         cancellationToken.ThrowIfCancellationRequested();
         if (!preview.Report.CanImport || preview.Source is null)
@@ -31,9 +37,14 @@ public static class BankPerfectImporter
             var target = MonetaFile.ValidatePath(destination, mustExist: false);
             using var original = new FileStream(preview.SourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             VerifySource(original, preview.Report);
-            var plan = BankPerfectPlan.Build(preview.Source, preview.Report, Guid.NewGuid(), DateTimeOffset.UtcNow, cancellationToken);
-            var audit = BankPerfectAudit.Encode(plan, preview.Source, preview.Report);
+            BankPerfectTarget plan;
+            using (Timings.StartActivity("build-plan"))
+                plan = BankPerfectPlan.Build(preview.Source, preview.Report, Guid.NewGuid(), DateTimeOffset.UtcNow, cancellationToken);
+            byte[] audit;
+            using (Timings.StartActivity("encode-provenance"))
+                audit = BankPerfectAudit.Encode(plan, preview.Source, preview.Report);
             var provenanceHash = Convert.ToHexString(SHA256.HashData(audit));
+            cancellationToken.ThrowIfCancellationRequested();
 
             var directory = Path.Combine(Path.GetDirectoryName(target)!, $".moneta-import-{Guid.NewGuid():N}");
             if (Directory.Exists(directory) || File.Exists(directory))
@@ -46,22 +57,32 @@ public static class BankPerfectImporter
 
             progress?.Report("Écriture du dossier de travail…");
             cancellationToken.ThrowIfCancellationRequested();
+            using (Timings.StartActivity("write-candidate"))
             using (MonetaFile.Create(candidate, plan.Document, plan.Operations, plan.Transfers, audit)) { }
             cancellationToken.ThrowIfCancellationRequested();
 
             progress?.Report("Réouverture et comparaison des opérations…");
             FinancialDocument verified;
-            using (var opened = MonetaFile.Open(candidate))
+            MonetaFile opened;
+            using (Timings.StartActivity("reopen"))
+                opened = MonetaFile.Open(candidate);
+            using (opened)
             {
-                Verify(opened, plan, preview.Report, audit, provenanceHash, cancellationToken);
+                using (Timings.StartActivity("compare"))
+                    Verify(opened, plan, preview.Report, audit, provenanceHash, cancellationToken);
                 verified = opened.Snapshot;
                 progress?.Report("Sauvegarde de contrôle…");
                 cancellationToken.ThrowIfCancellationRequested();
-                MonetaBackup.Create(opened, backup);
+                using (Timings.StartActivity("backup"))
+                    MonetaBackup.Create(opened, backup);
             }
             progress?.Report("Restauration et comparaison de contrôle…");
             cancellationToken.ThrowIfCancellationRequested();
-            using (var copy = MonetaBackup.Restore(backup, restored))
+            MonetaFile copy;
+            using (Timings.StartActivity("restore"))
+                copy = MonetaBackup.Restore(backup, restored);
+            using (copy)
+            using (Timings.StartActivity("compare-restored"))
             {
                 Verify(copy, plan, preview.Report, audit, provenanceHash, cancellationToken);
                 Require(MonetaBackup.Digest(copy.Snapshot) == MonetaBackup.Digest(verified), "Le dossier restauré diffère du dossier importé.");
@@ -71,7 +92,8 @@ public static class BankPerfectImporter
             VerifySource(original, preview.Report);
             cancellationToken.ThrowIfCancellationRequested();
             var result = new BankPerfectImportResult(target, verified.Id, provenanceHash, preview.Report, true);
-            MonetaFile.PublishVerifiedImport(candidate, target, verified, cancellationToken);
+            using (Timings.StartActivity("publish"))
+                MonetaFile.PublishVerifiedImport(candidate, target, verified, cancellationToken);
             return result;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException

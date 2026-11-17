@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
@@ -440,6 +441,249 @@ public sealed class BankPerfectImportTests
         Assert.IsFalse(File.Exists(Target));
         Assert.AreEqual(before, Hash(Source));
         NoScratch();
+    }
+
+    [DataTestMethod]
+    [DataRow("read-file")]
+    [DataRow("decode")]
+    [DataRow("parse")]
+    [DataRow("validate-v5")]
+    public void PreparationCanBeCancelledWhileReadingOrValidating(string phase)
+    {
+        _ = Prepare(Header, Opening);
+        var before = Hash(Source);
+        using var cancellation = new CancellationTokenSource();
+        var thread = Environment.CurrentManagedThreadId;
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == "Moneta.BankPerfect.V5",
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStarted = activity =>
+            {
+                if (Environment.CurrentManagedThreadId == thread && activity.OperationName == phase)
+                    cancellation.Cancel();
+            }
+        };
+        ActivitySource.AddActivityListener(listener);
+        Assert.ThrowsException<OperationCanceledException>(() => BankPerfectImporter.Prepare(Source, cancellation.Token));
+        Assert.AreEqual(before, Hash(Source));
+        Assert.IsFalse(File.Exists(Target));
+        NoScratch();
+    }
+
+    [DataTestMethod]
+    [DataRow("")]
+    [DataRow("Écriture du dossier")]
+    [DataRow("Réouverture et comparaison")]
+    [DataRow("Restauration et comparaison")]
+    public void CancelledImportLeavesNoPublishedCandidate(string phase)
+    {
+        var preview = Prepare(Header, Opening);
+        var before = Hash(Source);
+        using var cancellation = new CancellationTokenSource();
+        if (phase.Length == 0) cancellation.Cancel();
+        var progress = new InlineProgress(message =>
+        {
+            if (message.StartsWith(phase, StringComparison.Ordinal)) cancellation.Cancel();
+        });
+        Assert.ThrowsException<OperationCanceledException>(() =>
+            BankPerfectImporter.Import(preview, Target, cancellation.Token, progress));
+        Assert.AreEqual(before, Hash(Source));
+        Assert.IsFalse(File.Exists(Target));
+        NoScratch();
+    }
+
+    [DataTestMethod]
+    [DataRow("Écriture du dossier", DocumentError.DestinationExists)]
+    [DataRow("Sauvegarde de contrôle", DocumentError.DestinationExists)]
+    [DataRow("Restauration et comparaison", DocumentError.VerificationFailed)]
+    public void RealStorageFailuresLeaveNoPublishedCandidate(string phase, DocumentError error)
+    {
+        var preview = Prepare(Header, Opening);
+        var before = Hash(Source);
+        var progress = new InlineProgress(message =>
+        {
+            if (!message.StartsWith(phase, StringComparison.Ordinal)) return;
+            var work = Directory.GetDirectories(directory, ".moneta-import-*").Single();
+            switch (error)
+            {
+                case DocumentError.VerificationFailed:
+                    File.AppendAllText(Path.Combine(work, "backup.moneta"), "archive altérée");
+                    break;
+                default:
+                    var name = phase.StartsWith("Écriture", StringComparison.Ordinal) ? "candidate.moneta" : "backup.moneta";
+                    File.WriteAllText(Path.Combine(work, name), "fichier de test qui occupe le nom");
+                    break;
+            }
+        });
+        Assert.AreEqual(error, Assert.ThrowsException<DocumentException>(() =>
+            BankPerfectImporter.Import(preview, Target, progress: progress)).Error);
+        Assert.AreEqual(before, Hash(Source));
+        Assert.IsFalse(File.Exists(Target));
+        NoScratch();
+    }
+
+    [DataTestMethod]
+    [DataRow("")]
+    [DataRow("-wal")]
+    public void LateDestinationCollisionLeavesTheExistingBytesUntouched(string suffix)
+    {
+        var preview = Prepare(Header, Opening);
+        var existing = Target + suffix;
+        var progress = new InlineProgress(message =>
+        {
+            if (message.StartsWith("Vérification de la source", StringComparison.Ordinal))
+                File.WriteAllText(existing, "fichier externe");
+        });
+        Assert.AreEqual(DocumentError.DestinationExists, Assert.ThrowsException<DocumentException>(() =>
+            BankPerfectImporter.Import(preview, Target, progress: progress)).Error);
+        Assert.AreEqual("fichier externe", File.ReadAllText(existing));
+        Assert.AreEqual(suffix.Length == 0, File.Exists(Target));
+        NoScratch();
+    }
+
+    [TestMethod]
+    public void HeldDestinationLockBlocksImportAndCanBeReusedAfterRelease()
+    {
+        var preview = Prepare(Header, Opening);
+        var lockPath = Target + ".lock";
+        File.WriteAllText(lockPath, "verrou réservé au test");
+        using (File.Open(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            Assert.AreEqual(DocumentError.DestinationExists, Assert.ThrowsException<DocumentException>(() =>
+                BankPerfectImporter.Import(preview, Target)).Error);
+            Assert.IsFalse(File.Exists(Target));
+            NoScratch();
+        }
+        BankPerfectImporter.Import(preview, Target);
+        using (var file = MonetaFile.Open(Target))
+            Assert.AreEqual(1L, file.Snapshot.OperationCount);
+        Assert.AreEqual("verrou réservé au test", File.ReadAllText(lockPath));
+        NoScratch();
+    }
+
+    [TestMethod]
+    public void CleanupLeavesUnrelatedContentsInTheWorkDirectory()
+    {
+        var preview = Prepare(Header, Opening);
+        using var cancellation = new CancellationTokenSource();
+        string? marker = null;
+        var progress = new InlineProgress(message =>
+        {
+            if (!message.StartsWith("Réouverture et comparaison", StringComparison.Ordinal)) return;
+            var work = Directory.GetDirectories(directory, ".moneta-import-*").Single();
+            marker = Path.Combine(work, "fichier-tiers.txt");
+            File.WriteAllText(marker, "à préserver");
+            cancellation.Cancel();
+        });
+        Assert.ThrowsException<OperationCanceledException>(() =>
+            BankPerfectImporter.Import(preview, Target, cancellation.Token, progress));
+        Assert.IsFalse(File.Exists(Target));
+        Assert.IsNotNull(marker);
+        Assert.AreEqual("à préserver", File.ReadAllText(marker));
+        CollectionAssert.AreEqual(new[] { marker }, Directory.GetFiles(Path.GetDirectoryName(marker)!));
+    }
+
+    [TestMethod]
+    public void AnUnavailableDestinationDirectoryNeverPublishesIntoItsMovedCopy()
+    {
+        var preview = Prepare(Header, Opening);
+        var backup = Hash(Source);
+        var originalDirectory = Directory.CreateDirectory(Path.Combine(directory, "destination")).FullName;
+        var movedDirectory = Path.Combine(directory, "déplacé");
+        var destination = Path.Combine(originalDirectory, "new.moneta");
+        var progress = new InlineProgress(message =>
+        {
+            if (message.StartsWith("Vérification de la source", StringComparison.Ordinal))
+                Directory.Move(originalDirectory, movedDirectory);
+        });
+        Assert.AreEqual(DocumentError.MissingFile, Assert.ThrowsException<DocumentException>(() =>
+            BankPerfectImporter.Import(preview, destination, progress: progress)).Error);
+        Assert.IsFalse(File.Exists(destination));
+        Assert.IsFalse(File.Exists(Path.Combine(movedDirectory, Path.GetFileName(destination))));
+        Assert.AreEqual(1, Directory.GetDirectories(movedDirectory, ".moneta-import-*").Length);
+        Assert.AreEqual(backup, Hash(Source));
+    }
+
+    [DataTestMethod]
+    [DataRow("R", "Départ atypique")]
+    [DataRow("P", "Création du compte courant")]
+    [DataRow("", "Création du compte courant")]
+    public void AnUnattestedOpeningStaysBlockedDespiteMatchingAmounts(string state, string label)
+    {
+        var preview = Prepare(Header, $"46337;{state};40;{label};;-1;1000,00;46337;UId=1\n" +
+            "45306;;40;Création du compte courant;;-1;1000,00;45306;UId=2");
+        Assert.AreEqual(2000m, preview.Report.Accounts.Single().Balance);
+        Assert.IsTrue(preview.Report.Issues.Any(issue => issue.Code == "opening-uncertain" && issue.Blocking));
+        Assert.ThrowsException<DocumentException>(() => BankPerfectImporter.Import(preview, Target));
+        Assert.IsFalse(File.Exists(Target));
+    }
+
+    [TestMethod]
+    public void ImportedTransferEditsAndTombstonesPreserveTheOriginalProvenance()
+    {
+        var preview = TransferPreview();
+        var imported = BankPerfectImporter.Import(preview, Target);
+        using var file = MonetaFile.Open(Target);
+        var originalAudit = file.ReadBankPerfectProvenance()!;
+        using var report = JsonDocument.Parse(originalAudit);
+        var id = report.RootElement.GetProperty("objects").EnumerateArray()
+            .Single(entry => entry.GetProperty("type").GetString() == "transfer").GetProperty("targetId").GetGuid();
+        var original = file.ReadTransfer(id);
+        var model = new MainViewModel(file.Snapshot, file);
+        var current = model.EditTransfer(id, original.Value.Revision,
+            new(original.Debit.AccountId, original.Credit.AccountId, original.Value.Date.AddDays(1),
+                151m, 151m, "Référence Moneta", "Correction Moneta"));
+        file.Save(model.CaptureDocument(), model.PendingChanges, model.PendingReconciliations, model.PendingTransfers);
+        Assert.AreEqual(current, file.ReadTransfer(id));
+        Assert.AreEqual(original.Debit.Id, current.Debit.Id);
+        Assert.AreEqual(original.Credit.Id, current.Credit.Id);
+        CollectionAssert.AreEqual(originalAudit, file.ReadBankPerfectProvenance());
+
+        model = new MainViewModel(file.Snapshot, file);
+        model.DeleteTransfer(id, current.Value.Revision);
+        file.Save(model.CaptureDocument(), model.PendingChanges, model.PendingReconciliations, model.PendingTransfers);
+        var backup = Path.Combine(directory, "changes.backup.moneta");
+        MonetaBackup.Create(file, backup);
+        using var restored = MonetaBackup.Restore(backup, Path.Combine(directory, "changes.restored.moneta"));
+        Assert.IsTrue(restored.ReadTransfer(id).Value.IsDeleted);
+        CollectionAssert.AreEqual(originalAudit, restored.ReadBankPerfectProvenance());
+        Assert.AreEqual(imported.ProvenanceSha256, restored.Snapshot.BankPerfectProvenanceHash);
+    }
+
+    [TestMethod]
+    public void ReopeningAFormalStatementRestoresTheImportedPointingWithoutChangingProvenance()
+    {
+        var marked = Income.Replace("45306;;", "45306;P;").Replace(";45306;UId", ";45291;UId");
+        var preview = Prepare(Header + Catalog, Opening + "\n" + marked);
+        BankPerfectImporter.Import(preview, Target);
+        using var file = MonetaFile.Open(Target);
+        var audit = file.ReadBankPerfectProvenance()!;
+        var account = file.Snapshot.Accounts.Single();
+        var rows = Operations(file, account);
+        var opening = rows.Single(row => row.Status == ReconciliationStatus.Reconciled);
+        var original = rows.Single(row => row.Status == ReconciliationStatus.Marked);
+        var model = new MainViewModel(file.Snapshot, file);
+        model.ReleaseLegacyReconciliation(new(opening.Id, opening.Revision), "Libération de test.");
+        file.Save(model.CaptureDocument(), model.PendingChanges, model.PendingReconciliations);
+
+        model = new MainViewModel(file.Snapshot, file);
+        var session = model.StageReconciliation(new(original.Date, original.Amount, "Relevé fictif"), [original.Id]);
+        file.Save(model.CaptureDocument(), model.PendingChanges, model.PendingReconciliations);
+        Assert.AreEqual(ReconciliationStatus.Reconciled, file.ReadTransactions([original.Id]).Single().Status);
+
+        model = new MainViewModel(file.Snapshot, file);
+        model.ReopenReconciliation(session.Id, session.Revision, "Réexamen de test.");
+        file.Save(model.CaptureDocument(), model.PendingChanges, model.PendingReconciliations);
+        var backup = Path.Combine(directory, "statement.backup.moneta");
+        MonetaBackup.Create(file, backup);
+        using var restored = MonetaBackup.Restore(backup, Path.Combine(directory, "statement.restored.moneta"));
+        var row = restored.ReadTransactions([original.Id]).Single();
+        Assert.AreEqual(ReconciliationStatus.Marked, row.Status);
+        Assert.IsNull(row.MarkedOn);
+        Assert.IsNull(row.ReconciliationId);
+        Assert.AreEqual(ReconciliationSessionState.Reopened, restored.ReadReconciliation(session.Id).Session.State);
+        CollectionAssert.AreEqual(audit, restored.ReadBankPerfectProvenance());
     }
 
     private BankPerfectImportPreview TransferPreview(string creditDate = "46337") =>

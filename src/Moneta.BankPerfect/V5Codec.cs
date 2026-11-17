@@ -19,14 +19,15 @@ internal static class V5Codec
     private const int HeaderLength = 9;
     private static readonly int[] Positions = CreatePositions();
 
-    public static (string? Format, byte[]? Decoded, V5LineRecovery Recovery) Decode(ReadOnlySpan<byte> raw)
+    public static (string? Format, byte[]? Decoded, V5LineRecovery Recovery) Decode(ReadOnlySpan<byte> raw,
+        CancellationToken cancellationToken = default)
     {
         if (raw.StartsWith("BPFILE6\0"u8))
             return ("V6", null, V5LineRecovery.None);
 
         var format = Detect(raw);
         if (format == "V5")
-            return (format, DecryptBody(raw), V5LineRecovery.None);
+            return (format, DecryptBody(raw, cancellationToken), V5LineRecovery.None);
 
         // CR seul et LF ont la même longueur et sont hors de l'alphabet.
         // Leur échange ne peut changer la signature, et le parseur lit les deux.
@@ -36,12 +37,12 @@ internal static class V5Codec
         var (from, to, recovery) = hasCrLf
             ? ("\r\n", "\n", V5LineRecovery.CrLfToLf)
             : ("\n", "\r\n", V5LineRecovery.LfToCrLf);
-        var converted = ConvertLineEnds(raw, from, to);
+        var converted = ConvertLineEnds(raw, from, to, cancellationToken);
         if (converted is null)
             return (format, null, V5LineRecovery.None);
         var alternateFormat = Detect(converted);
         if (alternateFormat == "V5")
-            return (alternateFormat, DecryptBody(converted), recovery);
+            return (alternateFormat, DecryptBody(converted, cancellationToken), recovery);
         return (format ?? alternateFormat, null, V5LineRecovery.None);
     }
 
@@ -57,11 +58,14 @@ internal static class V5Codec
             : null;
     }
 
-    private static byte[] DecryptBody(ReadOnlySpan<byte> raw)
+    private static byte[] DecryptBody(ReadOnlySpan<byte> raw, CancellationToken cancellationToken)
     {
         var body = new byte[raw.Length - HeaderLength];
         for (var index = HeaderLength; index < raw.Length; index++)
+        {
+            if (((index - HeaderLength) & 0xffff) == 0) cancellationToken.ThrowIfCancellationRequested();
             body[index - HeaderLength] = Decrypt(raw[index], index, raw.Length);
+        }
         return body;
     }
 
@@ -83,7 +87,7 @@ internal static class V5Codec
         return positions;
     }
 
-    private static byte[]? ConvertLineEnds(ReadOnlySpan<byte> raw, string from, string to)
+    private static byte[]? ConvertLineEnds(ReadOnlySpan<byte> raw, string from, string to, CancellationToken cancellationToken)
     {
         Span<byte> search = stackalloc byte[from.Length];
         for (var index = 0; index < from.Length; index++)
@@ -98,6 +102,7 @@ internal static class V5Codec
         var written = 0;
         while (raw.IndexOf(search) is var match && match >= 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             raw[..match].CopyTo(converted.AsSpan(written));
             written += match;
             foreach (var character in to)
