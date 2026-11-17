@@ -2,6 +2,8 @@
 
 ## Portée et légende
 
+La mission 10E ajoute des preuves de reprise, de concurrence et de charge pour l’import EUR V5 qualifié. Les états de pointage et les dates source sont documentés avec les variantes BP8, le registre Moneta et la provenance de l’import. [Qualification avancée](BANKPERFECT_QUALIFICATION_10E.md)
+
 État **mission 8** : cours officiels NBRB/CBR, historique/cache hors ligne, convertisseur indicatif de montant et estimation du solde sélectionné réalisés. Dossiers/comptes, registre, pointage/rapprochements, virements liés et sauvegarde/restauration du graphe complet conservés ; **format financier schéma 5 et Ctrl+S inchangés**. Total multicomptes dans l’interface, taux manuel, import natif `.bp`, budgets, échéancier et installation de mises à jour restent absents. Les preuves BankPerfect sont distinctes des conventions Moneta ; aucune parité parfaite n’est déduite des fonctionnalités livrées.
 
 **Qualification mission 9 :** fonctionnalités et conventions financières conservées ; corrections des onglets clairs, de la petite hauteur du rapprochement et des noms UI Automation. Vérification contrôlée de huit surfaces en deux thèmes/quatre DPI WPF, sans prétendre à quatre configurations matérielles ni à une qualification complète par lecteur d'écran. [Preuves et limites](PERFORMANCE_AUDIT.md). Cette consolidation ne clôt aucune ligne de parité encore absente et ne démontre pas le format natif `.bp`.

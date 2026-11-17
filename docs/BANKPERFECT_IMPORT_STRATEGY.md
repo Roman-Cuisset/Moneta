@@ -1,5 +1,11 @@
 # Stratégie de conversion native BankPerfect vers Moneta
 
+## Interruptions et reprise — mission 10E
+
+L’analyse peut être annulée pendant la lecture, la désobfuscation, le parsing et la validation. L’import vérifie l’annulation aux frontières des phases SQLite. La publication emprunte le verrou exclusif Moneta ordinaire, vérifie à nouveau la destination et renomme la base autonome sans écrasement. Un verrou libéré reste réutilisable lors d’une nouvelle tentative.
+
+Après une interruption, recommencer depuis la source et un nouvel aperçu. La relance crée son propre répertoire de travail. Un résidu doit rester à part et son nettoyage éventuel être explicite. [Épreuves, limites et reprise](BANKPERFECT_QUALIFICATION_10E.md#interruption-et-concurrence)
+
 ## Qualification de la conversion — mission 10D
 
 Le rapport préalable différencie les blocages, les incertitudes historiques, les éléments conservés en provenance et les informations. La décision de convertir repose toujours sur les contrôles financiers. Une date de pointage antérieure au jour comptable est possible dans BP8 et la date supplémentaire demeure consultable en provenance. Les réciproques de virements sont vérifiées avant création et les deux jambes sont accessibles dans le rapport d’audit via leurs correspondances source et cible. Les cas de refus incluent les réciproques manquantes, asymétriques, dupliquées ou visant le mauvais compte et les jambes dépourvues d’UID. [Matrice de qualification](BANKPERFECT_COMPATIBILITY_MATRIX.md)

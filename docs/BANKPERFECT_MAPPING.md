@@ -1,5 +1,11 @@
 # Correspondance BankPerfect → Moneta
 
+## Fidélité après import — mission 10E
+
+Les UID historiques, les positions et les dates brutes décrivent le dossier à l’instant de l’import. Une correction Moneta ou une suppression logique peut modifier l’état courant tout en conservant les UUID et la provenance d’origine. Les instantanés et événements d’un rapprochement formel décrivent ce relevé et sa réouverture. [Vérifications et limites](BANKPERFECT_QUALIFICATION_10E.md#fidélité-des-données)
+
+Les conditions de validation d’un pointage Moneta ordinaire restent en vigueur. Une future prise en charge explicite des dates de pointage héritées devra distinguer leur sémantique et leur fiabilité selon les versions source.
+
 ## Précisions appliquées en mission 10D
 
 - Le geste de création dans BP8 prouve l’origine d’une ligne d’ouverture pour le corpus. Un fichier V5 isolé permet seulement une classification probable par signature. Le plan garde chaque mouvement et crée les comptes à zéro technique. Une erreur de classification probable peut modifier le repérage de l’ouverture dans l’audit. Le nombre de lignes, les états et les soldes découlent de la reprise intégrale du registre. Une situation sans candidate suffisamment distincte bloque la conversion. La position physique sert à départager l’affichage à date égale.

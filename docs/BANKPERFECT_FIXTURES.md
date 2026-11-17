@@ -1,5 +1,57 @@
 # Corpus BankPerfect — fixtures natives et qualification
 
+## Variantes natives — mission 10E
+
+Les fichiers ont été obtenus sur des copies fictives par les commandes de BankPerfect 8.0.0.373 dans le bac à sable Windows hors réseau, puis examinés avec le lecteur C# et l’importateur Moneta. Les huit empreintes de F00 à F07 correspondent aux sections ci-dessous avant et après les essais. F00, F01, F02, F04, F05, F06 et F07 ont de nouveau été importés. F03 est refusé pour `0,0001 EUR`. Les fichiers, les instantanés et les captures restent dans `private/mission10e-bp8/output`, hors Git.
+
+### BP-F08 — Ouverture négative renommée et homonyme
+
+Sur une copie de F04, ajouter un autre prélèvement NP de 250 EUR à la date de l’ouverture. Renommer le tiers de l’ouverture en « Départ atypique », comme celui du nouveau débit. Accepter la modification de la ligne R dans BP8. Supprimer son pointage, puis la pointer de nouveau. Les trois lignes de −250 EUR font un solde de −750 EUR. Les deux mouvements homonymes gardent les UID distincts 1 et 3. La ligne d’ouverture, créée en premier, apparaît physiquement après les UID 2 et 3 dans les instantanés.
+
+| Instantané | État de l’UID 1 | SHA-256 |
+|---|---|---|
+| BP-F08-negative-r | R | `510019ED28114FB3EFA9EFD3FFA54B31A4DC027D9079C90E6A6DC36EEAABD66A` |
+| BP-F08-negative-np | NP | `3131101A0C399BF249E378FDF3B99EB571EF33159886EE9AF0F1C75EF431F7ED` |
+| BP-F08 | P | `85BD9AD8394B5402053F9D2C110D54C4A3CF0C82D4C9DE2165C8D0A24176B71D` |
+| BP-F08-positive | R, variante distincte à +1 000 EUR | `D0515DC0F0E6B1AD13943890E2E0E60FB41FC68E0C3DC6D7F3129471C1520457` |
+
+Moneta lit les états et les montants de chaque variante, calcule le solde de toutes les lignes, puis refuse `opening-uncertain` avant création. Seule la suite d’actions BP8 permet d’identifier l’UID 1 comme ouverture avec certitude dans ce scénario. Le nom, la position ou le montant ne fournissent pas cette preuve dans le fichier isolé.
+
+La variante positive part d’une copie de F05. Renommer l’ouverture de 1 000 EUR en « Départ positif » préserve l’UID 1, l’état R et le solde de 1 087,67 EUR. Le même refus est vérifié.
+
+### BP-F09 — Correction et suppression du virement
+
+Sur une copie de F06, créer un quatrième virement de 75 EUR de Courant vers A — Étude. Les jambes UID 9 et 10 ont des réciproques. Depuis le crédit, choisir **Les 2 lignes** après correction du montant à 88,50 EUR, puis répéter pour la date au 18/11/2026 et le tiers du crédit. Pointer le crédit seul, puis utiliser **Rapprocher toutes les lignes pointées**. Le débit reste NP. Enfin, supprimer le crédit depuis le menu Édition et confirmer la suppression de la ligne rapprochée.
+
+| Instantané | Observations sur les deux comptes | SHA-256 |
+|---|---|---|
+| BP-F09-created | 10 mouvements, quatrième paire à 75 EUR le 17/11/2026 | `350454558E8952DA0CA73C7AF64BC584C3C8AE0398A8B9924D2448BDCF8145E3` |
+| BP-F09-amount-both | −88,50 et +88,50 EUR, mêmes UID et réciproques | `145397E20F89016F8B0EE080511FF53CEA2E8C70A7E8E909F5E5D2ADC0C7680F` |
+| BP-F09-date-both | Dates d’opération avancées au 18/11/2026 sur les deux jambes. Le champ supplémentaire du débit reste au 17/11 | `5128BCEB41118C7666F47CE45B403B9B953BB389081BAE60BEF067EBD85FCB78` |
+| BP-F09-label-both | Le tiers change uniquement sur le crédit. Le lien reste présent dans Extra même lorsque l’icône de lien disparaît sur cette ligne | `2791A1A7BE2E3E4A03F23F00FA547B327B51F452A8FD5CCD26D9454365EFF5DE` |
+| BP-F09-pointing | Débit NP, crédit P au 17/11, la date d’opération du crédit reste le 18/11 | `39710F6A2278A8BE06CC9640C69DE4A98B51A520C433AADC06447283FB199EC3` |
+| BP-F09-reconciled | Débit NP, crédit R, mêmes montants, dates et UID | `7415C9FEE7DF2FC0F85437B3374700329E51AEDAFA50D1AFCE7B5601555396B6` |
+| BP-F09 | UID 10 absent. L’UID 9 demeure et pointe toujours vers le 10. Trois autres paires intactes | `ED825FA6194627C6955B0C429663F589A0407D34CE0CBCB64DC9F7448FDBC62D` |
+| BP-F09-both-delete | Copie de l’instantané avant renommage, suppression explicite des deux jambes. Les UID 9 et 10 disparaissent et les trois autres paires restent intactes | `10D7517587705187F35F320B32FDFD7FD960C7F144251F7B359839B56F5AA447` |
+
+Les six instantanés précédant la suppression sont importables. Après correction du montant, les soldes sont de 461,50 EUR et 738,50 EUR. Le fichier orphelin est refusé avant toute création avec `transfer-missing-target` et `transfer-missing-links`. Le plan exige une contrepartie attestée pour chaque lien. Sur la copie avant renommage, **Supprimer** propose les deux lignes. Après confirmation, la conversion retrouve huit mouvements, trois paires, aucun lien vers les UID 9 et 10 et les soldes de 550 EUR et 650 EUR.
+
+### BP-F10 — Pointage manuel et date comptable future
+
+Sur une copie de F05, choisir **Date de pointage** pour la recette de 100,01 EUR (UID 2) et passer du 31/12/2023 au 01/01/2024. Modifier ensuite la date comptable de la même opération au 02/01/2027 et accepter la modification de la ligne pointée. Saisir de nouveau une date de pointage, au 31/12/2026. Cliquer la case de pointage pour passer à R, puis sélectionner **Supprimer le pointage** pour arriver à NP et enregistrer.
+
+| Instantané | Date d’opération | Date supplémentaire | État | SHA-256 |
+|---|---|---|---|---|
+| BP-F10-manual | 15/01/2024 | 01/01/2024 | P | `EAEE6C3416E74508500741BD3FE85397A1EDDF2C5C8831EA33384B3C6B274C05` |
+| BP-F10-future-p | 02/01/2027 | 02/01/2027 | P | `AC505270715615C7A4BEBFFE4965676BD3C8ECEBFB6C2FC3304709EC8A54D36C` |
+| BP-F10-year-end-p | 02/01/2027 | 31/12/2026 | P | `2DB18144B5D9229811B268C91B2308694B8E0637B5B5417A62E7C251FA8DAD0E` |
+| BP-F10-future-r | 02/01/2027 | 17/11/2026 | R | `081B932C905E14BC99FAE0A5C79BFBA912C73B2AEC0FA645C3CD4150D4C7F98F` |
+| BP-F10 | 02/01/2027 | 17/11/2026 | NP | `EC43A13D66FD2F205C5F79A92DE2DB2ACF19B648FEAE5B2F9448BEAF22E006BE` |
+
+Les cinq états ont été importés et restaurés, avec trois lignes et un solde de 1 087,67 EUR. L’ouverture R garde son identité et la nouvelle date d’opération reste exacte. Le changement de date comptable, le passage à R et le dépointage montrent pourquoi la date supplémentaire ne peut pas être interprétée comme une date active dans chaque cas. Moneta garde les états en clair et le champ brut en provenance.
+
+La comparaison au lecteur Rust figé couvre les montants, UID, dates, états et réciproques présents dans ces fichiers natifs. Les tests synthétiques de charge parcourent aussi des dates non monotones et vérifient la cohérence du registre après restauration.
+
 ## Qualification native — mission 10D
 
 Les quatre sources F00 à F03 de la campagne historique ont été relues sans écriture. Leurs empreintes ci-dessous concordent avant et après les essais 10D. F00 à F02 ont de nouveau été converties et restaurées. F03 a donné un aperçu bloqué à cause de `0,0001 EUR`. Les deux instantanés précédant l’ajout de cette fraction, `BP-F03-P-auto.bp` et `BP-F03-P-manual-date.bp`, sont convertibles à 1 087,67 EUR et gardent les dates supplémentaires distinctes de la date comptable.

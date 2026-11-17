@@ -6,6 +6,8 @@ Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostiq
 
 ## Provenance des imports BankPerfect
 
+Le rapport source reste un instantané de l’import après les corrections, les suppressions logiques et les changements de rapprochement réalisés dans Moneta. Les valeurs courantes se lisent dans le registre. Les événements et instantanés de relevés décrivent les transformations de rapprochement qu’ils couvrent. [Qualification après modification](BANKPERFECT_QUALIFICATION_10E.md#fidélité-des-données)
+
 En 10D, le JSON v1 accepte des champs additionnels dans le rapport privé. Les avertissements portent un type `kind` et conservent `blocking`. Une correspondance peut indiquer `openingConfidence` et, pour un virement, `transfer` détaille chaque jambe jusqu’à l’UUID d’opération cible. Les positions de source et les UID écrits sont conservés, y compris leurs zéros initiaux. Les anciens rapports v1 restent lisibles via la même API.
 
 Les dossiers créés par la mission 10C utilisent les mêmes tables financières, la même précision et `user_version=5`. Ils possèdent une table optionnelle non financière `BankPerfectProvenance`, associée au marqueur d’origine `native-accounts-v5+bankperfect-v1`. Ce marqueur exige la table lors d’une ouverture. Son schéma exact et son unique rapport JSON v1 en BLOB sont validés, avec SHA-256 et limite de 64 Mio. Les dossiers ordinaires et leurs manifestes existants gardent leur format. Les versions de Moneta antérieures à 10C rejettent cette extension.

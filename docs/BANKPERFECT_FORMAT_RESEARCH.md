@@ -1,5 +1,13 @@
 # Recherche du format BankPerfect — mission 10A
 
+## Ouvertures renommées et virements modifiés — mission 10E
+
+BP-F08 enregistre la même date, le même montant et le même libellé sur l’ouverture renommée et un prélèvement ordinaire. L’UID seul distingue leurs identités et ne qualifie pas la nature d’ouverture sans la trace des gestes BP8. Le scénario a enregistré R, NP et P sur la même ligne d’ouverture. Le plan conserve un refus explicite de l’ouverture indéterminée.
+
+BP-F09 montre que le formulaire **Les 2 lignes** peut modifier le montant et la date sur les deux mouvements sans changer leurs UID. Le renommage du tiers du crédit ne se propage pas au débit et conserve les réciproques brutes. La suppression ultérieure du crédit rapproché sur cette trajectoire laisse le débit et une référence sœur pendante. Sur une copie avant renommage, la suppression explicitement confirmée des deux mouvements retire les deux UID et leurs liens. La présence d’un lien dépend des références réellement présentes dans le fichier. [Instantanés et empreintes](BANKPERFECT_FIXTURES.md#variantes-natives--mission-10e)
+
+BP-F10 montre trois comportements du champ supplémentaire. La date modifiée avec la commande de pointage est persistée. La modification du jour comptable le remplace par la nouvelle date comptable. Le passage à R enregistre le jour de l’essai et le dépointage conserve cette valeur sur une ligne devenue NP. Les règles ordinaires de pointage Moneta continuent à s’appliquer aux opérations éditées dans Moneta.
+
 ## Observations natives complémentaires — mission 10D
 
 La campagne 10D utilise le même exécutable BP8 8.0.0.373, dans un bac à sable Windows hors réseau avec données fictives. BP-F04 confirme que la création d’un compte accepte une ouverture négative et l’enregistre comme mouvement R. Cette ligne peut suivre physiquement un débit NP du même montant daté d’une année antérieure. Le montant et la première position physique ne suffisent donc pas à déduire la nature d’une ligne.

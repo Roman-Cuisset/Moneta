@@ -20,6 +20,12 @@ Le corpus BP8 fictif couvre désormais une ouverture négative R, une date de po
 
 Pour une mission suivante, compléter les variantes natives encore ouvertes et qualifier les limites de volume et la reprise après interruption. L’évolution pour les montants sous le centime et la valorisation historique des futurs rapports ont des études séparées. [Précision historique](HISTORICAL_MONEY_PRECISION.md) · [Valorisation historique](HISTORICAL_FX_VALUATION.md)
 
+### Robustesse et bilan — mission 10E
+
+La relance après arrêt repart de la source. Le corpus synthétique d’EUR exerce la conversion exhaustive et la restauration jusqu’à 50 000 lignes. La prochaine reprise du développement courant peut s’appuyer sur ce périmètre et un pilote ciblé avec des dossiers fictifs supplémentaires. Priorités restantes pour élargir l’import. Qualifier séparément les autres builds, devises et signatures d’ouverture, et mesurer les reprises sur d’autres systèmes de fichiers.
+
+Les futurs budgets et rapports valoriseront chaque dépense passée avec le cours applicable à la date de cette dépense pour toute devise prise en charge. [Qualification 10E](BANKPERFECT_QUALIFICATION_10E.md) · [Valorisation historique](HISTORICAL_FX_VALUATION.md)
+
 ### Lecteur diagnostique C# — mission 10B
 
 B02/B03 disposent d’une bibliothèque .NET 10 et d’une CLI interne. Lecture seule des quatre fixtures BP8 V5, provenance source, décimaux exacts, liens réciproques, diagnostics bornés et couverture JSON. [Résultats](BANKPERFECT_FIXTURES.md#qualification-c--mission-10b)

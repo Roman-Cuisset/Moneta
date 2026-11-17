@@ -1,4 +1,20 @@
-# Compatibilité BankPerfect — qualification missions 10A à 10D
+# Compatibilité BankPerfect — qualification missions 10A à 10E
+
+## Qualification avancée en mission 10E
+
+| Cas | Résultat |
+|---|---|
+| BP-F00 à BP-F07 | Sept conversions revérifiées. BP-F03 reste bloqué pour précision sous le centime et les huit originaux conservent leur SHA-256 |
+| BP-F08 | Refus contrôlé de l’ouverture indéterminée, y compris avec le même nom et le même montant sur un mouvement ordinaire |
+| BP-F09 avant suppression | Conversion des quatre paires après correction du montant, de la date et du tiers, avec maintien des UID. État R hérité d’une seule jambe |
+| BP-F09 après suppression du crédit renommé | Refus contrôlé. Le débit contient une référence vers la ligne supprimée |
+| BP-F09 après suppression explicite de la paire | Conversion des huit lignes restantes et des trois paires encore présentes, soldes 550 et 650 EUR |
+| BP-F10 | Conversion du mouvement futur et de ses états P/R/NP dans les instantanés. Conservation du jour comptable et de la date supplémentaire brute, y compris après dépointage |
+| Charge synthétique V5 EUR | Conversion et restauration à 1 000, 10 000 et 50 000 lignes. Mesures séparées et vérifications exhaustives |
+
+Les épreuves de publication et de reprise se limitent aux frontières et au poste documentés. Les autres versions, devises et contenus financiers inconnus suivent la politique de refus ou de qualification dédiée. [Bilan, interruptions, charge et parcours WPF](BANKPERFECT_QUALIFICATION_10E.md) · [Cas natifs](BANKPERFECT_FIXTURES.md#variantes-natives--mission-10e)
+
+Le bilan des onze fichiers nommés BP-F00 à BP-F10 donne huit conversions et trois refus. Les instantanés de variantes servent de preuves supplémentaires dans chaque famille.
 
 ## Extension qualifiée en mission 10D
 

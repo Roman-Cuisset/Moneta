@@ -310,6 +310,8 @@ La sauvegarde manuelle utilise déjà `BackupDatabase`, compare l'intégralité 
 
 ## 8. Migration depuis BankPerfect, sans compatibilité native présumée
 
+La qualification 10E vérifie l’arrêt avant publication et la concurrence dans des processus distincts. Une nouvelle tentative ne réutilise que le protocole de verrouillage ordinaire, avec un nouveau plan et une base de travail propre. [Garanties mesurées et limites](BANKPERFECT_QUALIFICATION_10E.md)
+
 **Objectif prioritaire décidé :** `Fichier > Ouvrir` accepte `.moneta` et `.bp`. Un `.bp` reconnu déclenche une proposition explicite de conversion native vers un **nouveau** `.moneta`, jamais un enregistrement dans l'original ni sa suppression. Le format `.bp`, les protections et la capacité de reprise complète restent **inconnus** : cette décision fixe un objectif et non une capacité disponible. Ne pas ouvrir `identity.dat`, contourner un mot de passe, exécuter un script de référence ou décompiler un binaire pour combler l'inconnue.
 
 La voie native est étudiée dans l'ordre : documentation publique, API des scripts lisibles, limites des exports/imports, comparaison de fichiers `.bp` strictement fictifs produits par l'utilisateur (ou après autorisation d'exécution distincte), puis analyse binaire non destructive de **ces fichiers de données**, sans décompilation, déchiffrement ni contournement. Aucun corpus `.bp` fictif n'a été produit ou fourni dans cette mission ; aucune variation d'octets n'est déclarée observée. Le [protocole et les critères de conversion](BANKPERFECT_IMPORT_STRATEGY.md) gouvernent ce travail.

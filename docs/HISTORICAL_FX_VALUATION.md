@@ -1,5 +1,7 @@
 # Valorisation historique multidevise
 
+Dans un rapport, chaque dépense passée utilise le cours applicable à sa date métier. Cette règle vaut pour chaque devise prise en charge, y compris celles ajoutées ultérieurement. La date de consultation est une métadonnée du rapport.
+
 ## Calculs par nature de montant
 
 | Objet | Date de valorisation | Traitement |
