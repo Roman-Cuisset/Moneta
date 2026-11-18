@@ -2,13 +2,17 @@
 
 ## Portée et règle de lecture
 
-**Mission 8 : cours officiels NBRB/CBR, cache/historique datés, conversion indicative et estimation du solde sélectionné opérationnels.** Les virements liés 7C, registre/pointage/rapprochements 7A/7B et Ctrl+S restent inchangés ; **format financier schéma 5 conservé**, cache public indépendant. Aucun jalon de parité complet n’est présumé clos : total multicomptes dans l’interface, taux manuel, import `.bp`, budgets, échéancier, sauvegarde automatique et mise à jour installable ne sont pas livrés.
+Le format financier courant utilise le **schéma 6** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le total multicomptes dans l’interface, le taux manuel, les budgets, l’échéancier, la sauvegarde automatique et la mise à jour installable restent ouverts.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Gestion des comptes — mission 11
+
+Propriétés descriptives, ordre persistant, archivage, réactivation, consultation de l’historique et suppression confirmée d’un compte vierge sont disponibles dans Moneta. Les dossiers antérieurs passent au schéma 6 sur copie. Pour la mission 12, une suite possible consiste à étendre la recherche au registre actif, avec pagination et conservation du contexte de compte. [Règles de la mission 11](ACCOUNT_MANAGEMENT.md)
 
 ### Première conversion financière — mission 10C
 

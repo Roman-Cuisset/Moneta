@@ -1,8 +1,14 @@
 # Formats de fichiers Moneta
 
-**État mission 8 : schéma financier courant 5 inchangé**, dossiers/comptes, registre, pointages, rapprochements/historique et virements liés avec frais persistants ; sauvegarde/restauration du graphe complet. Les cours officiels et leur historique public sont dans un **cache SQLite séparé, schéma 1** ; les préférences locales passent au schéma JSON 2. Aucun cours ni choix de valorisation n’est ajouté au `.moneta`. Cycle manuel Enregistrer ; pas de ventilations, automatisation financière ou conversion `.bp`. Voir [README](../README.md) et [ARCHITECTURE](ARCHITECTURE.md).
+Le format financier courant utilise le **schéma SQLite 6**. Il couvre les comptes, le registre, les rapprochements, les virements liés avec frais et la provenance des imports BankPerfect. Les cours officiels et leur historique public résident dans un **cache SQLite séparé, schéma 1**. Les préférences locales utilisent le schéma JSON 2. [Architecture](ARCHITECTURE.md)
 
 Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) utilise un modèle en mémoire et une CLI indépendante du format financier.
+
+## Comptes et schéma courant
+
+Le schéma **6** ajoute à `Accounts` les colonnes texte facultatives `bank_name`, `bank_reference` et `holder`. Une migration de v5 vers v6 les initialise à NULL et compare le contenu avant et après, en incluant le condensat du registre et l’empreinte de provenance. Le schéma 6 inclut ces champs et l’ordre des comptes dans le contrôle de sauvegarde. Les sauvegardes v1 à v5 restent vérifiées avec leur représentation d’origine.
+
+La suppression d’un compte se fait dans la transaction d’enregistrement. Le contrôle porte sur le solde initial, les écritures actives et supprimées, les rapprochements et les comptes d’origine référencés dans la provenance. Les liens de virements et de frais dépendent de leurs écritures. Les relations historiques restent en place lors de l’archivage et de la réactivation. [Gestion des comptes](ACCOUNT_MANAGEMENT.md)
 
 ## Provenance des imports BankPerfect
 
@@ -34,7 +40,7 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 |---|---|
 | `Document` | Une ligne singleton ; identité, versions, nom, création/modification UTC, sélection |
 | `Currencies` | Code unique, nom, symbole, précision, culture/règles d'affichage et ordre ; EUR/BYN/RUB proposés à la création, registre extensible |
-| `Accounts` | UUID unique, nom, type, devise native FK vers `Currencies`, `opening_minor INTEGER`, notes, archive, création/modification UTC et ordre |
+| `Accounts` | UUID unique, nom, type, devise native FK vers `Currencies`, `opening_minor INTEGER`, notes, archive, création/modification UTC, ordre, banque, référence bancaire et titulaire |
 | `MigrationHistory` | Version source/cible, identifiant/définition de migration et date UTC ; seules les définitions reconnues sont acceptées |
 | `Categories` | UUID, nom, clé de correspondance, parent facultatif ; racines et un niveau de sous-catégories, unicité par parent |
 | `Payees` | UUID, nom et clé unique de correspondance |
@@ -166,7 +172,7 @@ Après crash, conserver principal et journaux à leurs noms et emplacements coh�
 1. Enregistrer d'abord les modifications en attente. La sauvegarde représente les données committées, pas un brouillon.
 2. Comparer le snapshot vivant au dernier snapshot enregistré ; utiliser `SqliteConnection.BackupDatabase` vers un temporaire exclusif voisin de la destination.
 3. Vérifier identité, version, schéma exact, `integrity_check`, `foreign_key_check` et empreinte canonique des métadonnées/référentiels et de **chaque opération, virement/lien, session, instantané et événement**, frais, libérations héritées et tombstones compris. Calcul en streaming, pas les seuls soldes. Consolider le WAL de la copie puis passer la copie autonome en journal `DELETE`.
-4. Fermer et calculer SHA-256/longueur. Le manifeste JSON version 1 certifie schéma, UUID, fichier et contenu complet. Le digest v4 couvre les données de pointage et les nombres/contenus de sessions/événements/instantanés ; v5 ajoute le graphe de virements et son nombre. Aucun nom, note ou solde en clair dans le manifeste. **Algorithmes 1/2/3/4 inchangés** pour les archives anciennes.
+4. Fermer et calculer SHA-256 et la longueur. Le manifeste JSON version 1 certifie le schéma, l’UUID du dossier, le fichier et son contenu complet. L’empreinte v4 couvre le pointage, les sessions, les événements et les instantanés. L’empreinte v5 ajoute le graphe de virements. L’empreinte v6 ajoute les trois champs bancaires. Le manifeste stocke les empreintes et garde les champs financiers et descriptifs dans le dossier. Les archives anciennes utilisent les algorithmes 1 à 5 d’origine.
 5. Publier la base sous un nom neuf, puis son `<nom>.moneta.manifest.json` **en dernier**. Le couple n'est pas une transaction multifichier : sans manifeste final ou en cas de divergence, la copie n'est pas certifiée. Une publication interrompue ne supprime aucune ancienne sauvegarde.
 6. Conserver les deux fichiers ensemble, à l'écart du dossier actif, et tester une restauration. L'empreinte n'est ni chiffrement ni signature d'authenticité. Ne pas ouvrir/enregistrer directement l'archive comme dossier de travail : son hash pourrait changer ; restaurer une nouvelle copie.
 
@@ -179,15 +185,15 @@ La date UTC propre à la sauvegarde, un identifiant de génération distinct du 
 3. Vérifier le contenu complet contre le digest certifié, puis publier sous un nouveau nom, rouvrir avec `MonetaFile.Open` et comparer à nouveau. Un hash ou `integrity_check=ok` isolé ne suffit pas.
 4. Le dialogue annonce uniquement une **restauration sur nouvelle copie rouverte et comparée**. Le dossier actuellement affiché, ses données et brouillons restent inchangés. Utiliser ensuite Fichier → Ouvrir pour une bascule volontaire.
 
-Restauration exercée historiquement en 7B avec comptes EUR/BYN/RUB, recettes/dépenses, référentiels, notes, révisions, suppressions logiques, pointages, sessions validées puis rouvertes, instantanés et événements de correction/libération. Le parcours Windows synthétique 7C ajoute virements même devise/multidevises, frais, état P/R indépendant, fermeture/réouverture et sauvegarde à chaud/restauration ouverte ; observations chiffrées et portée de preuve dans le README. Le contrôle applicatif compare le graphe au-delà des soldes, notamment les relations susceptibles de changer sans changer un solde. Archives certifiées 1..4 vérifiées selon leur schéma original, puis seule la copie de travail est migrée avant publication/réouverture.
+Restauration exercée historiquement en 7B et 7C avec comptes EUR/BYN/RUB, opérations, frais, virements liés et relevés avec instantanés et événements. Le contrôle applicatif compare les relations et l’ensemble du registre. Les archives 1 à 5 sont vérifiées selon leur schéma d’origine avant migration de la copie de travail.
 
 Audit 6.1 : un source bloqué par partage/verrou Windows (codes 32/33) renvoie maintenant `DocumentError.Locked` avec un message explicite, sans essai de contournement. Tests supplémentaires : écriture WAL non committée, lecteur WAL épinglé, sources bloqués et readonly pour restauration/migration. Lecture seule SQLite ne garantit pas l'absence de fichiers de coordination adjacents.
 
 ## FMT-07 — Migration du schéma, sans rétrogradation
 
-Schéma courant **5**. Transitions connues : **1 → 2**, ajout du drapeau archivé ; **2 → 3**, référentiels/opérations/index ; **3 → 4**, deux colonnes nullable sur `Transactions`, trois tables de rapprochement et index ; **4 → 5**, ajout de `Transfers`/`TransferLegs` et de leurs index d’unicité, puis métadonnées/version/historique. Aucune recréation des comptes/devises/opérations, aucune modification de `Transaction` ni du contrat d’instantané V1 pour 4 → 5.
+Les transitions connues vont de **1 → 2 → 3 → 4 → 5 → 6**. Elles ajoutent successivement le drapeau archivé, le registre et ses référentiels, le pointage et les rapprochements, les virements, puis les descriptions bancaires. L’ordre stocké des comptes précédents est repris à la migration.
 
-L’ouverture normale d’une version **1, 2, 3 ou 4** demande une migration sur une nouvelle copie consentie. Lecture source sans écriture, copie SQLite, comparaison de la représentation d’origine, transitions connues, contrôle des UUID/comptes/devises/soldes/opérations/états/révisions et de l’historique, version/historique de migration transactionnels puis réouverture comparée. Représentation v3 recalculée après 3 → 4 ; représentation **v4 complète** recalculée après 4 → 5, y compris relevés, instantanés et événements. Hash du principal source inchangé ; aucun journal supprimé. Les anciennes R restent sans session et les dates inconnues restent null. Les certificats d’archives 1..4 sont vérifiés avec leur algorithme d’origine avant toute migration de copie, jamais réécrits pour les faire correspondre au nouveau digest.
+L’ouverture normale d’une version **1 à 5** demande une migration sur une nouvelle copie consentie. Moneta lit la source en lecture seule, compare la représentation d’origine, applique les transitions à la copie et la rouvre pour vérification. Le contrôle couvre les UUID, devises, soldes, opérations, états, révisions, virements, rapprochements et la provenance disponibles. Les anciennes R gardent leur statut hérité et les dates inconnues restent nulles. Le certificat d’origine reste valide pour sa version.
 
 Version future, définition inconnue ou schéma altéré : refus, jamais de downgrade. Pour les futures versions publiées, étendre ce catalogue et les essais d'interruption à chaque frontière, avec sauvegarde cohérente/restauration préalable qualifiée. Aucun mécanisme générique de « réparation » ou migration automatique sur l'unique original.
 

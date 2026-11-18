@@ -2,7 +2,9 @@
 
 ## Contrat documentaire
 
-Cartographie cible, complétée par la capture privée de mission 4 : ce n’est pas une liste de fonctions toutes implémentées. **Moneta mission 8** ajoute cours officiels NBRB/CBR, cache/historique, convertisseur de montant et estimation du solde individuel aux virements liés et rapprochements 7A/7B/7C ; voir le [README](../README.md). **Format financier schéma 5 et Ctrl+S inchangés** ; aucun lecteur `.bp`, budget, échéancier ni installation de mises à jour. Les identifiants CMD restent stables ; preuves BankPerfect et décisions Moneta restent distinctes.
+La mission 11 livre **Comptes → Propriétés du compte…**, **Archiver le compte…**, **Réactiver le compte…**, **Monter**, **Descendre** et **Supprimer le compte vierge…**. Les actions sont aussi accessibles au clic droit dans la liste de gauche. La case d’affichage des archives contrôle la liste et le sélecteur de la barre d’outils. Les raccourcis en service sont conservés. [Commandes et comportement](ACCOUNT_MANAGEMENT.md)
+
+La cartographie cible s’appuie sur le manuel et la capture privée de mission 4. Les identifiants CMD restent stables. Le README récapitule les commandes en service. [README](../README.md)
 
 ### Lecture des tables
 
@@ -14,7 +16,7 @@ Cartographie cible, complétée par la capture privée de mission 4 : ce n’est
 
 **Ordre principal confirmé par la capture utilisateur de mission 4 : Fichier | Édition | Affichage | Comptes | Opérations | Outils | Plugins | Internet | ?.** Inconnus restants : ordre des sous-commandes, séparateurs, accélérateurs Alt et comportements dépendant du focus. L'image ne montre pas les menus déroulés ; aucune donnée personnelle n'en est retranscrite.
 
-### Présentation Moneta — historique et état courant mission 8
+### Présentation Moneta — historique jusqu’à la mission 8
 
 - Barre d'outils : emplacement du dossier/compte, Comptes (ajout), Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, **Virement**. Comptes/Ouvrir/Enregistrer, Virement et la sélection sont opérationnels ; les autres outils restent explicitement désactivés, avec débordement en fenêtre étroite. Le bouton Virement reprend l’emplacement transfert existant, sans nouvelle barre.
 - Les sous-menus et indications de touches documentés sont conservés, sans activer des raccourcis financiers inexistants. Quitter sous Fichier et À propos sous ? restent des décisions Moneta, pas des observations de menus ouverts BankPerfect.

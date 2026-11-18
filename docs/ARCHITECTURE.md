@@ -2,7 +2,9 @@
 
 ## Statut et limites de cette étude
 
-**Mission 8 : cours officiels NBRB/CBR, cache public indépendant et valorisation indicative, sur le socle financier 7C inchangé (schéma SQLite 5).** Enregistrement financier manuel maintenu ; montants natifs, virements et rapprochements protégés contre toute réécriture par les cours. Aucun import `.bp`, mise à jour/installation automatique ou historique général de toutes les corrections.
+La gestion des comptes de mission 11 réutilise le cycle brouillon et Ctrl+S. Les propriétés changent sur l’UUID existant. L’ordre de la collection définit l’ordre SQLite et départage les comptes homonymes dans les sélecteurs. L’archivage conserve le registre et ses relations. La suppression d’un compte exige une preuve d’absence de dépendances, relue dans la transaction d’écriture. [Gestion des comptes](ACCOUNT_MANAGEMENT.md)
+
+Les cours officiels NBRB/CBR, le cache public indépendant et la valorisation indicative viennent de la mission 8. La valorisation laisse les montants natifs, virements et rapprochements inchangés.
 
 Le [lecteur BankPerfect 10B](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) est une bibliothèque de diagnostic appelée par une CLI indépendante. Il consulte les règles de représentabilité de Moneta.Core et n'a aucune référence à WPF ou au stockage.
 
@@ -55,9 +57,9 @@ Voir [CURRENCIES_AND_SETTINGS.md](CURRENCIES_AND_SETTINGS.md) pour les contrats,
 4. **Enregistrer sous / F12** crée un nouveau fichier, sans écrasement, conservant UUID du dossier et dates/UUID des données. Le précédent fichier n'est pas modifié par cette action. Les copies ne sont pas synchronisées.
 5. **Sauvegarder le dossier** exige d'abord l'enregistrement des modifications, puis produit un snapshot SQLite autonome et son manifeste. **Restaurer** exige ce manifeste, crée une nouvelle copie, la rouvre et compare son contenu ; le dossier affiché et ses brouillons ne sont pas remplacés.
 
-Schéma courant **5**, marqueur `Moneta`, `application_id=0x4D4E5441`, `user_version` concordant. Treize tables `STRICT` : `Document`, `Currencies`, `Accounts`, `MigrationHistory`, `Categories`, `Payees`, `PaymentMethods`, `Transactions`, `Reconciliations`, `ReconciliationEntries`, `ReconciliationHistory`, `Transfers`, `TransferLegs`. UUID, dates métier ISO, UTC et contraintes explicites. Le créateur historique `Moneta-6` est conservé ; seul le numéro de schéma sélectionne la migration.
+Schéma courant **6** avec marqueur `Moneta`, `application_id=0x4D4E5441` et `user_version` concordant. Les treize tables `STRICT` du socle comprennent `Accounts`, `Transactions`, les référentiels, le rapprochement et les liens de virement. Les dossiers convertis ajoutent la table de provenance BankPerfect. Le créateur historique `Moneta-6` est conservé et le numéro de schéma sélectionne la migration.
 
-Migrations connues **1 → 2 → 3 → 4 → 5**, sur copie consentie. 2 → 3 ajoute le registre ; 3 → 4 ajoute deux colonnes de pointage nullable, trois tables d’historique et leurs index ; 4 → 5 ajoute les deux tables de virements et leurs index d’unicité, sans recréer ni enrichir `Transactions`. Comparaisons des représentations historiques, notamment v4 avant/après 4 → 5 : opérations, pointages, relevés, instantanés V1 et événements conservés ; dates/relevés inconnus restent null. Sources lues sans écriture, versions inconnues refusées ; certifications de sauvegarde **1/2/3/4** vérifiées avec leurs algorithmes originaux avant migration de la seule copie.
+Migrations connues **1 → 2 → 3 → 4 → 5 → 6**, sur copie consentie. La transition 5 → 6 ajoute trois colonnes de description aux comptes. Chaque transition compare la projection historique, avec les opérations, pointages, relevés, événements, virements et la provenance lorsque présents. Les sauvegardes des schémas antérieurs sont contrôlées selon leur algorithme d’origine avant migration de la copie restaurée.
 
 **Consolidation 6.1 :** les trois protections (Close après checkpoint, refus de journaux orphelins, comparaison du snapshot dans la transaction Save) sont conservées. Le verrou reste coopératif/par chemin ; les accès parallèles sur une session, alias filesystem et mutations concurrentes des listes ne sont pas pris en charge. La comparaison n'est ni surveillance continue ni protection contre un remplacement malveillant du fichier. Historique technique et snapshot financier ont des périmètres distincts. Les extensions 7B/7C couvrent explicitement baseline et digest de sauvegarde, sans changer les instantanés d’opération V1. [Preuves et risques historiques](AUDIT_MISSION_6_1.md).
 
@@ -296,7 +298,7 @@ Version de format et suite de migrations ordonnées avec identifiant/empreinte ;
 
 Après migration : contrôles de structure, références, nombre d'opérations, soldes par compte/devise, ventilation et liens de transferts ; pas seulement « le fichier s'ouvre ». Le suivi de version peut utiliser [PRAGMA user_version](https://www.sqlite.org/pragma.html#pragma_user_version), sans confondre cette convention applicative avec une migration déjà réalisée.
 
-Implémentation courante : chaîne connue **1 → 2 → 3 → 4 → 5**, sur copie consentie, décrite dans FILE_FORMATS. L'historique vérifie version source/cible et identifiants de définition connus ; 4 → 5 conserve explicitement la représentation v4, rapprochements/historique compris. Les archives 1..4 gardent leurs algorithmes originaux avant migration de la copie. La qualification de toutes les frontières de panne et la sauvegarde automatisée avant les futures migrations publiées restent des exigences supplémentaires.
+La chaîne **1 → 2 → 3 → 4 → 5 → 6** passe par une copie consentie. L’historique vérifie les versions source et cible ainsi que les identifiants de définition. Les archives 1 à 5 gardent leurs algorithmes de certification d’origine. [Format et migrations](FILE_FORMATS.md)
 
 ### 7.3 Sauvegarde et restauration : manuel réalisé, automatisation future
 
