@@ -62,7 +62,7 @@ public partial class MainWindow
 
     private void ReturnToResults_Click(object sender, RoutedEventArgs e)
     {
-        if (CanSearchLedger) _searchWindow?.Open(null, null, null, false, returning: true);
+        if (CanSearchLedger) _searchWindow?.Open(null, false, returning: true);
     }
 
     private void OpenRegisterSearch(bool advanced, bool all = false)
@@ -72,7 +72,7 @@ public partial class MainWindow
         {
             _searchPath = path;
             _searchSnapshot = snapshot;
-            _searchWindow = new LedgerSearchWindow(path, snapshot, NavigateFromSearchAsync) { Owner = this };
+            _searchWindow = new LedgerSearchWindow(path, snapshot, NavigateFromSearchAsync, RegisterAccountForSearch) { Owner = this };
             _searchWindow.Closed += (_, _) =>
             {
                 _searchWindow = null;
@@ -80,9 +80,14 @@ public partial class MainWindow
                 CommandManager.InvalidateRequerySuggested();
             };
         }
-        var account = _workspace.Model?.SelectedAccount;
-        _searchWindow.Open(account?.Account.Id, account?.DisplayName, advanced ? null : QuickSearch.Text, advanced, all: all);
+        _searchWindow.Open(advanced ? null : QuickSearch.Text, advanced, all: all);
         SearchContext.Visibility = Visibility.Visible;
+    }
+
+    private (Guid? Id, string? Name) RegisterAccountForSearch()
+    {
+        var account = _workspace.Model?.SelectedAccount;
+        return (account?.Account.Id, account?.DisplayName);
     }
 
     private async Task<bool> NavigateFromSearchAsync(LedgerSearchRow row)

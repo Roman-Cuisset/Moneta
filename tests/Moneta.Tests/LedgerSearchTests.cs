@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Microsoft.Data.Sqlite;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moneta.App;
 using Moneta.Core;
@@ -22,6 +23,35 @@ public sealed class LedgerSearchTests
 
     private LedgerSearchPage Search(LedgerSearchCriteria query, int index = 0, CancellationToken token = default) =>
         MonetaFile.SearchOperations(Pathname, _document, query, index, token);
+
+    [TestMethod]
+    public void UnavailableFileDuringConnectionOpenReportsDocumentError()
+    {
+        var document = FinancialDocument.New("Ouverture bloquée");
+        _document = document.Id;
+        using (MonetaFile.Create(Pathname, document)) { }
+        using var exclusive = File.Open(Pathname, FileMode.Open, FileAccess.Read, FileShare.None);
+        Assert.ThrowsException<DocumentException>(() => Search(new()));
+    }
+
+    [TestMethod]
+    public void InvalidPersistedDateDuringSearchReportsDocumentError()
+    {
+        using (var workspace = NewWorkspace(out _, out _, out _))
+        {
+            workspace.Model!.AddTransaction(new(Date, 1m, TransactionDirection.Credit, "Date fictive"));
+            workspace.Save(Pathname);
+        }
+        using (var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = Pathname, Pooling = false }.ToString()))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA ignore_check_constraints=ON; UPDATE Transactions SET date='2025-02-30';";
+            command.ExecuteNonQuery();
+        }
+        var error = Assert.ThrowsException<DocumentException>(() => Search(new()));
+        Assert.AreEqual(DocumentError.Corrupt, error.Error);
+    }
 
     private DocumentWorkspace NewWorkspace(out Guid eur, out Guid byn, out Guid rub)
     {

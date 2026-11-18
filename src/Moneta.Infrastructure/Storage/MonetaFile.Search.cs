@@ -30,7 +30,7 @@ public sealed partial class MonetaFile
         criteria.Validate();
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         cancellationToken.ThrowIfCancellationRequested();
-        using var connection = OpenConnection(ValidatePath(path, true), true);
+        using var connection = OpenSearchConnection(path, cancellationToken);
         raw.sqlite3_progress_handler(connection.Handle!, 1000, _ => cancellationToken.IsCancellationRequested ? 1 : 0, null);
         try
         {
@@ -78,8 +78,10 @@ public sealed partial class MonetaFile
                 string Text(int i) => reader.IsDBNull(i) ? string.Empty : reader.GetString(i);
                 var places = reader.GetInt32(13);
                 var transfer = !reader.IsDBNull(16);
+                if (!DateOnly.TryParseExact(Text(5), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) || date == default)
+                    throw Error(DocumentError.Corrupt, "Date de l’opération invalide.");
                 rows.Add(new(ReadGuid(Text(0)), ReadGuid(Text(1)), Text(2), reader.GetInt64(3), ReadBoolean(reader, 4),
-                    DateOnly.ParseExact(Text(5), "yyyy-MM-dd", CultureInfo.InvariantCulture), Text(6), Text(7), Text(8), Text(9),
+                    date, Text(6), Text(7), Text(8), Text(9),
                     Text(10), Text(11), Text(12), places, reader.GetInt64(19) / SearchScales[places],
                     (TransactionDirection)reader.GetInt32(14), (ReconciliationStatus)reader.GetInt32(15),
                     transfer ? ReadGuid(Text(16)) : null, transfer ? (LedgerTransferLeg)reader.GetInt32(17) : null, Text(18)));
@@ -93,6 +95,16 @@ public sealed partial class MonetaFile
         }
         catch (SqliteException error) { throw Translate(error); }
         finally { raw.sqlite3_progress_handler(connection.Handle!, 0, null, null); }
+    }
+
+    private static SqliteConnection OpenSearchConnection(string path, CancellationToken cancellationToken)
+    {
+        try { return OpenConnection(ValidatePath(path, true), true); }
+        catch (SqliteException error)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw Translate(error, DocumentError.AccessDenied);
+        }
     }
 
     private static string ConfigureSearch(SqliteConnection connection, SqliteCommand command, LedgerSearchCriteria query)

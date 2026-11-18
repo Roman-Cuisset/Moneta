@@ -31,9 +31,12 @@ public partial class LedgerSearchWindow : Window
     private readonly string _path;
     private readonly Guid _documentId;
     private readonly Func<LedgerSearchRow, Task<bool>> _navigate;
+    private readonly Func<(Guid? Id, string? Name)> _registerAccount;
     private CancellationTokenSource? _request;
     private LedgerSearchCriteria? _applied;
     private LedgerSearchPage? _page;
+    private int _requestedPage;
+    private Guid? _selectedResultId;
     private Guid _accountId;
     private string _accountName = "";
     private bool _periodUpdating;
@@ -41,11 +44,13 @@ public partial class LedgerSearchWindow : Window
     private bool _refreshOnShow;
     private bool _closed;
 
-    public LedgerSearchWindow(string path, FinancialDocument document, Func<LedgerSearchRow, Task<bool>> navigate)
+    public LedgerSearchWindow(string path, FinancialDocument document, Func<LedgerSearchRow, Task<bool>> navigate,
+        Func<(Guid? Id, string? Name)> registerAccount)
     {
         _path = path;
         _documentId = document.Id;
         _navigate = navigate;
+        _registerAccount = registerAccount;
         InitializeComponent();
         Bind(Kind, new Choice<LedgerSearchKind>[] { new(LedgerSearchKind.All, "Tous les types"), new(LedgerSearchKind.Income, "Recettes"), new(LedgerSearchKind.Expense, "Dépenses"), new(LedgerSearchKind.Transfers, "Virements et frais"), new(LedgerSearchKind.Fees, "Frais de virement") });
         Bind(Pointing, new Choice<LedgerSearchStatus>[] { new(LedgerSearchStatus.All, "Tous les états"), new(LedgerSearchStatus.Unmarked, "NP"), new(LedgerSearchStatus.Marked, "P"), new(LedgerSearchStatus.Reconciled, "R"),
@@ -67,12 +72,10 @@ public partial class LedgerSearchWindow : Window
 
     private static T Value<T>(ComboBox control) => ((Choice<T>)control.SelectedItem).Value;
 
-    internal void Open(Guid? accountId, string? accountName, string? words, bool advanced, bool returning = false, bool all = false)
+    internal void Open(string? words, bool advanced, bool returning = false, bool all = false)
     {
         if (!returning)
         {
-            _accountId = accountId ?? Guid.Empty;
-            _accountName = accountName ?? "Aucun compte sélectionné";
             if (!advanced) ResetFields();
             if (words is not null) Words.Text = words;
             if (all || !advanced) Scope.SelectedIndex = all ? 1 : 0;
@@ -87,7 +90,7 @@ public partial class LedgerSearchWindow : Window
             Words.Focus();
             Words.SelectAll();
         }
-        if (!returning) _ = ApplyAsync();
+        if (!returning) _ = ApplyAsync(useRegisterAccount: true);
         else if (_refreshOnShow) _ = RefreshAsync();
     }
 
@@ -109,7 +112,7 @@ public partial class LedgerSearchWindow : Window
     }
 
     private Task RefreshAsync() => _applied is { } criteria
-        ? RunAsync(criteria, _page?.Index ?? 0) : ApplyAsync();
+        ? RunAsync(criteria, _requestedPage) : ApplyAsync();
 
     private LedgerSearchCriteria ReadCriteria() => new()
     {
@@ -131,11 +134,17 @@ public partial class LedgerSearchWindow : Window
             ? date : throw new ArgumentException("Saisissez les dates au format jj/mm/aaaa.");
     }
 
-    private Task ApplyAsync()
+    private Task ApplyAsync(bool useRegisterAccount = false)
     {
         CancelSearch();
         try
         {
+            if (useRegisterAccount)
+            {
+                var (id, name) = _registerAccount();
+                _accountId = id ?? Guid.Empty;
+                _accountName = name ?? "Aucun compte sélectionné";
+            }
             var criteria = ReadCriteria();
             criteria.Validate();
             return RunAsync(criteria, 0);
@@ -143,6 +152,8 @@ public partial class LedgerSearchWindow : Window
         catch (ArgumentException error)
         {
             _applied = null;
+            _requestedPage = 0;
+            _selectedResultId = null;
             _refreshOnShow = false;
             ResetPage();
             SearchStatus.Text = error.Message;
@@ -155,7 +166,9 @@ public partial class LedgerSearchWindow : Window
         CancelSearch();
         using var request = new CancellationTokenSource();
         _request = request;
-        var selected = (Results.SelectedItem as Result)?.Row.Id;
+        // A replacement request can arrive while the result grid is already empty.
+        if (_page is not null) _selectedResultId = (Results.SelectedItem as Result)?.Row.Id;
+        _requestedPage = index;
         var token = request.Token;
         _applied = criteria;
         _refreshOnShow = false;
@@ -166,9 +179,10 @@ public partial class LedgerSearchWindow : Window
             var page = await Task.Run(() => MonetaFile.SearchOperations(_path, _documentId, criteria, index, token), token);
             if (_request != request) return;
             _page = page;
+            _requestedPage = page.Index;
             var rows = page.Rows.Select(row => new Result(row)).ToArray();
             Results.ItemsSource = rows;
-            if (selected is { } id) Results.SelectedItem = rows.FirstOrDefault(row => row.Row.Id == id);
+            if (_selectedResultId is { } id) Results.SelectedItem = rows.FirstOrDefault(row => row.Row.Id == id);
             Previous.IsEnabled = page.Index > 0;
             var pages = (page.Total + LedgerSearchCriteria.PageSize - 1) / LedgerSearchCriteria.PageSize;
             Next.IsEnabled = page.Index + 1 < pages;
@@ -275,7 +289,7 @@ public partial class LedgerSearchWindow : Window
         finally { _navigating = false; IsEnabled = true; }
     }
 
-    private async void Apply_Click(object sender, RoutedEventArgs e) => await ApplyAsync();
+    private async void Apply_Click(object sender, RoutedEventArgs e) => await ApplyAsync(useRegisterAccount: true);
     private async void Clear_Click(object sender, RoutedEventArgs e) => await ClearAsync();
     private async void Previous_Click(object sender, RoutedEventArgs e)
     {
@@ -289,7 +303,7 @@ public partial class LedgerSearchWindow : Window
     {
         if (e.Key != Key.Enter) return;
         e.Handled = true;
-        await ApplyAsync();
+        await ApplyAsync(useRegisterAccount: true);
     }
     private async void Results_KeyDown(object sender, KeyEventArgs e)
     {
