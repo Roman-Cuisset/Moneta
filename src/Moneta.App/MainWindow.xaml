@@ -26,7 +26,9 @@
         <CommandBinding Command="{x:Static local:WindowCommands.Backup}" Executed="Backup_Executed" CanExecute="Backup_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Restore}" Executed="Restore_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Demo}" Executed="Demo_Executed" CanExecute="Available_CanExecute" />
-        <CommandBinding Command="{x:Static local:WindowCommands.Search}" CanExecute="Unavailable_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Search}" Executed="Search_Executed" CanExecute="Search_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.SearchFilters}" Executed="Search_Executed" CanExecute="Search_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ClearSearch}" Executed="ClearSearch_Executed" CanExecute="Search_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.FinancialUndo}" CanExecute="Unavailable_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.FinancialRedo}" CanExecute="Unavailable_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.NewTransaction}" Executed="NewTransaction_Executed" CanExecute="NewTransaction_CanExecute" />
@@ -86,14 +88,6 @@
             <Setter Property="Padding" Value="7,5" /><Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
         </Style>
-        <DataTemplate x:Key="RegisterHeader">
-            <StackPanel Margin="0,3">
-                <TextBlock Text="{Binding}" FontWeight="SemiBold" Margin="0,0,0,5" />
-                <TextBox Text="Indisponible" IsEnabled="False" FontSize="10" Padding="4,2" MinHeight="22" Height="22"
-                         ToolTip="Filtre de colonne non implémenté. Aucune ligne n'est masquée."
-                         ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Filtre de colonne indisponible" />
-            </StackPanel>
-        </DataTemplate>
     </Window.Resources>
     <Grid Background="{DynamicResource CanvasBrush}">
         <Grid.RowDefinitions>
@@ -136,7 +130,7 @@
                         <MenuItem Header="C_oller" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Annuler une opération" Command="{x:Static local:WindowCommands.FinancialUndo}" InputGestureText="Ctrl+Z (futur)" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Refaire une opération" Command="{x:Static local:WindowCommands.FinancialRedo}" InputGestureText="Ctrl+Y (futur)" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="_Rechercher" Command="{x:Static local:WindowCommands.Search}" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="_Rechercher" Command="{x:Static local:WindowCommands.Search}" CommandParameter="Focus" />
                     </MenuItem>
                     <MenuItem Header="_Affichage">
                         <MenuItem Header="_Thème" SubmenuOpened="ThemeMenu_Opened">
@@ -146,7 +140,8 @@
                         <Separator />
                         <MenuItem Header="Affichage sur _2 lignes" InputGestureText="F4" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem x:Name="ShowMarkingDatesItem" Header="Dates de pointage" IsCheckable="True" IsChecked="{Binding ShowMarkingDates, Mode=OneWay}" Command="{x:Static local:WindowCommands.ShowMarkingDates}" InputGestureText="F11 (registre)" AutomationProperties.AutomationId="ShowMarkingDatesCommand" />
-                        <MenuItem Header="Filtres enregistrés…" InputGestureText="F7" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Filtres avancés…" Command="{x:Static local:WindowCommands.SearchFilters}" />
+                        <MenuItem Header="Effacer les filtres" Command="{x:Static local:WindowCommands.ClearSearch}" />
                         <MenuItem Header="Cacher les lignes inutiles" InputGestureText="Ctrl+H" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
                     <MenuItem Header="_Comptes">
@@ -158,6 +153,7 @@
                         <MenuItem Header="Monter le compte" Command="{x:Static local:WindowCommands.MoveAccount}" CommandParameter="Up" />
                         <MenuItem Header="Descendre le compte" Command="{x:Static local:WindowCommands.MoveAccount}" CommandParameter="Down" />
                         <MenuItem Header="Supprimer le compte vierge…" Command="{x:Static local:WindowCommands.DeleteAccount}" />
+                        <MenuItem Header="Registre de tous les comptes…" Command="{x:Static local:WindowCommands.SearchFilters}" CommandParameter="All" InputGestureText="" />
                         <MenuItem Header="Afficher les comptes archivés" IsCheckable="True" IsChecked="{Binding ShowArchivedAccounts, Mode=TwoWay}" />
                         <MenuItem Header="Mot de passe…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
@@ -248,7 +244,7 @@
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Budget"><StackPanel><Path Data="{StaticResource BudgetIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Budget" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Totaux"><StackPanel><Path Data="{StaticResource TotalsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Totaux" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Graphiques"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Graphiques" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.SearchFilters}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Échéancier"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Échéancier" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.NewTransfer}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Virement" AutomationProperties.AutomationId="NewTransferButton" ToolTip="Virement lié dans le dossier : deux montants natifs exacts, frais séparés."><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Virement" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                 </ToolBar>
@@ -363,16 +359,12 @@
                 <StackPanel Margin="3,0,3,10">
                     <DockPanel>
                         <TextBlock Text="Registre des opérations" FontSize="17" FontWeight="SemiBold" />
-                        <TextBlock Text="Saisie via Nouvelle / Modifier · filtres indisponibles" Style="{StaticResource MutedText}" TextAlignment="Right" VerticalAlignment="Center" />
                     </DockPanel>
                     <DockPanel Margin="0,5,0,0" LastChildFill="True">
-                        <DockPanel.Style><Style TargetType="DockPanel"><Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers><DataTrigger Binding="{Binding SelectedAccount.Account.IsArchived}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
-                        </Style></DockPanel.Style>
-                        <Button x:Name="ArchivedSearch" DockPanel.Dock="Right" Content="Rechercher" Click="ArchivedSearch_Click" Margin="6,0,0,0"
-                                AutomationProperties.AutomationId="ArchivedSearch"/>
-                        <TextBox x:Name="ArchivedQuery" MaxLength="120" AutomationProperties.Name="Rechercher dans le compte archivé"
-                                 ToolTip="Rechercher dans les libellés, notes et tiers du compte archivé." />
+                        <Button x:Name="SearchContext" DockPanel.Dock="Right" Content="Retour aux résultats" Click="ReturnToResults_Click" Margin="6,0,0,0" Visibility="Collapsed"/>
+                        <Button DockPanel.Dock="Right" Content="Rechercher" Command="{x:Static local:WindowCommands.Search}" Margin="6,0,0,0"/>
+                        <TextBox x:Name="QuickSearch" MaxLength="240" KeyDown="QuickSearch_KeyDown" AutomationProperties.Name="Recherche rapide dans le compte sélectionné"
+                                 ToolTip="Rechercher dans les opérations enregistrées de ce compte." />
                     </DockPanel>
                     <TextBlock Text="{Binding LedgerErrorText}" Foreground="{DynamicResource NegativeBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="LedgerErrorText">
                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Margin" Value="0,6,0,0" /><Style.Triggers><DataTrigger Binding="{Binding LedgerErrorText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger><DataTrigger Binding="{Binding LedgerErrorText}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
@@ -385,7 +377,7 @@
                           EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          HeadersVisibility="Column" RowHeight="42" ColumnHeaderHeight="64" GridLinesVisibility="Horizontal"
+                          HeadersVisibility="Column" RowHeight="42" ColumnHeaderHeight="32" GridLinesVisibility="Horizontal"
                           AutomationProperties.AutomationId="TransactionsGrid" AutomationProperties.Name="Registre du compte sélectionné"
                           AutomationProperties.HelpText="Ctrl ou Maj pour sélectionner plusieurs lignes de cette page. P / Espace : basculer non pointé / pointé ; Maj+P : dépointer ; Ctrl+Maj+R : rapprochement ; F11 : dates de pointage. Ctrl+S enregistre les brouillons.">
                     <DataGrid.InputBindings>
@@ -416,9 +408,9 @@
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.Columns>
-                        <DataGridTextColumn x:Name="RegisterDateColumn" Header="Date" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DisplayDateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
-                        <DataGridTextColumn Header="Mode" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
-                        <DataGridTemplateColumn Header="Tiers / libellé" HeaderTemplate="{StaticResource RegisterHeader}" Width="2*" MinWidth="170">
+                        <DataGridTextColumn x:Name="RegisterDateColumn" Header="Date" Binding="{Binding DisplayDateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Mode" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTemplateColumn Header="Tiers / libellé" Width="2*" MinWidth="170">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
                                 <TextBlock Text="{Binding PayeeName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PayeeName}">
                                     <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Style.Triggers><DataTrigger Binding="{Binding IsTransfer}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
@@ -434,15 +426,15 @@
                                 <TextBlock Text="{Binding Label}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}" />
                             </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Catégorie" HeaderTemplate="{StaticResource RegisterHeader}" Width="*" MinWidth="135">
+                        <DataGridTemplateColumn Header="Catégorie" Width="*" MinWidth="135">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
                                 <TextBlock Text="{Binding CategoryName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CategoryName}" />
                                 <TextBlock Text="{Binding SubcategoryName}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SubcategoryName}" />
                             </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Débit" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding DebitText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
-                        <DataGridTextColumn Header="Crédit" HeaderTemplate="{StaticResource RegisterHeader}" Binding="{Binding CreditText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
-                        <DataGridTemplateColumn Header="Pointage" HeaderTemplate="{StaticResource RegisterHeader}" Width="150" MinWidth="115">
+                        <DataGridTextColumn Header="Débit" Binding="{Binding DebitText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
+                        <DataGridTextColumn Header="Crédit" Binding="{Binding CreditText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
+                        <DataGridTemplateColumn Header="Pointage" Width="150" MinWidth="115">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <Button Content="{Binding MarkText}" Command="{x:Static local:WindowCommands.TogglePointing}" CommandParameter="{Binding}"
                                         CommandTarget="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}}"

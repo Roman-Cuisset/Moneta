@@ -53,19 +53,6 @@ public partial class MainWindow
     private bool ConfirmAccountChange(string message, string title) =>
         MessageBox.Show(this, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes;
 
-    private void ArchivedSearch_Click(object sender, RoutedEventArgs e)
-    {
-        if (_busy || _workspace.Model is not { } model) return;
-        try
-        {
-            if (model.FindArchivedOperation(ArchivedQuery.Text) && model.SelectedRow is { } row)
-                TransactionsGrid.ScrollIntoView(row);
-            else
-                MessageBox.Show(this, "Aucune opération correspondante dans ce compte.", "Recherche dans le registre");
-        }
-        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "recherche dans le registre"); }
-    }
-
     private void ManageAccount(Action<MainViewModel, AccountSummary> action)
     {
         if (_busy || _workspace.Model is not { IsDemo: false, SelectedAccount: { } summary } model) return;

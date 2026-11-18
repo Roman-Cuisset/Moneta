@@ -24,7 +24,9 @@ public static class WindowCommands
     // No Ctrl+Z/Y window bindings: native text editing retains its own undo/redo.
     public static RoutedUICommand FinancialUndo { get; } = new("Annuler une écriture", nameof(FinancialUndo), typeof(WindowCommands));
     public static RoutedUICommand FinancialRedo { get; } = new("Refaire une écriture", nameof(FinancialRedo), typeof(WindowCommands));
-    public static RoutedUICommand Search { get; } = new("Rechercher", nameof(Search), typeof(WindowCommands), [new KeyGesture(Key.F, ModifierKeys.Control)]);
+    public static RoutedUICommand Search { get; } = new("Rechercher", nameof(Search), typeof(WindowCommands));
+    public static RoutedUICommand SearchFilters { get; } = new("Filtres avancés", nameof(SearchFilters), typeof(WindowCommands), [new KeyGesture(Key.F7)]);
+    public static RoutedUICommand ClearSearch { get; } = new("Effacer les filtres", nameof(ClearSearch), typeof(WindowCommands), [new KeyGesture(Key.F7, ModifierKeys.Shift)]);
     // Register-only key bindings live on the DataGrid, never on a text editor or dialog.
     public static RoutedUICommand NewTransaction { get; } = new("Nouvelle opération", nameof(NewTransaction), typeof(WindowCommands));
     public static RoutedUICommand EditTransaction { get; } = new("Modifier une opération", nameof(EditTransaction), typeof(WindowCommands));

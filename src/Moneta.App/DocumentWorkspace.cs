@@ -13,6 +13,7 @@ public sealed class DocumentWorkspace : IDisposable
     private MonetaFile? _file;
     public MainViewModel? Model { get; private set; }
     public string? FilePath => _file?.FilePath;
+    internal FinancialDocument? SavedSnapshot => _file?.Snapshot;
     public bool CanSave => Model is { IsDemo: false };
     public bool HasUnsavedChanges => CanSave && (_file is null || Model!.IsDirty);
     public bool CanBackup => _file is not null && CanSave;

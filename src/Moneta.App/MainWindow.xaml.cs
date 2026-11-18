@@ -32,6 +32,7 @@ public partial class MainWindow : Window
 
     private void UpdateDocumentState()
     {
+        UpdateRegisterSearch();
         if (!ReferenceEquals(DataContext, _workspace.Model)) DataContext = _workspace.Model;
         var model = _workspace.Model;
         var caption = model is null ? "Aucun dossier ouvert" : model.IsDemo ? "Démonstration · en mémoire" : model.DocumentName;
