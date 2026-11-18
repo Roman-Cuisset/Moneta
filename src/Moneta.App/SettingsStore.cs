@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using Moneta.Infrastructure.Storage;
 
 namespace Moneta.App;
 
@@ -10,6 +11,7 @@ public sealed record LocalSettings
     public bool CheckUpdatesAtStartup { get; init; }
     public bool RefreshRatesAtStartup { get; init; }
     public string RateSource { get; init; } = "NBRB";
+    public BackupPolicy Backups { get; init; } = new();
 }
 
 public sealed class SettingsException : Exception
@@ -23,7 +25,7 @@ public sealed class SettingsException : Exception
 /// <summary>Versioned, atomic storage independent of WPF and of financial data.</summary>
 public sealed class SettingsStore
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private bool _loaded;
     private SettingsException? _loadFailure;
@@ -97,7 +99,8 @@ public sealed class SettingsStore
                     Theme = settings.Theme,
                     CheckUpdatesAtStartup = settings.CheckUpdatesAtStartup,
                     RefreshRatesAtStartup = settings.RefreshRatesAtStartup,
-                    RateSource = settings.RateSource
+                    RateSource = settings.RateSource,
+                    Backups = settings.Backups
                 }, JsonOptions);
                 stream.Flush(flushToDisk: true);
             }
@@ -144,7 +147,7 @@ public sealed class SettingsStore
         using var stream = File.OpenRead(path);
         var document = JsonSerializer.Deserialize<SettingsDocument>(stream, JsonOptions)
             ?? throw new JsonException("Le document est vide.");
-        if (document.SchemaVersion is not (1 or SchemaVersion))
+        if (document.SchemaVersion is not (1 or 2 or SchemaVersion))
         {
             throw new SettingsException(
                 $"La version {document.SchemaVersion} du fichier de préférences n'est pas prise en charge.");
@@ -156,7 +159,9 @@ public sealed class SettingsStore
             CheckUpdatesAtStartup = document.CheckUpdatesAtStartup,
             RefreshRatesAtStartup = document.RefreshRatesAtStartup,
             RateSource = document.SchemaVersion == 1 ? "NBRB" : document.RateSource
-                ?? throw new SettingsException("Le fournisseur des cours est absent des préférences.")
+                ?? throw new SettingsException("Le fournisseur des cours est absent des préférences."),
+            Backups = document.SchemaVersion < 3 ? new() : document.Backups
+                ?? throw new SettingsException("La politique de sauvegarde est absente des préférences.")
         };
         Validate(settings);
         return settings;
@@ -170,6 +175,8 @@ public sealed class SettingsStore
         }
         if (settings.RateSource is not ("NBRB" or "CBR"))
             throw new SettingsException("Le fournisseur des cours doit être NBRB ou CBR.");
+        try { settings.Backups.Validate(); }
+        catch (ArgumentException error) { throw new SettingsException(error.Message, error); }
     }
 
     private sealed class SettingsDocument
@@ -183,5 +190,6 @@ public sealed class SettingsStore
         public required bool CheckUpdatesAtStartup { get; init; }
         public required bool RefreshRatesAtStartup { get; init; }
         public string? RateSource { get; init; }
+        public BackupPolicy? Backups { get; init; }
     }
 }

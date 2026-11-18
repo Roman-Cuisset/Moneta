@@ -24,6 +24,7 @@
         <CommandBinding Command="{x:Static local:WindowCommands.Save}" Executed="Save_Executed" CanExecute="Save_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.SaveAs}" Executed="SaveAs_Executed" CanExecute="Save_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Backup}" Executed="Backup_Executed" CanExecute="Backup_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.BackupHistory}" Executed="BackupHistory_Executed" CanExecute="BackupHistory_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Restore}" Executed="Restore_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Demo}" Executed="Demo_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Search}" Executed="Search_Executed" CanExecute="Search_CanExecute" />
@@ -106,6 +107,9 @@
                         <Separator />
                         <MenuItem Header="_Sauvegarder le dossier…" Command="{x:Static local:WindowCommands.Backup}" AutomationProperties.AutomationId="BackupDocumentCommand" />
                         <MenuItem Header="_Restaurer une sauvegarde…" Command="{x:Static local:WindowCommands.Restore}" AutomationProperties.AutomationId="RestoreDocumentCommand" />
+                        <MenuItem Header="_Sauvegardes">
+                            <MenuItem Header="_Historique…" Command="{x:Static local:WindowCommands.BackupHistory}" />
+                        </MenuItem>
                         <Separator />
                         <MenuItem Header="Mode _démonstration" Command="{x:Static local:WindowCommands.Demo}" ToolTip="Données fictives en mémoire, sans possibilité d’enregistrement financier." AutomationProperties.AutomationId="DemoDocumentCommand" />
                         <Separator />
@@ -483,9 +487,15 @@
             </Grid>
         </Grid>
         <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,6">
-            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusText" Text="{Binding StatusText, FallbackValue='Fichier → Nouveau dossier ou Ouvrir pour commencer'}" Style="{StaticResource MutedText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding StatusText}" AutomationProperties.AutomationId="StatusText" />
-                <TextBlock x:Name="DevelopmentNotice" Grid.Column="1" Text="Version de développement — données fictives" Style="{StaticResource MutedText}" Margin="16,0,0,0" AutomationProperties.AutomationId="DevelopmentNotice" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                    <TextBlock x:Name="BackupStatus" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               MaxWidth="340" AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
+                    <Button x:Name="BackupCancel" Content="Annuler la sauvegarde" Click="BackupCancel_Click"
+                            Margin="8,0,0,0" Visibility="Collapsed" />
+                </StackPanel>
+                <TextBlock x:Name="DevelopmentNotice" Grid.Column="2" Text="Version de développement — données fictives" Style="{StaticResource MutedText}" Margin="16,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="DevelopmentNotice" />
             </Grid>
         </Border>
     </Grid>

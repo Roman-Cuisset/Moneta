@@ -7,6 +7,8 @@ using Moneta.Core;
 namespace Moneta.Infrastructure.Storage;
 
 public sealed record BackupResult(string FilePath, string Sha256, Guid DocumentId);
+public sealed record BackupInspection(BackupResult Backup, int ManifestVersion, long Length, FinancialDocument Snapshot);
+public enum BackupPhase { Capture, Verification, Publication, Rotation }
 
 /// <summary>
 /// Certified SQLite snapshots. The manifest detects accidental modification; it is not
@@ -22,20 +24,45 @@ public static class MonetaBackup
         WriteIndented = true
     };
 
-    public static BackupResult Create(MonetaFile source, string destination) => Execute(() =>
+    public static BackupResult Create(MonetaFile source, string destination)
     {
         ArgumentNullException.ThrowIfNull(source);
+        return Execute(() => CreateCore(source.Connection, source.Snapshot, destination, default, null),
+            "Création de la sauvegarde impossible.");
+    }
+
+    internal static BackupResult CreateFromCommitted(string sourcePath, FinancialDocument expected, string destination,
+        CancellationToken cancellation, Action<BackupPhase>? phase) => Execute(() =>
+    {
+        cancellation.ThrowIfCancellationRequested();
+        using var source = MonetaFile.OpenConnection(ExistingPath(sourcePath), readOnly: true);
+        return CreateCore(source, expected, destination, cancellation, phase);
+    }, "Création de la sauvegarde impossible.");
+
+    private static BackupResult CreateCore(SqliteConnection source, FinancialDocument snapshot, string destination,
+        CancellationToken cancellation, Action<BackupPhase>? phase)
+    {
         var target = NewDestination(destination, requireManifest: true);
         string? temporary = null;
         string? temporaryManifest = null;
         try
         {
-            var expected = Digest(source.Snapshot);
-            var live = MonetaFile.ReadValidated(source.Connection);
+            phase?.Invoke(BackupPhase.Capture);
+            cancellation.ThrowIfCancellationRequested();
+            var expected = Digest(snapshot);
+            var live = MonetaFile.ReadValidated(source);
             RequireEqual(expected, Digest(live), "Le dossier actif a changé depuis son ouverture ou sa dernière sauvegarde.");
+            cancellation.ThrowIfCancellationRequested();
             temporary = ReserveTemporary(target);
-            var copied = CopyDatabase(source.Connection, temporary);
+            var copied = CopyDatabase(source, temporary, beforeVerification: () =>
+            {
+                phase?.Invoke(BackupPhase.Verification);
+                cancellation.ThrowIfCancellationRequested();
+            });
             RequireEqual(expected, Digest(copied), "La copie SQLite ne correspond pas au dossier actif.");
+            cancellation.ThrowIfCancellationRequested();
+            using (var bytes = new FileStream(temporary, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+                bytes.Flush(flushToDisk: true);
             var certification = Certify(temporary, copied);
             temporaryManifest = ReserveTemporary(target + ".manifest.json");
             using (var stream = new FileStream(temporaryManifest, FileMode.Open, FileAccess.Write, FileShare.None))
@@ -43,6 +70,7 @@ public static class MonetaBackup
                 JsonSerializer.Serialize(stream, certification, ManifestJson);
                 stream.Flush(flushToDisk: true);
             }
+            cancellation.ThrowIfCancellationRequested();
             File.Move(temporary, target, overwrite: false);
             temporary = null;
             // Publication is deliberately last: an interrupted publication is not certified.
@@ -55,19 +83,43 @@ public static class MonetaBackup
             DeleteTemporary(temporaryManifest);
             DeleteTemporary(temporary);
         }
-    }, "Création de la sauvegarde impossible.");
+    }
+
+    public static BackupInspection Inspect(string backup) => Execute(() =>
+    {
+        var sourcePath = ExistingPath(backup);
+        using var bytes = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var manifest = ReadManifest(sourcePath + ".manifest.json");
+        VerifyFile(bytes, manifest);
+        using var source = MonetaFile.OpenConnection(sourcePath, readOnly: true);
+        var snapshot = MonetaFile.ReadValidated(source, allowVersion1: true);
+        VerifySnapshot(snapshot, manifest);
+        return new BackupInspection(new(sourcePath, manifest.Sha256, manifest.DocumentId), manifest.ManifestVersion, manifest.Length, snapshot);
+    }, "Vérification de la sauvegarde impossible.");
+
+    internal static void VerifyCertifiedBytes(string archive, BackupVersion version) => Execute(() =>
+    {
+        using var bytes = new FileStream(archive, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var manifest = ReadManifest(archive + ".manifest.json");
+        if (manifest.DocumentId != version.DocumentId || manifest.SchemaVersion != version.SchemaVersion ||
+            manifest.Length != version.Length)
+            throw new DocumentException(DocumentError.VerificationFailed, "Le manifeste ne correspond pas à la version publiée.");
+        RequireEqual(version.Sha256, manifest.Sha256, "L’empreinte ne correspond pas à la version publiée.");
+        VerifyFile(bytes, manifest);
+        return true;
+    }, "Vérification de la dernière version impossible.");
 
     public static MonetaFile Restore(string backup, string destination) => Execute(() =>
     {
         var target = NewDestination(destination, requireManifest: false);
         var sourcePath = ExistingPath(backup);
-        var manifest = ReadManifest(sourcePath + ".manifest.json");
         string expected;
         string? temporary = null;
         try
         {
             // Keep the certified file read-locked through the copy and the second hash.
-            using (var sourceBytes = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using var sourceBytes = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var manifest = ReadManifest(sourcePath + ".manifest.json");
             using (var source = MonetaFile.OpenConnection(sourcePath, readOnly: true))
             {
                 VerifyFile(sourceBytes, manifest);
@@ -169,10 +221,12 @@ public static class MonetaBackup
         return upgraded;
     }
 
-    private static FinancialDocument CopyDatabase(SqliteConnection source, string temporary, bool allowLegacy = false)
+    private static FinancialDocument CopyDatabase(SqliteConnection source, string temporary, bool allowLegacy = false,
+        Action? beforeVerification = null)
     {
         using var copy = MonetaFile.OpenConnection(temporary, readOnly: false);
         source.BackupDatabase(copy);
+        beforeVerification?.Invoke();
         var snapshot = MonetaFile.ReadValidated(copy, allowVersion1: allowLegacy);
         MakeStandalone(copy);
         return snapshot;

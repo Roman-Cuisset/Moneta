@@ -6,6 +6,7 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using Moneta.Core;
 using Moneta.Core.Presentation;
+using Moneta.Infrastructure.Storage;
 
 namespace Moneta.App;
 
@@ -18,8 +19,16 @@ public partial class MainWindow : Window
     private string? _operation;
 
     public MainWindow()
+        : this(new BackupLibrary(), () => App.Settings.Current.Backups)
     {
+    }
+
+    internal MainWindow(BackupLibrary backupLibrary, Func<BackupPolicy> backupPolicy)
+    {
+        _backupLibrary = backupLibrary;
+        _readBackupPolicy = backupPolicy;
         InitializeComponent();
+        InitializeBackups();
         _workspace.Changed += (_, _) =>
         {
             if (Dispatcher.CheckAccess()) UpdateDocumentState();
@@ -48,7 +57,8 @@ public partial class MainWindow : Window
             : "Développement — dossier local enregistré";
         RegisterDateColumn.Header = model?.DateColumnHeader ?? "Date";
         ApplyRateState();
-        IsEnabled = !_busy;
+        IsEnabled = !_busy && !_stopBackupRequests;
+        UpdateBackupContext();
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -128,7 +138,9 @@ public partial class MainWindow : Window
             if (dialog.ShowDialog(this) != true) return false;
             path = dialog.FileName;
         }
-        return await RunIo(() => _workspace.Save(path), "Enregistrement…");
+        var saved = await RunIo(() => _workspace.Save(path), "Enregistrement…");
+        if (saved) _ = RequestBackup(BackupKind.AfterSave);
+        return saved;
     }
 
     private async Task<bool> ConfirmReplacement()
@@ -191,6 +203,7 @@ public partial class MainWindow : Window
         if (_workspace.HasUnsavedChanges && !await SaveAsync()) return;
         var dialog = Destination("Sauvegarder le dossier", "Sauvegarde.moneta");
         if (dialog.ShowDialog(this) != true) return;
+        await _backupWork;
         if (await RunIo(() => _workspace.Backup(dialog.FileName), "Sauvegarde SQLite et vérification…"))
             MessageBox.Show(this, "Sauvegarde cohérente vérifiée. Conservez ensemble le fichier .moneta et son fichier .manifest.json. Testez une restauration avant de considérer cette copie comme votre unique sauvegarde.", "Moneta — sauvegarde", MessageBoxButton.OK, MessageBoxImage.Information);
     }
@@ -213,10 +226,24 @@ public partial class MainWindow : Window
         _closingPrompt = true;
         try
         {
-            if (await ConfirmReplacement() && await RunIo(_workspace.Dispose, "Fermeture du dossier…"))
+            if (!await ConfirmReplacement()) return;
+            _stopBackupRequests = true;
+            _backupTimer.Stop();
+            // Once the close decision is made, no new draft can be entered while waiting.
+            IsEnabled = false;
+            RefreshBackupUi();
+            await _backupWork;
+            ReportBackupFailuresOnExit();
+            if (await RunIo(_workspace.Dispose, "Fermeture du dossier…"))
             {
                 _allowClose = true;
                 Close();
+            }
+            else
+            {
+                _stopBackupRequests = false;
+                _backupTimer.Start();
+                UpdateDocumentState();
             }
         }
         finally { _closingPrompt = false; }
@@ -224,7 +251,11 @@ public partial class MainWindow : Window
 
     private void Close_Executed(object sender, ExecutedRoutedEventArgs e) => Close();
     private void About_Executed(object sender, ExecutedRoutedEventArgs e) => new AboutWindow { Owner = this }.ShowDialog();
-    private void Settings_Executed(object sender, ExecutedRoutedEventArgs e) => new SettingsWindow { Owner = this }.ShowDialog();
+    private void Settings_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        var window = new SettingsWindow(DescribeBackup(), _workspace.SavedSnapshot is null ? null : ShowBackupHistory) { Owner = this };
+        if (window.ShowDialog() == true) UpdateBackupContext();
+    }
     private void AddAccount_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (DataContext is MainViewModel model) new AccountWindow(model) { Owner = this }.ShowDialog();

@@ -19,6 +19,7 @@ public static class WindowCommands
     public static RoutedUICommand New { get; } = new("Nouveau dossier", nameof(New), typeof(WindowCommands), [new KeyGesture(Key.N, ModifierKeys.Control)]);
     public static RoutedUICommand SaveAs { get; } = new("Enregistrer sous", nameof(SaveAs), typeof(WindowCommands), [new KeyGesture(Key.F12)]);
     public static RoutedUICommand Backup { get; } = new("Sauvegarder le dossier", nameof(Backup), typeof(WindowCommands));
+    public static RoutedUICommand BackupHistory { get; } = new("Historique des sauvegardes", nameof(BackupHistory), typeof(WindowCommands));
     public static RoutedUICommand Restore { get; } = new("Restaurer une sauvegarde", nameof(Restore), typeof(WindowCommands));
     public static RoutedUICommand Demo { get; } = new("Ouvrir la démonstration", nameof(Demo), typeof(WindowCommands));
     // No Ctrl+Z/Y window bindings: native text editing retains its own undo/redo.

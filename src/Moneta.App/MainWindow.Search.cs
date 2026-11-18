@@ -10,7 +10,7 @@ public partial class MainWindow
     private FinancialDocument? _searchSnapshot;
     private string? _searchPath;
 
-    private bool CanSearchLedger => !_busy && _workspace.FilePath is not null && _workspace.SavedSnapshot is not null;
+    private bool CanSearchLedger => !_busy && !_stopBackupRequests && _workspace.FilePath is not null && _workspace.SavedSnapshot is not null;
 
     private void UpdateRegisterSearch()
     {

@@ -73,13 +73,34 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="_Sauvegardes">
-                <StackPanel Margin="18">
-                    <TextBlock Text="Sauvegardes manuelles disponibles" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-                    <TextBlock Text="Utilisez Fichier → Sauvegarder le dossier pour produire une copie SQLite cohérente et son manifeste. Fichier → Restaurer une sauvegarde vérifie puis rouvre une nouvelle copie, sans remplacer le dossier affiché. La planification automatique reste à développer."
-                               TextWrapping="Wrap" Margin="0,0,0,12" />
-                    <TextBlock Text="L'enregistrement des préférences locales n'est pas une sauvegarde de vos comptes."
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18"><StackPanel>
+                    <CheckBox x:Name="AutomaticBackup" Content="_Activer les sauvegardes automatiques" />
+                    <CheckBox x:Name="BackupAfterSave" Content="Après un _enregistrement réussi" Margin="0,8,0,0" />
+                    <CheckBox x:Name="BackupDaily" Content="_Chaque jour où le dossier est ouvert" Margin="0,8,0,0" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <StackPanel Margin="0,0,18,0">
+                            <Label Content="Intervalle minimum après Ctrl+S (minutes)" Target="{Binding ElementName=BackupInterval}" />
+                            <TextBox x:Name="BackupInterval" MaxLength="4" Width="78" HorizontalAlignment="Left"
+                                     AutomationProperties.Name="Intervalle minimum après Ctrl+S en minutes" />
+                        </StackPanel>
+                        <StackPanel>
+                            <Label Content="Versions à conserver par dossier" Target="{Binding ElementName=BackupRetention}" />
+                            <TextBox x:Name="BackupRetention" MaxLength="3" Width="78" HorizontalAlignment="Left"
+                                     AutomationProperties.Name="Nombre de versions de sauvegarde à conserver" />
+                        </StackPanel>
+                    </WrapPanel>
+                    <Label Content="_Destination locale (vide pour le dossier par défaut)" Target="{Binding ElementName=BackupDestination}" Margin="0,8,0,0" />
+                    <DockPanel>
+                        <Button Content="_Parcourir…" Click="BrowseBackups_Click" DockPanel.Dock="Right" Margin="6,0,0,0" />
+                        <TextBox x:Name="BackupDestination" AutomationProperties.Name="Répertoire local des sauvegardes" />
+                    </DockPanel>
+                    <TextBlock x:Name="BackupDefaultPath" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,10" />
+                    <TextBlock Text="Un autre disque protège aussi contre une panne du disque d’origine. Les copies contiennent vos données financières en clair."
                                TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" />
-                </StackPanel>
+                    <TextBlock x:Name="BackupInformation" TextWrapping="Wrap" Margin="0,8,0,6" />
+                    <Button x:Name="BackupHistory" Content="_Historique des sauvegardes…" Click="BackupHistory_Click" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="BackupValidation" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,6,0,0" />
+                </StackPanel></ScrollViewer>
             </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
