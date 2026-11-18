@@ -20,10 +20,10 @@
             <StackPanel Margin="0,0,8,0">
                 <TextBlock x:Name="AccountNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,8" />
                 <Label Content="Compte _source (débit)" Target="{Binding ElementName=SourceAccount}" />
-                <ComboBox x:Name="SourceAccount" DisplayMemberPath="Name" SelectionChanged="Account_SelectionChanged"
+                <ComboBox x:Name="SourceAccount" DisplayMemberPath="DisplayName" SelectionChanged="Account_SelectionChanged"
                           AutomationProperties.AutomationId="TransferSourceAccount" AutomationProperties.Name="Compte source du virement" />
                 <Label Content="Compte _destinataire (crédit)" Target="{Binding ElementName=DestinationAccount}" Margin="0,6,0,0" />
-                <ComboBox x:Name="DestinationAccount" DisplayMemberPath="Name" SelectionChanged="Account_SelectionChanged"
+                <ComboBox x:Name="DestinationAccount" DisplayMemberPath="DisplayName" SelectionChanged="Account_SelectionChanged"
                           AutomationProperties.AutomationId="TransferDestinationAccount" AutomationProperties.Name="Compte destinataire du virement" />
                 <Label Content="_Date du virement (jj/mm/aaaa)" Target="{Binding ElementName=EntryDate}" Margin="0,6,0,0" />
                 <TextBox x:Name="EntryDate" MaxLength="10" TextChanged="Date_TextChanged"
@@ -61,7 +61,7 @@
                           AutomationProperties.AutomationId="TransferHasFee" AutomationProperties.Name="Inclure un mouvement de frais séparé" />
                 <StackPanel x:Name="FeeFields">
                     <Label Content="Compte des _frais" Target="{Binding ElementName=FeeAccount}" />
-                    <ComboBox x:Name="FeeAccount" DisplayMemberPath="Name" SelectionChanged="FeeAccount_SelectionChanged"
+                    <ComboBox x:Name="FeeAccount" DisplayMemberPath="DisplayName" SelectionChanged="FeeAccount_SelectionChanged"
                               AutomationProperties.AutomationId="TransferFeeAccount" AutomationProperties.Name="Compte actif du dossier pour les frais, devise native" />
                     <Label Content="Montant des f_rais" Target="{Binding ElementName=FeeAmount}" Margin="0,6,0,0" />
                     <TextBox x:Name="FeeAmount" MaxLength="128" TextAlignment="Right"

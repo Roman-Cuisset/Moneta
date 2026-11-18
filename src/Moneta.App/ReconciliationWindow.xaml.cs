@@ -31,7 +31,8 @@ public partial class ReconciliationWindow : Window
     public ReconciliationWindow(MainViewModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        if (!model.CanReconcile)
+        var historyOnly = model.SelectedAccount?.Account.IsArchived == true;
+        if (!model.CanReconcile && !historyOnly)
             throw new InvalidOperationException("Enregistrez d’abord le dossier et sélectionnez un compte actif pour ouvrir le rapprochement.");
         _model = model;
         _source = model.ReconciliationSource
@@ -39,9 +40,18 @@ public partial class ReconciliationWindow : Window
         _account = model.SelectedAccount?.Account
             ?? throw new InvalidOperationException("Sélectionnez un compte actif.");
         InitializeComponent();
-        AccountHeading.Text = $"Rapprochement bancaire · {_account.Name} ({_account.Currency.Code})";
+        AccountHeading.Text = $"Rapprochement bancaire · {model.SelectedAccount!.DisplayName}";
         StatementDate.Text = DateOnly.FromDateTime(DateTime.Today).ToString("dd/MM/yyyy", French);
         _ready = true;
+        if (historyOnly)
+        {
+            StatementTab.Visibility = Visibility.Collapsed;
+            HistoryTab.Header = "Historique";
+            ReconciliationTabs.SelectedItem = HistoryTab;
+            ReconciliationNotice.Text = "Compte archivé. Réactivez-le et enregistrez pour reprendre les rapprochements.";
+            LoadHistory(0);
+            return;
+        }
         LoadCandidates(0, _selectedIds);
         LoadHistory(0);
         Loaded += (_, _) => { StatementDate.Focus(); StatementDate.SelectAll(); };

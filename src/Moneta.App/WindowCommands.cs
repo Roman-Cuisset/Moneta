@@ -7,6 +7,11 @@ public static class WindowCommands
     public static RoutedUICommand About { get; } = new("À propos de Moneta", nameof(About), typeof(WindowCommands));
     public static RoutedUICommand Settings { get; } = new("Paramètres", nameof(Settings), typeof(WindowCommands));
     public static RoutedUICommand AddAccount { get; } = new("Ajouter un compte", nameof(AddAccount), typeof(WindowCommands));
+    public static RoutedUICommand AccountProperties { get; } = new("Propriétés du compte", nameof(AccountProperties), typeof(WindowCommands));
+    public static RoutedUICommand ArchiveAccount { get; } = new("Archiver le compte", nameof(ArchiveAccount), typeof(WindowCommands));
+    public static RoutedUICommand ReactivateAccount { get; } = new("Réactiver le compte", nameof(ReactivateAccount), typeof(WindowCommands));
+    public static RoutedUICommand MoveAccount { get; } = new("Déplacer le compte", nameof(MoveAccount), typeof(WindowCommands));
+    public static RoutedUICommand DeleteAccount { get; } = new("Supprimer un compte vierge", nameof(DeleteAccount), typeof(WindowCommands));
     public static RoutedUICommand Theme { get; } = new("Thème", nameof(Theme), typeof(WindowCommands));
     public static RoutedUICommand Open { get; } = new("Ouvrir", nameof(Open), typeof(WindowCommands), [new KeyGesture(Key.O, ModifierKeys.Control)]);
     public static RoutedUICommand ImportBankPerfect { get; } = new("Importer BankPerfect", nameof(ImportBankPerfect), typeof(WindowCommands));

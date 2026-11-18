@@ -55,11 +55,12 @@ public sealed partial class MonetaFile
             created_utc TEXT NOT NULL,
             modified_utc TEXT NOT NULL,
             ordinal INTEGER NOT NULL UNIQUE CHECK(ordinal>=0)
-        """ + (version >= 2 ? ",\n    is_archived INTEGER NOT NULL CHECK(is_archived IN (0,1))\n" : "\n") + ") STRICT";
+        """ + (version >= 2 ? ",\n    is_archived INTEGER NOT NULL CHECK(is_archived IN (0,1))" : "") +
+        (version >= 6 ? ",\n    bank_name TEXT,\n    bank_reference TEXT,\n    holder TEXT" : "") + "\n) STRICT";
 
     internal static string SchemaSql(int version)
     {
-        if (version is not (1 or 2 or 3 or 4 or 5)) throw Error(DocumentError.UnsupportedVersion, "Schéma inconnu.");
+        if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, "Schéma inconnu.");
         return string.Join(";\n", DocumentSql, CurrenciesSql, AccountsSql(version), HistorySql) + ";" +
             (version >= 4 ? LedgerSchemaSql4 : version == 3 ? LedgerSchemaSql : "") + (version >= 5 ? TransferSchemaSql : "");
     }
@@ -82,7 +83,7 @@ public sealed partial class MonetaFile
         if (Integer(connection, "PRAGMA application_id;", transaction) != ApplicationId)
             throw Error(DocumentError.InvalidFormat, "Cette base SQLite n’appartient pas à Moneta.");
         var version = Integer(connection, "PRAGMA user_version;", transaction);
-        if (version is not (1 or 2 or 3 or 4 or 5)) throw Error(DocumentError.UnsupportedVersion, "Version du dossier inconnue ou plus récente.");
+        if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, "Version du dossier inconnue ou plus récente.");
         var hasProvenance = ValidateSchema(connection, (int)version, transaction);
         using (var integrity = connection.CreateCommand())
         {
@@ -139,7 +140,8 @@ public sealed partial class MonetaFile
         using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
-            command.CommandText = "SELECT account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal," + (version >= 2 ? "is_archived" : "0") + " FROM Accounts ORDER BY ordinal;";
+            command.CommandText = "SELECT account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal," +
+                (version >= 2 ? "is_archived" : "0") + (version >= 6 ? ",bank_name,bank_reference,holder" : ",NULL,NULL,NULL") + " FROM Accounts ORDER BY ordinal;";
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -151,7 +153,10 @@ public sealed partial class MonetaFile
                     Notes = reader.IsDBNull(5) ? null : reader.GetString(5),
                     CreatedUtc = ReadTimestamp(reader.GetString(6)),
                     ModifiedUtc = ReadTimestamp(reader.GetString(7)),
-                    IsArchived = ReadBoolean(reader, 9)
+                    IsArchived = ReadBoolean(reader, 9),
+                    BankName = reader.IsDBNull(10) ? null : reader.GetString(10),
+                    BankReference = reader.IsDBNull(11) ? null : reader.GetString(11),
+                    Holder = reader.IsDBNull(12) ? null : reader.GetString(12)
                 });
             }
         }
@@ -221,7 +226,7 @@ public sealed partial class MonetaFile
         {
             var type = reader.GetString(0);
             var name = reader.GetString(1);
-            if (version == 5 && type == "table" && name == "BankPerfectProvenance" &&
+            if (version >= 5 && type == "table" && name == "BankPerfectProvenance" &&
                 reader.GetString(2) == name && !reader.IsDBNull(3) &&
                 CanonicalSql(reader.GetString(3)) == CanonicalSql(BankPerfectProvenanceSql))
             {
@@ -259,7 +264,7 @@ public sealed partial class MonetaFile
         try
         {
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is 1 or 2 or 3 or 4)) throw new ArgumentException("Version du snapshot invalide.");
+            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is >= 1 and <= 5)) throw new ArgumentException("Version du snapshot invalide.");
             if (snapshot.Id == Guid.Empty) throw new ArgumentException("Identifiant du dossier vide.");
             ValidateText(snapshot.Name, true);
             ValidateTimes(snapshot.CreatedUtc, snapshot.ModifiedUtc);
@@ -279,6 +284,9 @@ public sealed partial class MonetaFile
                 ValidateText(account.Name, true);
                 ValidateText(account.Type, false);
                 ValidateText(account.Notes, false);
+                ValidateAccountField(account.BankName, 120);
+                ValidateAccountField(account.BankReference, 120);
+                ValidateAccountField(account.Holder, 120);
                 ValidateTimes(account.CreatedUtc, account.ModifiedUtc);
                 if (registry.Get(account.Currency.Code) != account.Currency) throw new ArgumentException("Définition de devise du compte incohérente.");
                 _ = ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency);
@@ -296,6 +304,12 @@ public sealed partial class MonetaFile
     {
         if ((required && string.IsNullOrWhiteSpace(value)) || value?.Length > 1_000_000 || value?.Contains('\0') == true)
             throw new ArgumentException("Texte vide, trop long ou contenant NUL.");
+    }
+
+    private static void ValidateAccountField(string? value, int maxLength)
+    {
+        if (value?.Length > maxLength || value?.Contains('\0') == true)
+            throw new ArgumentException("Information bancaire trop longue ou contenant NUL.");
     }
 
     private static void ValidateTimes(DateTimeOffset created, DateTimeOffset modified)
@@ -332,9 +346,9 @@ public sealed partial class MonetaFile
         using var reader = command.ExecuteReader();
         if (!reader.Read()) throw Error(DocumentError.Corrupt, "Historique de schéma absent.");
         var first = reader.GetInt64(0);
-        var definition = hasProvenance ? "native-accounts-v5+bankperfect-v1" : $"native-accounts-v{first}";
-        if (reader.GetInt64(1) != 0 || first is not (1 or 2 or 3 or 4 or 5) || first > version ||
-            (hasProvenance && first != 5) || reader.GetString(2) != $"create-v{first}" || reader.GetString(3) != definition)
+        var definition = $"native-accounts-v{first}" + (hasProvenance ? "+bankperfect-v1" : "");
+        if (reader.GetInt64(1) != 0 || first < 1 || first > version ||
+            (hasProvenance && first < 5) || reader.GetString(2) != $"create-v{first}" || reader.GetString(3) != definition)
             throw Error(DocumentError.Corrupt, "Origine du schéma inconnue.");
         _ = ReadTimestamp(reader.GetString(4));
         if (first == 1 && version >= 2)
@@ -359,6 +373,12 @@ public sealed partial class MonetaFile
         {
             if (!reader.Read() || reader.GetInt64(0) != 5 || reader.GetInt64(1) != 4 || reader.GetString(2) != "v4-to-v5-transfers" || reader.GetString(3) != "linked-transfer-legs-v5")
                 throw Error(DocumentError.Corrupt, "Historique des virements incomplet.");
+            _ = ReadTimestamp(reader.GetString(4));
+        }
+        if (first <= 5 && version >= 6)
+        {
+            if (!reader.Read() || reader.GetInt64(0) != 6 || reader.GetInt64(1) != 5 || reader.GetString(2) != "v5-to-v6-account-properties" || reader.GetString(3) != "account-descriptions-v6")
+                throw Error(DocumentError.Corrupt, "Historique des propriétés de comptes incomplet.");
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (reader.Read()) throw Error(DocumentError.Corrupt, "Migration inconnue.");
@@ -393,7 +413,8 @@ public sealed partial class MonetaFile
         using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
-            command.CommandText = "INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id) VALUES(1,'Moneta',$id,$name,5,5,5,'Moneta-6',$created,$modified,$selected) ON CONFLICT(singleton) DO UPDATE SET name=excluded.name,modified_utc=excluded.modified_utc,selected_account_id=excluded.selected_account_id;";
+            command.CommandText = "INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id) VALUES(1,'Moneta',$id,$name,$version,$version,$version,'Moneta-6',$created,$modified,$selected) ON CONFLICT(singleton) DO UPDATE SET name=excluded.name,modified_utc=excluded.modified_utc,selected_account_id=excluded.selected_account_id;";
+            command.Parameters.AddWithValue("$version", CurrentSchemaVersion);
             command.Parameters.AddWithValue("$id", snapshot.Id.ToString("D"));
             command.Parameters.AddWithValue("$name", snapshot.Name);
             command.Parameters.AddWithValue("$created", snapshot.CreatedUtc.ToString("O", CultureInfo.InvariantCulture));
@@ -413,7 +434,6 @@ public sealed partial class MonetaFile
             var use = command.Parameters.Add("$use", SqliteType.Integer);
             var before = command.Parameters.Add("$before", SqliteType.Integer);
             var ordinal = command.Parameters.Add("$ordinal", SqliteType.Integer);
-            // Save forbids removals, so new counts exceed every existing ordinal.
             // Shift above the complete final range before any inserts/reordering.
             using (var shift = connection.CreateCommand())
             {
@@ -435,7 +455,13 @@ public sealed partial class MonetaFile
         using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
-            command.CommandText = "INSERT INTO Accounts(account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal,is_archived) VALUES($id,$name,$type,$currency,$minor,$notes,$created,$modified,$ordinal,$archived) ON CONFLICT(account_id) DO UPDATE SET name=excluded.name,type=excluded.type,opening_minor=excluded.opening_minor,notes=excluded.notes,modified_utc=excluded.modified_utc,ordinal=excluded.ordinal,is_archived=excluded.is_archived;";
+            command.CommandText = """
+                INSERT INTO Accounts(account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal,is_archived,bank_name,bank_reference,holder)
+                VALUES($id,$name,$type,$currency,$minor,$notes,$created,$modified,$ordinal,$archived,$bank,$reference,$holder)
+                ON CONFLICT(account_id) DO UPDATE SET name=excluded.name,type=excluded.type,
+                    notes=excluded.notes,modified_utc=excluded.modified_utc,ordinal=excluded.ordinal,is_archived=excluded.is_archived,
+                    bank_name=excluded.bank_name,bank_reference=excluded.bank_reference,holder=excluded.holder;
+                """;
             var id = command.Parameters.Add("$id", SqliteType.Text);
             var name = command.Parameters.Add("$name", SqliteType.Text);
             var type = command.Parameters.Add("$type", SqliteType.Text);
@@ -446,6 +472,9 @@ public sealed partial class MonetaFile
             var modified = command.Parameters.Add("$modified", SqliteType.Text);
             var ordinal = command.Parameters.Add("$ordinal", SqliteType.Integer);
             var archived = command.Parameters.Add("$archived", SqliteType.Integer);
+            var bank = command.Parameters.Add("$bank", SqliteType.Text);
+            var reference = command.Parameters.Add("$reference", SqliteType.Text);
+            var holder = command.Parameters.Add("$holder", SqliteType.Text);
             for (var index = 0; index < snapshot.Accounts.Count; index++)
             {
                 var account = snapshot.Accounts[index];
@@ -453,6 +482,9 @@ public sealed partial class MonetaFile
                 currency.Value = account.Currency.Code; minor.Value = ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency);
                 notes.Value = (object?)account.Notes ?? DBNull.Value; created.Value = account.CreatedUtc.ToString("O", CultureInfo.InvariantCulture);
                 modified.Value = account.ModifiedUtc.ToString("O", CultureInfo.InvariantCulture); ordinal.Value = index; archived.Value = account.IsArchived ? 1 : 0;
+                bank.Value = (object?)account.BankName ?? DBNull.Value;
+                reference.Value = (object?)account.BankReference ?? DBNull.Value;
+                holder.Value = (object?)account.Holder ?? DBNull.Value;
                 command.ExecuteNonQuery();
             }
         }

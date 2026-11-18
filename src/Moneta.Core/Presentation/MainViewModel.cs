@@ -77,7 +77,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
                 rows[rowIndex] = new LedgerRow(transaction, balance);
             }
 
-            var summary = new AccountSummary(account, balance);
+            var summary = new AccountSummary(account, balance, index);
             _accounts.Add(summary);
             _ledgers.Add(account.Id, new AccountLedger(
                 summary,
@@ -111,6 +111,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         {
             if (!_ledgers.TryGetValue(selectedId, out var ledger))
                 throw new ArgumentException("Le compte sélectionné est absent du dossier.", nameof(document));
+            _showArchivedAccounts = ledger.Summary.Account.IsArchived;
             SelectedAccount = ledger.Summary;
         }
     }
@@ -392,42 +393,38 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     {
         if (!IsDemo)
             throw new InvalidOperationException("Un compte fictif ne peut pas être ajouté à un dossier réel.");
-        return AddAccountCore(name, currency, type, openingBalance, notes);
+        return AddAccountCore(new(name, type, notes), currency, openingBalance);
     }
 
     public AccountSummary AddAccount(string name, Currency currency, string? type, decimal openingBalance, string? notes)
+        => AddAccount(new(name, type, notes), currency, openingBalance);
+
+    public AccountSummary AddAccount(AccountProperties properties, Currency currency, decimal openingBalance)
     {
         if (IsDemo)
             throw new InvalidOperationException("Un compte réel ne peut pas être ajouté à la démonstration.");
-        return AddAccountCore(name, currency, type, openingBalance, notes);
+        ArgumentNullException.ThrowIfNull(properties);
+        return AddAccountCore(properties, currency, openingBalance);
     }
 
-    private AccountSummary AddAccountCore(string name, Currency currency, string? type, decimal openingBalance, string? notes)
+    private AccountSummary AddAccountCore(AccountProperties properties, Currency currency, decimal openingBalance)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(currency);
-        var accountName = name.Trim();
-        if (accountName.Length > 120)
-            throw new ArgumentException("Le nom du compte est limité à 120 caractères.", nameof(name));
-        if (type?.Length > 80)
-            throw new ArgumentException("Le type est limité à 80 caractères.", nameof(type));
-        if (notes?.Length > 2000)
-            throw new ArgumentException("Les notes sont limitées à 2 000 caractères.", nameof(notes));
         if (!CurrencyRegistry.TryGet(currency.Code, out var registered) || registered != currency)
             throw new ArgumentException("Choisissez une devise du référentiel.", nameof(currency));
         _ = ExactMoney.ToMinorUnits(openingBalance, currency);
 
         var now = DateTimeOffset.UtcNow;
-        var account = new Account(Guid.NewGuid(), accountName, currency, openingBalance)
+        var account = new Account(Guid.NewGuid(), properties.Name, currency, openingBalance)
         {
-            Type = string.IsNullOrWhiteSpace(type) ? null : type.Trim(),
-            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
             CreatedUtc = now,
             ModifiedUtc = now
         };
+        account = ApplyAccountProperties(account, properties, existing: false);
         var page = IsDemo ? null : ReadPage(account, 0, PendingChanges);
         var rows = page is null ? null : BuildRows(page);
         var summary = AddAccountSummary(account);
+        NotifyVisibleAccounts();
         SelectAccount(summary, page, rows);
         if (!IsDemo) MarkDirty();
         return summary;
@@ -435,7 +432,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     private AccountSummary AddAccountSummary(Account account)
     {
-        var summary = new AccountSummary(account, account.OpeningBalance);
+        var summary = new AccountSummary(account, account.OpeningBalance, _accounts.Count);
         var status = $"0 opérations · {account.Name} ({account.Currency.Code})";
         if (IsDemo)
             status += " · données fictives en mémoire uniquement";

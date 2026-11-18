@@ -5,20 +5,38 @@ namespace Moneta.Core.Presentation;
 
 public sealed class AccountSummary : INotifyPropertyChanged
 {
-    internal AccountSummary(Account account, decimal balance)
+    internal AccountSummary(Account account, decimal balance, int ordinal)
     {
         Account = account;
         Balance = balance;
         BalanceText = MoneyFormatter.Format(balance, account.Currency);
+        _ordinal = ordinal;
     }
 
-    public Account Account { get; }
+    private int _ordinal;
+    public Account Account { get; private set; }
     public string Name => Account.Name;
     public string CurrencyCode => Account.Currency.Code;
+    public string DisplayName => $"{_ordinal + 1}. {Name} · {CurrencyCode}" + (Account.IsArchived ? " · Archivé" : "");
     public decimal Balance { get; private set; }
     public string BalanceText { get; private set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    internal void UpdateAccount(Account value)
+    {
+        Account = value;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Account)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
+    }
+
+    internal void UpdateOrdinal(int ordinal)
+    {
+        if (ordinal == _ordinal) return;
+        _ordinal = ordinal;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
+    }
 
     internal void UpdateBalance(decimal balance)
     {

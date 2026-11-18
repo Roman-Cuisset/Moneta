@@ -8,6 +8,9 @@ public sealed partial class MainViewModel
 
     public IReadOnlyCollection<TransferChange> PendingTransfers => Array.AsReadOnly(_pendingTransfers.Values.ToArray());
 
+    public bool HasArchivedTransferAccount(TransferDetails details) =>
+        TransferLegs(details).Any(leg => _ledgers[leg.AccountId].Summary.Account.IsArchived);
+
     public TransferDetails CreateTransfer(TransferDraft draft)
     {
         var metadata = TransferContext();
@@ -92,6 +95,7 @@ public sealed partial class MainViewModel
         var rows = BuildRows(page);
         if (!rows.Any(row => row.Transaction.Id == target.Id))
             throw new InvalidOperationException("La contrepartie n'est pas présente dans le registre.");
+        if (summary.Account.IsArchived) ShowArchivedAccounts = true;
         SelectAccount(summary, page, rows);
         ApplyPage(page, rows, target.Id);
         SetLedgerError(string.Empty);

@@ -453,7 +453,7 @@ public sealed class LedgerStorageTests
         ExpectError(DocumentError.MigrationRequired, () => MonetaFile.Open(FileName));
         using (var migrated = MonetaBackup.Migrate(FileName, Path.Combine(directory, "migrated.moneta")))
         {
-            Assert.AreEqual(5, migrated.Snapshot.SchemaVersion);
+            Assert.AreEqual(6, migrated.Snapshot.SchemaVersion);
             Assert.AreEqual(metadata.Id, migrated.Snapshot.Id);
             Assert.AreEqual(metadata.Name, migrated.Snapshot.Name);
             Assert.AreEqual(metadata.CreatedUtc, migrated.Snapshot.CreatedUtc);

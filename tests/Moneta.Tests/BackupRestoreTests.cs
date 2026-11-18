@@ -36,10 +36,17 @@ public sealed class BackupRestoreTests
             Name = "Dossier sauvegardé € 日本",
             ModifiedUtc = original.ModifiedUtc.AddDays(1),
             Accounts = original.Accounts.Select((account, index) => index == 0
-                ? account with { Notes = "Modification en WAL\nnon consolidée", OpeningBalance = -9876.54m, ModifiedUtc = account.ModifiedUtc.AddHours(1) }
+                ? account with { Notes = "Modification en WAL\nnon consolidée", BankName = "Banque fictive", ModifiedUtc = account.ModifiedUtc.AddHours(1) }
                 : account).ToArray()
         };
-        source.Save(saved);
+        var accountId = original.Accounts[0].Id;
+        var adjustment = new Transaction(Guid.NewGuid(), accountId, new DateOnly(2025, 4, 23),
+            "Correction explicite", new Payee(""), new Category(""), 11111.10m, original.Currencies[0],
+            TransactionDirection.Debit, ReconciliationStatus.Unmarked, "")
+            { CreatedUtc = saved.ModifiedUtc, ModifiedUtc = saved.ModifiedUtc };
+        source.Save(saved, [new(adjustment, 0)]);
+        saved = source.Snapshot;
+        Assert.AreEqual(-9876.54m, saved.AccountBalances![accountId]);
         Assert.IsTrue(File.Exists(source.FilePath + "-wal"), "The source must remain open in WAL mode.");
         Assert.IsTrue(new FileInfo(source.FilePath + "-wal").Length > 32, "Saved accounts must have live WAL frames.");
         var result = MonetaBackup.Create(source, PathFor("backup.moneta"));
@@ -48,9 +55,9 @@ public sealed class BackupRestoreTests
         Assert.IsTrue(File.Exists(result.FilePath + ".manifest.json"));
         var backupBytes = File.ReadAllBytes(result.FilePath);
         using (var restored = MonetaBackup.Restore(result.FilePath, PathFor("restored.moneta")))
-            AssertSnapshot(saved, restored.Snapshot);
+            AssertCompleteSnapshot(saved, restored.Snapshot);
         using (var reopened = MonetaFile.Open(PathFor("restored.moneta")))
-            AssertSnapshot(saved, reopened.Snapshot);
+            AssertCompleteSnapshot(saved, reopened.Snapshot);
         CollectionAssert.AreEqual(backupBytes, File.ReadAllBytes(result.FilePath));
         AssertSnapshot(saved, source.Snapshot);
         AssertSnapshot(saved, MonetaFile.Inspect(source.FilePath));
@@ -630,6 +637,9 @@ public sealed class BackupRestoreTests
             Assert.AreEqual(account.OpeningBalance, restored.OpeningBalance);
             Assert.AreEqual(account.Type, restored.Type);
             Assert.AreEqual(account.Notes, restored.Notes);
+            Assert.AreEqual(account.BankName, restored.BankName);
+            Assert.AreEqual(account.BankReference, restored.BankReference);
+            Assert.AreEqual(account.Holder, restored.Holder);
             Assert.AreEqual(account.IsArchived, restored.IsArchived);
             Assert.AreEqual(account.CreatedUtc, restored.CreatedUtc);
             Assert.AreEqual(account.ModifiedUtc, restored.ModifiedUtc);

@@ -40,7 +40,8 @@ public partial class MainWindow
 
     private void Reconcile_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        e.CanExecute = CanEditLedger;
+        e.CanExecute = CanEditLedger || (!_busy && _workspace.Model is
+            { IsDemo: false, SelectedAccount.Account.IsArchived: true, ReconciliationSource: not null });
         e.Handled = true;
     }
 
@@ -90,6 +91,11 @@ public partial class MainWindow
 
     private async void Reconcile_Executed(object sender, ExecutedRoutedEventArgs e)
     {
+        if (!_busy && _workspace.Model is { IsDemo: false, SelectedAccount.Account.IsArchived: true } archived)
+        {
+            ShowReconciliation(archived);
+            return;
+        }
         if (!CanEditLedger) return;
         if (_workspace.HasUnsavedChanges)
         {
@@ -99,6 +105,11 @@ public partial class MainWindow
                 MessageBoxResult.No) != MessageBoxResult.Yes || !await SaveAsync()) return;
         }
         if (_workspace.Model is not { CanReconcile: true } model) return;
+        ShowReconciliation(model);
+    }
+
+    private void ShowReconciliation(MainViewModel model)
+    {
         try { new ReconciliationWindow(model) { Owner = this }.ShowDialog(); }
         catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "rapprochement indisponible"); }
         CommandManager.InvalidateRequerySuggested();

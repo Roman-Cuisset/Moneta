@@ -74,7 +74,7 @@ public sealed class DocumentWorkspace : IDisposable
     private static MainViewModel CreateModel(MonetaFile file)
     {
         var model = new MainViewModel(file.Snapshot, file);
-        model.SelectedAccount ??= model.Accounts.FirstOrDefault();
+        model.SelectedAccount ??= model.VisibleAccounts.FirstOrDefault();
         return model;
     }
 

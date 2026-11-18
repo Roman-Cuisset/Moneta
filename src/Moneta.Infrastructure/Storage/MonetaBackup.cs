@@ -97,8 +97,8 @@ public static class MonetaBackup
             {
                 var originalHash = Hash(sourceBytes);
                 var original = MonetaFile.ReadValidated(connection, allowVersion1: true);
-                if (original.SchemaVersion is not (1 or 2 or 3 or 4))
-                    throw new DocumentException(DocumentError.InvalidData, "Seuls les schémas 1, 2, 3 et 4 nécessitent cette migration par copie.");
+                if (original.SchemaVersion is < 1 or >= MonetaFile.CurrentSchemaVersion)
+                    throw new DocumentException(DocumentError.InvalidData, "Le dossier ne nécessite pas de migration par copie.");
                 temporary = ReserveTemporary(target);
                 var copied = CopyDatabase(connection, temporary, allowLegacy: true);
                 RequireEqual(Digest(original), Digest(copied), "La copie avant migration diffère du dossier source.");
@@ -150,6 +150,7 @@ public static class MonetaBackup
         if (original.SchemaVersion <= 2) MonetaFile.UpgradeV2(connection);
         if (original.SchemaVersion <= 3) MonetaFile.UpgradeV3(connection);
         if (original.SchemaVersion <= 4) MonetaFile.UpgradeV4(connection);
+        MonetaFile.UpgradeV5(connection);
         var upgraded = MonetaFile.ReadValidated(connection);
         // Compare historical ledgers through their original canonical projection;
         // newer digests additionally certify reconciliation history and transfer links.
@@ -224,7 +225,7 @@ public static class MonetaBackup
         Certification? manifest;
         try { manifest = JsonSerializer.Deserialize<Certification>(stream, ManifestJson); }
         catch (JsonException ex) { throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde illisible.", ex); }
-        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion is not (1 or 2 or 3 or 4 or 5) ||
+        if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion is < 1 or > MonetaFile.CurrentSchemaVersion ||
             manifest.DocumentId == Guid.Empty || manifest.Length <= 0 || manifest.CurrencyCount < 0 || manifest.AccountCount < 0 ||
             !ValidHash(manifest.Sha256) || !ValidHash(manifest.SnapshotDigest))
             throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde invalide ou non pris en charge.");
@@ -286,6 +287,12 @@ public static class MonetaBackup
                 writer.WriteNumber("openingMinor", ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency));
                 writer.WriteString("type", account.Type);
                 writer.WriteString("notes", account.Notes);
+                if (snapshot.SchemaVersion >= 6)
+                {
+                    writer.WriteString("bankName", account.BankName);
+                    writer.WriteString("bankReference", account.BankReference);
+                    writer.WriteString("holder", account.Holder);
+                }
                 writer.WriteBoolean("archived", account.IsArchived);
                 writer.WriteString("created", account.CreatedUtc.ToUniversalTime());
                 writer.WriteString("modified", account.ModifiedUtc.ToUniversalTime());

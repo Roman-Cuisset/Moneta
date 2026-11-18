@@ -17,9 +17,21 @@ public sealed record Account(Guid Id, string Name, Currency Currency, decimal Op
     public Currency Currency { get; } = Currency;
     public string? Type { get; init; }
     public string? Notes { get; init; }
+    public string? BankName { get; init; }
+    public string? BankReference { get; init; }
+    public string? Holder { get; init; }
     public bool IsArchived { get; init; }
     public DateTimeOffset CreatedUtc { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset ModifiedUtc { get; init; } = DateTimeOffset.UtcNow;
+}
+
+public sealed record AccountProperties(string Name, string? Type, string? Notes,
+    string? BankName = null, string? BankReference = null, string? Holder = null);
+
+public interface IAccountHistorySource
+{
+    bool HasAccountHistory(Guid accountId);
+    Guid? FindAccountOperation(Guid accountId, string query, Guid? afterId);
 }
 
 public sealed record Category(string Name)

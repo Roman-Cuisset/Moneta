@@ -72,13 +72,13 @@ public partial class MainWindow : Window
     private void AccountSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_busy || _workspace.Model is not { } model ||
-            AccountsSelector.SelectedItem is not AccountSummary selected ||
+            sender is not System.Windows.Controls.Primitives.Selector selector || selector.SelectedItem is not AccountSummary selected ||
             ReferenceEquals(selected, model.SelectedAccount)) return;
         try { model.SelectedAccount = selected; }
         catch (Exception error) when (error is DocumentException or ArgumentException or InvalidOperationException or OverflowException)
         {
             // A failed binding setter must never leave one account's caption over another account's rows.
-            AccountsSelector.GetBindingExpression(ComboBox.SelectedItemProperty)?.UpdateTarget();
+            selector.GetBindingExpression(System.Windows.Controls.Primitives.Selector.SelectedItemProperty)?.UpdateTarget();
             MessageBox.Show(this, error.Message, "Moneta — changement de compte interrompu", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         CommandManager.InvalidateRequerySuggested();

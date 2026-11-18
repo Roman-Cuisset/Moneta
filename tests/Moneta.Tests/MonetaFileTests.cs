@@ -50,10 +50,13 @@ public sealed class MonetaFileTests
                     Name = "Compte modifié " + index,
                     Notes = "Écriture Unicode : 日本語",
                     IsArchived = index == 1,
-                    ModifiedUtc = account.ModifiedUtc.AddMinutes(1),
-                    OpeningBalance = index == 0 ? -1234.56m : account.OpeningBalance
+                    ModifiedUtc = account.ModifiedUtc.AddMinutes(1)
                 }).Reverse().ToArray()
             };
+            AssertDocument(original, MonetaFile.Inspect(FileName));
+            var invalid = changed with { Accounts = changed.Accounts.Select(account =>
+                account.Id == original.Accounts[0].Id ? account with { OpeningBalance = -1234.56m } : account).ToArray() };
+            Assert.AreEqual(DocumentError.InvalidData, Assert.ThrowsException<DocumentException>(() => file.Save(invalid)).Error);
             AssertDocument(original, MonetaFile.Inspect(FileName));
             file.Save(changed);
             AssertDocument(changed, file.Snapshot);
@@ -376,7 +379,7 @@ public sealed class MonetaFileTests
     public void SchemaFourCreatesStrictHistoryAndNullablePointingFieldsWithoutInventedRecords()
     {
         using var file = MonetaFile.Create(FileName, Synthetic());
-        Assert.AreEqual(5, file.Snapshot.SchemaVersion);
+        Assert.AreEqual(6, file.Snapshot.SchemaVersion);
         Assert.AreEqual(0L, file.Snapshot.ReconciliationCount);
         Assert.AreEqual(0L, file.Snapshot.ReconciliationEventCount);
         using var raw = Raw(FileName);

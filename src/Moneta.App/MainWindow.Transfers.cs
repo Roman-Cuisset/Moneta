@@ -84,9 +84,11 @@ public partial class MainWindow
         try
         {
             var details = model.GetTransfer(id);
+            if (model.HasArchivedTransferAccount(details))
+                throw new InvalidOperationException("Réactivez les comptes du virement, frais compris, avant de le supprimer.");
             if (details.HasReconciledLeg)
                 throw new InvalidOperationException("Un mouvement de ce virement est rapproché. Rouvrez le relevé concerné puis enregistrez avant de corriger ou supprimer le virement entier.");
-            string Name(Guid accountId) => model.Accounts.First(account => account.Account.Id == accountId).Name;
+            string Name(Guid accountId) => model.Accounts.First(account => account.Account.Id == accountId).DisplayName;
             var fee = details.Fee is { } value
                 ? $"\nFrais : −{MoneyFormatter.Format(value.Amount, value.Currency)} sur {Name(value.AccountId)}" : string.Empty;
             var message = $"Supprimer le virement entier ?\n\n{ Name(details.Debit.AccountId) } : −{MoneyFormatter.Format(details.Debit.Amount, details.Debit.Currency)}\n{ Name(details.Credit.AccountId) } : +{MoneyFormatter.Format(details.Credit.Amount, details.Credit.Currency)}{fee}\n\nLes deux mouvements et les frais liés seront retirés ensemble. Les traces déjà enregistrées seront conservées. Ctrl+S reste nécessaire.";

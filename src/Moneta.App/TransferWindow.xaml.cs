@@ -25,7 +25,8 @@ public partial class TransferWindow : Window
         ArgumentNullException.ThrowIfNull(model);
         if (model.IsDemo)
             throw new InvalidOperationException("Les virements ne sont pas disponibles dans la démonstration.");
-        var consultation = editing is not null && (readOnly || editing.HasReconciledLeg || !model.PendingReconciliations.IsEmpty);
+        var archived = editing is not null && model.HasArchivedTransferAccount(editing);
+        var consultation = editing is not null && (readOnly || archived || editing.HasReconciledLeg || !model.PendingReconciliations.IsEmpty);
         if (!consultation && !model.PendingReconciliations.IsEmpty)
             throw new InvalidOperationException("Enregistrez le rapprochement ou sa réouverture (Ctrl+S) avant de modifier un virement.");
         if (editing?.Value.IsDeleted == true)
@@ -36,14 +37,9 @@ public partial class TransferWindow : Window
         _model = model;
         _editing = editing;
         _readOnly = consultation;
-        var accounts = model.CaptureDocument().Accounts.Where(account => consultation || !account.IsArchived)
-            .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        var accounts = model.Accounts.Where(item => consultation || !item.Account.IsArchived).ToArray();
         if (accounts.Length < 2)
             throw new InvalidOperationException("Créez au moins deux comptes actifs dans le dossier pour effectuer un virement.");
-        if (!consultation && editing is not null && (!accounts.Any(account => account.Id == editing.Debit.AccountId)
-            || !accounts.Any(account => account.Id == editing.Credit.AccountId)
-            || (editing.Fee is { } oldFee && !accounts.Any(account => account.Id == oldFee.AccountId))))
-            throw new InvalidOperationException("Tous les comptes du virement, frais compris, doivent être actifs pour le modifier.");
 
         InitializeComponent();
         Title = consultation ? "Consulter le virement" : editing is null ? "Nouveau virement" : "Modifier le virement";
@@ -51,12 +47,12 @@ public partial class TransferWindow : Window
         SourceAccount.ItemsSource = accounts;
         DestinationAccount.ItemsSource = accounts;
         FeeAccount.ItemsSource = accounts;
-        SourceAccount.SelectedItem = accounts.FirstOrDefault(account => account.Id == (editing?.Debit.AccountId ?? model.SelectedAccountId)) ?? accounts[0];
+        SourceAccount.SelectedItem = accounts.FirstOrDefault(item => item.Account.Id == (editing?.Debit.AccountId ?? model.SelectedAccountId)) ?? accounts[0];
         DestinationAccount.SelectedItem = editing is null
-            ? accounts.First(account => account.Id != ((Account)SourceAccount.SelectedItem).Id)
-            : accounts.Single(account => account.Id == editing.Credit.AccountId);
+            ? accounts.First(item => item != SourceAccount.SelectedItem)
+            : accounts.Single(item => item.Account.Id == editing.Credit.AccountId);
         FeeAccount.SelectedItem = editing?.Fee is { } fee
-            ? accounts.Single(account => account.Id == fee.AccountId) : null;
+            ? accounts.Single(item => item.Account.Id == fee.AccountId) : null;
         SourceAccount.IsEnabled = DestinationAccount.IsEnabled = editing is null;
         EntryDate.Text = FormatDate(editing?.Value.Date ?? DateOnly.FromDateTime(DateTime.Today));
         ExchangeDate.Text = FormatDate(editing?.Value.ExchangeDate ?? editing?.Value.Date ?? DateOnly.FromDateTime(DateTime.Today));
@@ -84,7 +80,8 @@ public partial class TransferWindow : Window
                 field.IsReadOnly = true;
             ConfirmTransfer.IsEnabled = false;
             CancelTransfer.Content = "Fermer";
-            ErrorText.Text = editing!.HasReconciledLeg ? ReconciledMessage
+            ErrorText.Text = archived ? "Réactivez les comptes du virement, frais compris, pour retrouver ses commandes de modification."
+                : editing!.HasReconciledLeg ? ReconciledMessage
                 : !model.PendingReconciliations.IsEmpty
                     ? "Consultation seule : enregistrez le rapprochement ou sa réouverture (Ctrl+S) avant de modifier ce virement."
                     : "Consultation seule : la modification du virement est indisponible dans ce contexte.";
@@ -112,8 +109,8 @@ public partial class TransferWindow : Window
 
     private void RefreshAccounts()
     {
-        var source = SourceAccount.SelectedItem as Account;
-        var destination = DestinationAccount.SelectedItem as Account;
+        var source = (SourceAccount.SelectedItem as AccountSummary)?.Account;
+        var destination = (DestinationAccount.SelectedItem as AccountSummary)?.Account;
         var same = source is not null && destination is not null && source.Currency.Code == destination.Currency.Code;
         _updating = true;
         try
@@ -189,7 +186,7 @@ public partial class TransferWindow : Window
         var included = HasFee.IsChecked == true;
         FeeFields.IsEnabled = included;
         FeeAccount.IsEnabled = included && _editing?.Fee is null;
-        var account = FeeAccount.SelectedItem as Account;
+        var account = (FeeAccount.SelectedItem as AccountSummary)?.Account;
         FeeCurrency.Text = account?.Currency.Code ?? "Devise du compte de frais";
         FeeHint.Text = _editing?.Fee is not null
             ? "Frais existants : compte fixe et mouvement conservé. Saisissez explicitement 0 pour annuler ces frais."
@@ -200,7 +197,8 @@ public partial class TransferWindow : Window
 
     private void RefreshPreview()
     {
-        if (SourceAccount.SelectedItem is not Account source || DestinationAccount.SelectedItem is not Account destination)
+        if (SourceAccount.SelectedItem is not AccountSummary { Account: var source } ||
+            DestinationAccount.SelectedItem is not AccountSummary { Account: var destination })
         {
             RateDescription.Text = "Choisissez les deux comptes pour afficher le rapport de change.";
             return;
@@ -294,9 +292,9 @@ public partial class TransferWindow : Window
     private bool TryBuildDraft(out TransferDraft draft)
     {
         draft = null!;
-        if (SourceAccount.SelectedItem is not Account source)
+        if (SourceAccount.SelectedItem is not AccountSummary { Account: var source })
             return ShowError("Choisissez un compte source actif.", SourceAccount);
-        if (DestinationAccount.SelectedItem is not Account destination)
+        if (DestinationAccount.SelectedItem is not AccountSummary { Account: var destination })
             return ShowError("Choisissez un compte destinataire actif.", DestinationAccount);
         if (source.Id == destination.Id)
             return ShowError("Le compte source et le compte destinataire doivent être distincts.", DestinationAccount);
@@ -317,7 +315,7 @@ public partial class TransferWindow : Window
         decimal feeAmount = 0;
         if (HasFee.IsChecked == true)
         {
-            if (FeeAccount.SelectedItem is not Account feeAccount)
+            if (FeeAccount.SelectedItem is not AccountSummary { Account: var feeAccount })
                 return ShowError("Choisissez explicitement le compte actif débité pour les frais.", FeeAccount);
             feeAccountId = feeAccount.Id;
             if (!TryAmount(FeeAmount, feeAccount.Currency, _editing?.Fee is not null, out feeAmount)) return false;

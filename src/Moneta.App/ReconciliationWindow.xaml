@@ -8,11 +8,11 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,12">
             <TextBlock x:Name="AccountHeading" FontSize="20" FontWeight="SemiBold" AutomationProperties.AutomationId="ReconciliationAccount" />
-            <TextBlock Text="Brouillon uniquement : valider ou rouvrir ne sauvegarde pas le dossier. Ctrl+S après fermeture pour enregistrer dans SQLite. Annuler ne change rien."
+            <TextBlock x:Name="ReconciliationNotice" Text="Ctrl+S enregistre les rapprochements validés ou rouverts après fermeture de cette fenêtre."
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReconciliationDraftNotice" />
         </StackPanel>
         <TabControl Grid.Row="1" x:Name="ReconciliationTabs" AutomationProperties.AutomationId="ReconciliationTabs">
-            <TabItem Header="Nouveau relevé" AutomationProperties.AutomationId="ReconciliationStatementTab">
+            <TabItem x:Name="StatementTab" Header="Nouveau relevé" AutomationProperties.AutomationId="ReconciliationStatementTab">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
                 <Grid MinHeight="480" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
@@ -65,7 +65,7 @@
                 </Grid>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Historique et réouverture" AutomationProperties.AutomationId="ReconciliationHistoryTab">
+            <TabItem x:Name="HistoryTab" Header="Historique et réouverture" AutomationProperties.AutomationId="ReconciliationHistoryTab">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
                 <Grid MinHeight="480" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                     <Grid.RowDefinitions><RowDefinition Height="2*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="3*" /></Grid.RowDefinitions>

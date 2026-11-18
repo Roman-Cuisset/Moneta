@@ -12,6 +12,11 @@
         <CommandBinding Command="{x:Static local:WindowCommands.About}" Executed="About_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.Settings}" Executed="Settings_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.AddAccount}" Executed="AddAccount_Executed" CanExecute="AddAccount_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.AccountProperties}" Executed="AccountProperties_Executed" CanExecute="ManageAccount_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ArchiveAccount}" Executed="SetAccountArchived_Executed" CanExecute="ManageAccount_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.ReactivateAccount}" Executed="SetAccountArchived_Executed" CanExecute="ManageAccount_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.MoveAccount}" Executed="MoveAccount_Executed" CanExecute="ManageAccount_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.DeleteAccount}" Executed="DeleteAccount_Executed" CanExecute="ManageAccount_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Theme}" Executed="Theme_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.New}" Executed="New_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Open}" Executed="Open_Executed" CanExecute="Available_CanExecute" />
@@ -146,8 +151,14 @@
                     </MenuItem>
                     <MenuItem Header="_Comptes">
                         <MenuItem Header="_Nouveau fichier de comptes…" Command="{x:Static local:WindowCommands.New}" ToolTip="Même commande que Fichier → Nouveau dossier." />
-                        <MenuItem Header="_Gestion des comptes…" InputGestureText="Ctrl+G" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Ajouter un compte…" Command="{x:Static local:WindowCommands.AddAccount}" AutomationProperties.AutomationId="AddAccountCommand" />
+                        <MenuItem Header="_Propriétés du compte…" Command="{x:Static local:WindowCommands.AccountProperties}" AutomationProperties.AutomationId="AccountPropertiesCommand" />
+                        <MenuItem Header="Archiver le compte…" Command="{x:Static local:WindowCommands.ArchiveAccount}" />
+                        <MenuItem Header="Réactiver le compte…" Command="{x:Static local:WindowCommands.ReactivateAccount}" />
+                        <MenuItem Header="Monter le compte" Command="{x:Static local:WindowCommands.MoveAccount}" CommandParameter="Up" />
+                        <MenuItem Header="Descendre le compte" Command="{x:Static local:WindowCommands.MoveAccount}" CommandParameter="Down" />
+                        <MenuItem Header="Supprimer le compte vierge…" Command="{x:Static local:WindowCommands.DeleteAccount}" />
+                        <MenuItem Header="Afficher les comptes archivés" IsCheckable="True" IsChecked="{Binding ShowArchivedAccounts, Mode=TwoWay}" />
                         <MenuItem Header="Mot de passe…" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Tiers…" InputGestureText="F5" Style="{StaticResource UnavailableMenuItem}" />
@@ -217,7 +228,7 @@
                 <ToolBar Background="{DynamicResource SurfaceBrush}" BorderThickness="0" Padding="0" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ToolBarTray}}" AutomationProperties.Name="Accès rapides">
                     <StackPanel Margin="4,2,12,4" ToolBar.OverflowMode="Never">
                         <TextBlock x:Name="DocumentCaption" Text="Aucun dossier ouvert" Style="{StaticResource MutedText}" Margin="2,0,0,4" MaxWidth="218" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="DocumentCaption" />
-                        <ComboBox x:Name="AccountsSelector" Width="218" ItemsSource="{Binding Accounts}" DisplayMemberPath="Name"
+                        <ComboBox x:Name="AccountsSelector" Width="218" ItemsSource="{Binding VisibleAccounts}" DisplayMemberPath="DisplayName"
                                   SelectedItem="{Binding SelectedAccount, Mode=OneWay}" SelectionChanged="AccountSelectionChanged" IsSynchronizedWithCurrentItem="False"
                                   AutomationProperties.AutomationId="AccountsSelector" AutomationProperties.Name="Compte affiché"
                                   ToolTip="Choisir un compte du dossier affiché.">
@@ -253,8 +264,59 @@
                 <Grid MinHeight="500" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" MinHeight="60" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <StackPanel>
-                        <TextBlock Text="COMPTE SÉLECTIONNÉ" Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,0,0,10" />
+                        <TextBlock Text="Comptes" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <ListBox x:Name="AccountList" ItemsSource="{Binding VisibleAccounts}" DisplayMemberPath="DisplayName"
+                                 SelectedItem="{Binding SelectedAccount, Mode=OneWay}" SelectionChanged="AccountSelectionChanged"
+                                 PreviewMouseRightButtonDown="AccountList_RightClick" MaxHeight="105"
+                                 IsSynchronizedWithCurrentItem="False"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True"
+                                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                 Background="{DynamicResource SurfaceBrush}" Foreground="{DynamicResource TextBrush}"
+                                 BorderBrush="{DynamicResource DividerBrush}" AutomationProperties.Name="Comptes du dossier"
+                                 AutomationProperties.AutomationId="AccountList">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="4,2"/>
+                                    <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}"/>
+                                    <Setter Property="ToolTip" Value="{Binding DisplayName}"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="Row" Background="Transparent" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Row" Property="Background" Value="{DynamicResource SelectionBrush}"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Propriétés du compte…" Command="{x:Static local:WindowCommands.AccountProperties}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Archiver le compte…" Command="{x:Static local:WindowCommands.ArchiveAccount}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Réactiver le compte…" Command="{x:Static local:WindowCommands.ReactivateAccount}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Monter" Command="{x:Static local:WindowCommands.MoveAccount}" CommandParameter="Up" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Descendre" Command="{x:Static local:WindowCommands.MoveAccount}" CommandParameter="Down" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Supprimer le compte vierge…" Command="{x:Static local:WindowCommands.DeleteAccount}" CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
+                        <CheckBox Content="Afficher les comptes archivés" IsChecked="{Binding ShowArchivedAccounts, Mode=TwoWay}"
+                                  Margin="0,5,0,10" AutomationProperties.AutomationId="ShowArchivedAccounts"/>
                         <TextBlock Text="{Binding SelectedAccount.Name}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="Archivé · consultation" Foreground="{DynamicResource MutedBrush}">
+                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers><DataTrigger Binding="{Binding SelectedAccount.Account.IsArchived}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                            </Style></TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="{Binding SelectedAccount.CurrencyCode}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,5,0,18" />
                         <DockPanel Margin="0,0,0,9"><TextBlock Text="Solde pointé" /><TextBlock Text="{Binding SelectedPointedBalanceText}" FontWeight="SemiBold" TextAlignment="Right" TextWrapping="Wrap" ToolTip="Solde initial + opérations pointées ou rapprochées, dans la devise native." AutomationProperties.AutomationId="PointedBalance" /></DockPanel>
                         <DockPanel Margin="0,0,0,9"><TextBlock Text="Non pointé" /><TextBlock Text="{Binding SelectedUnmarkedAmountText}" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Somme signée des opérations non pointées, sans le solde initial." AutomationProperties.AutomationId="UnmarkedAmount" /></DockPanel>
@@ -302,6 +364,15 @@
                     <DockPanel>
                         <TextBlock Text="Registre des opérations" FontSize="17" FontWeight="SemiBold" />
                         <TextBlock Text="Saisie via Nouvelle / Modifier · filtres indisponibles" Style="{StaticResource MutedText}" TextAlignment="Right" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel Margin="0,5,0,0" LastChildFill="True">
+                        <DockPanel.Style><Style TargetType="DockPanel"><Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding SelectedAccount.Account.IsArchived}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                        </Style></DockPanel.Style>
+                        <Button x:Name="ArchivedSearch" DockPanel.Dock="Right" Content="Rechercher" Click="ArchivedSearch_Click" Margin="6,0,0,0"
+                                AutomationProperties.AutomationId="ArchivedSearch"/>
+                        <TextBox x:Name="ArchivedQuery" MaxLength="120" AutomationProperties.Name="Rechercher dans le compte archivé"
+                                 ToolTip="Rechercher dans les libellés, notes et tiers du compte archivé." />
                     </DockPanel>
                     <TextBlock Text="{Binding LedgerErrorText}" Foreground="{DynamicResource NegativeBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="LedgerErrorText">
                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Margin" Value="0,6,0,0" /><Style.Triggers><DataTrigger Binding="{Binding LedgerErrorText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger><DataTrigger Binding="{Binding LedgerErrorText}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>

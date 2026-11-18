@@ -6,9 +6,9 @@ using Moneta.Core;
 namespace Moneta.Infrastructure.Storage;
 
 /// <summary>A local, exclusively opened Moneta document. Financial changes are committed only by Save.</summary>
-public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconciliationSource, ITransferSource
+public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconciliationSource, ITransferSource, IAccountHistorySource
 {
-    public const int CurrentSchemaVersion = 5;
+    public const int CurrentSchemaVersion = 6;
     public const int ApplicationId = 0x4D4E5441;
     private const int TimeoutSeconds = 3;
     private readonly FileStream ownership;
@@ -58,8 +58,8 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
                 ApplyChanges(connection, snapshot, changes, transaction, creating: true);
                 WriteTransferChanges(connection, transfers, transaction);
                 if (provenance is not null) WriteBankPerfectProvenance(connection, transaction, provenance);
-                InsertHistory(connection, transaction, 5, 0, "create-v5",
-                    provenance is null ? "native-accounts-v5" : "native-accounts-v5+bankperfect-v1");
+                InsertHistory(connection, transaction, 6, 0, "create-v6",
+                    provenance is null ? "native-accounts-v6" : "native-accounts-v6+bankperfect-v1");
                 snapshot = ReadWithinTransaction(connection, false, transaction);
                 transaction.Commit();
                 Checkpoint(connection);
@@ -144,9 +144,11 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
         foreach (var previous in Snapshot.Accounts)
         {
             if (!accounts.TryGetValue(previous.Id, out var current))
-                throw Error(DocumentError.InvalidData, "La suppression de compte n’est pas prise en charge ; archivez le compte.");
+                continue; // Removals are checked against persisted history inside the write transaction.
             if (current.Currency.Code != previous.Currency.Code || current.CreatedUtc != previous.CreatedUtc || current.ModifiedUtc < previous.ModifiedUtc)
                 throw Error(DocumentError.InvalidData, "Devise native et création du compte immuables ; modification chronologique requise.");
+            if (current.OpeningBalance != previous.OpeningBalance)
+                throw Error(DocumentError.InvalidData, "Le solde initial est fixé à la création. Saisissez la correction comme opération dans le registre.");
         }
         foreach (var previous in Snapshot.Currencies)
             if (!currencies.TryGetValue(previous.Code, out var current) || current.DecimalPlaces != previous.DecimalPlaces)
@@ -163,6 +165,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             var persisted = ReadWithinTransaction(Connection, false, transaction);
             if (!SameSnapshot(Snapshot, persisted))
                 throw Error(DocumentError.InvalidData, "Le dossier a été modifié par un autre client SQLite. Fermez et rouvrez-le avant toute sauvegarde.");
+            ValidateAndRemoveAccounts(persisted, accounts, changes, reconciliation, transaction);
             ValidateReconciliationChanges(Connection, snapshot, changes, reconciliation, transaction, creating: false, baseline: persisted);
             ValidateTransferChanges(Connection, snapshot, changes, transfers, transaction, creating: false, baseline: persisted);
             WriteSnapshot(Connection, snapshot, transaction);

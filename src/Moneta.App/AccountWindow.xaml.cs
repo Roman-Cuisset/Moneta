@@ -1,4 +1,7 @@
+using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using Moneta.Core;
 using Moneta.Core.Presentation;
 
@@ -7,9 +10,12 @@ namespace Moneta.App;
 public partial class AccountWindow : Window
 {
     private readonly MainViewModel _model;
-    public AccountWindow(MainViewModel model)
+    private readonly Account? _editing;
+
+    public AccountWindow(MainViewModel model, Account? editing = null)
     {
         _model = model;
+        _editing = editing;
         InitializeComponent();
         DataContext = model;
         Title = model.IsDemo ? "Ajouter un compte de démonstration" : "Ajouter un compte";
@@ -18,23 +24,47 @@ public partial class AccountWindow : Window
             ? "En mémoire uniquement. Ce compte disparaîtra à la fermeture. Ne saisissez aucune donnée bancaire personnelle."
             : "Le compte sera ajouté au dossier. Utilisez Enregistrer (Ctrl+S) pour conserver les modifications sur disque.";
         ConfirmAccount.Content = model.IsDemo ? "Ajouter en mémoire" : "Ajouter au dossier";
-        Loaded += (_, _) => AccountName.Focus();
+        if (model.IsDemo) BankFields.Visibility = Visibility.Collapsed;
+        if (editing is not null)
+        {
+            Heading.Text = Title = "Propriétés du compte";
+            ConfirmAccount.Content = "Appliquer";
+            ModeNotice.Text = "La devise native et le solde initial sont fixés à la création. Ctrl+S enregistre les propriétés dans le dossier.";
+            AccountName.Text = editing.Name;
+            AccountType.Text = editing.Type ?? string.Empty;
+            NativeCurrency.SelectedItem = editing.Currency;
+            NativeCurrency.IsEnabled = false;
+            OpeningBalance.Text = editing.OpeningBalance.ToString($"F{editing.Currency.DecimalPlaces}", CultureInfo.GetCultureInfo("fr-FR"));
+            OpeningBalance.IsReadOnly = true;
+            BankName.Text = editing.BankName ?? string.Empty;
+            BankReference.Text = editing.BankReference ?? string.Empty;
+            Holder.Text = editing.Holder ?? string.Empty;
+            Notes.Text = editing.Notes ?? string.Empty;
+        }
+        AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, _) => ErrorText.Text = string.Empty));
+        Loaded += (_, _) =>
+        {
+            MaxHeight = SystemParameters.WorkArea.Height;
+            AccountName.Focus();
+        };
     }
     private void Add_Click(object sender, RoutedEventArgs e)
     {
-        if (NativeCurrency.SelectedItem is not Currency currency)
-        {
-            ErrorText.Text = "Choisissez une devise native.";
-            return;
-        }
         try
         {
-            var amount = MoneyInput.ParseFrench(OpeningBalance.Text, currency, allowNegative: true);
-            if (_model.IsDemo) _model.AddDemoAccount(AccountName.Text, currency, AccountType.Text, amount, Notes.Text);
-            else _model.AddAccount(AccountName.Text, currency, AccountType.Text, amount, Notes.Text);
+            var input = new AccountProperties(AccountName.Text, AccountType.Text, Notes.Text, BankName.Text, BankReference.Text, Holder.Text);
+            if (_editing is { } account)
+                _model.EditAccount(account.Id, input);
+            else
+            {
+                if (NativeCurrency.SelectedItem is not Currency currency) throw new ArgumentException("Choisissez une devise native.");
+                var amount = MoneyInput.ParseFrench(OpeningBalance.Text, currency, allowNegative: true);
+                if (_model.IsDemo) _model.AddDemoAccount(input.Name, currency, input.Type, amount, input.Notes);
+                else _model.AddAccount(input, currency, amount);
+            }
             DialogResult = true;
         }
-        catch (ArgumentException error)
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or DocumentException)
         {
             ErrorText.Text = error.Message;
         }

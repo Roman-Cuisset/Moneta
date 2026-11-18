@@ -337,13 +337,21 @@ public sealed class TransferStorageTests
             historyJson = (string)Scalar(raw, "SELECT snapshot_json FROM ReconciliationHistory WHERE kind=2;");
         }
         // A real v4 schema: additive v5 tables absent, exact v4 DDL and all 7B data retained.
-        using (var raw = Raw(FileName)) Execute(raw, "DROP TABLE TransferLegs; DROP TABLE Transfers; UPDATE Document SET schema_version=4,min_reader=4,min_writer=4; PRAGMA user_version=4; UPDATE MigrationHistory SET version=4,migration_id='create-v4',definition='native-accounts-v4';");
+        using (var raw = Raw(FileName)) Execute(raw, """
+            DROP TABLE TransferLegs; DROP TABLE Transfers;
+            ALTER TABLE Accounts DROP COLUMN holder;
+            ALTER TABLE Accounts DROP COLUMN bank_reference;
+            ALTER TABLE Accounts DROP COLUMN bank_name;
+            UPDATE Document SET schema_version=4,min_reader=4,min_writer=4;
+            PRAGMA user_version=4;
+            UPDATE MigrationHistory SET version=4,migration_id='create-v4',definition='native-accounts-v4';
+            """);
         var bytes = File.ReadAllBytes(FileName);
         Assert.AreEqual(DocumentError.MigrationRequired, Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(FileName)).Error);
         var destination = Path.Combine(directory, "migrated.moneta");
         using (var migrated = MonetaBackup.Migrate(FileName, destination))
         {
-            Assert.AreEqual(5, migrated.Snapshot.SchemaVersion); Assert.AreEqual(0L, migrated.Snapshot.TransferCount);
+            Assert.AreEqual(6, migrated.Snapshot.SchemaVersion); Assert.AreEqual(0L, migrated.Snapshot.TransferCount);
             Assert.AreEqual(2L, migrated.Snapshot.OperationCount); Assert.AreEqual(1L, migrated.Snapshot.ReconciliationCount); Assert.AreEqual(3L, migrated.Snapshot.ReconciliationEventCount);
             Assert.AreEqual(ReconciliationSessionState.Reopened, migrated.ReadReconciliation(sessionId).Session.State);
             Assert.AreEqual(ReconciliationStatus.Unmarked, migrated.GetTransaction(legacy.Id)!.Status);
@@ -353,7 +361,7 @@ public sealed class TransferStorageTests
             Assert.AreEqual(historyJson, Scalar(raw, "SELECT snapshot_json FROM ReconciliationHistory WHERE kind=2;"));
         }
         CollectionAssert.AreEqual(bytes, File.ReadAllBytes(FileName));
-        using (var raw = Raw(destination)) Execute(raw, "PRAGMA user_version=6;");
+        using (var raw = Raw(destination)) Execute(raw, "PRAGMA user_version=7;");
         var future = File.ReadAllBytes(destination);
         Assert.AreEqual(DocumentError.UnsupportedVersion, Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(destination)).Error);
         CollectionAssert.AreEqual(future, File.ReadAllBytes(destination));

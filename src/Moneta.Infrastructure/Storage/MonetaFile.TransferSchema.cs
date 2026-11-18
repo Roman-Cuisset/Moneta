@@ -41,7 +41,7 @@ public sealed partial class MonetaFile
         using var transaction = connection.BeginTransaction();
         Execute(connection, TransferSchemaSql + "UPDATE Document SET schema_version=5,min_reader=5,min_writer=5; PRAGMA user_version=5;", transaction);
         InsertHistory(connection, transaction, 5, 4, "v4-to-v5-transfers", "linked-transfer-legs-v5");
-        var migrated = ReadWithinTransaction(connection, false, transaction);
+        var migrated = ReadWithinTransaction(connection, true, transaction);
         var legacy = ReadLedgerMetadata(connection, migrated with { SchemaVersion = 4, TransferCount = 0 }, transaction);
         if (!SameSnapshot(original, legacy)) throw Error(DocumentError.VerificationFailed, "La migration a modifié le registre ou son historique de rapprochement.");
         transaction.Commit();
