@@ -10,9 +10,13 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Recherche et registre multicompte — mission 12
+
+Recherche et filtres combinés sur les opérations enregistrées, vue multicompte, tri stable et navigation par UUID livrés. Une piste pour la mission 13 consiste à améliorer les référentiels de tiers, catégories et modes avec des sélecteurs explicites, puis à étudier les filtres nommés. La valorisation historique reste une exigence pour les futurs rapports multidevises. Chaque dépense sera convertie au cours applicable à sa date. [Recherche et filtres](SEARCH_AND_FILTERS.md)
+
 ### Gestion des comptes — mission 11
 
-Propriétés descriptives, ordre persistant, archivage, réactivation, consultation de l’historique et suppression confirmée d’un compte vierge sont disponibles dans Moneta. Les dossiers antérieurs passent au schéma 6 sur copie. Pour la mission 12, une suite possible consiste à étendre la recherche au registre actif, avec pagination et conservation du contexte de compte. [Règles de la mission 11](ACCOUNT_MANAGEMENT.md)
+Propriétés descriptives, ordre persistant, archivage, réactivation, consultation de l’historique et suppression confirmée d’un compte vierge sont disponibles dans Moneta. Les dossiers antérieurs passent au schéma 6 sur copie. [Règles de la mission 11](ACCOUNT_MANAGEMENT.md)
 
 ### Première conversion financière — mission 10C
 

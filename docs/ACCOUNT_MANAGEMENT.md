@@ -12,7 +12,7 @@ La devise native et le solde d’ouverture sont fixés à la création, même su
 
 ## Archives et suppression
 
-Un compte archivé reste visible avec **Afficher les comptes archivés**. Son registre, ses soldes, ses relevés et ses liens sont consultables. Le champ de recherche parcourt les libellés, les notes et les tiers des opérations enregistrées dans ce compte. Un virement vers une contrepartie archivée réaffiche et sélectionne le compte correspondant.
+Un compte archivé reste visible avec **Afficher les comptes archivés**. Son registre, ses soldes, ses relevés et ses liens sont consultables. Depuis la mission 12, le champ au-dessus du registre ouvre la recherche commune aux comptes actifs et archivés. Le mode multicompte propose l’inclusion explicite des archives. Un virement vers une contrepartie archivée réaffiche et sélectionne le compte correspondant. [Recherche et filtres](SEARCH_AND_FILTERS.md)
 
 La saisie et le pointage sont réservés aux comptes actifs. La correction ou la suppression d’un virement exige que les comptes des deux jambes et des frais soient actifs. Un compte avec des écritures en brouillon doit les enregistrer avant archivage. La réactivation réutilise l’identité et l’ordre existants. Un rapprochement est à nouveau modifiable une fois la réactivation enregistrée, selon les protections habituelles.
 

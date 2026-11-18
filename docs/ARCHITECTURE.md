@@ -2,6 +2,8 @@
 
 ## Statut et limites de cette étude
 
+La mission 12 sépare le registre chronologique de la consultation filtrée. `LedgerSearchCriteria` valide les critères côté Core. `MonetaFile.SearchOperations` utilise une nouvelle connexion SQLite en lecture seule et un instantané commun au compte de résultats et à sa page. Seules la page demandée et les métadonnées de comptage sont retournées. `LedgerSearchWindow` exécute les requêtes hors du thread d’interface, annule les demandes remplacées et conserve le contexte en mémoire. La recherche renvoie le couple UUID de compte et UUID d’opération. `MainViewModel` charge la page originale en tenant compte des brouillons, puis publie la sélection validée. [Recherche et filtres](SEARCH_AND_FILTERS.md)
+
 La gestion des comptes de mission 11 réutilise le cycle brouillon et Ctrl+S. Les propriétés changent sur l’UUID existant. L’ordre de la collection définit l’ordre SQLite et départage les comptes homonymes dans les sélecteurs. L’archivage conserve le registre et ses relations. La suppression d’un compte exige une preuve d’absence de dépendances, relue dans la transaction d’écriture. [Gestion des comptes](ACCOUNT_MANAGEMENT.md)
 
 Les cours officiels NBRB/CBR, le cache public indépendant et la valorisation indicative viennent de la mission 8. La valorisation laisse les montants natifs, virements et rapprochements inchangés.

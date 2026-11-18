@@ -4,6 +4,8 @@ Le format financier courant utilise le **schéma SQLite 6**. Il couvre les compt
 
 Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) utilise un modèle en mémoire et une CLI indépendante du format financier.
 
+La recherche de mission 12 lit le schéma 6 et réutilise les tables de comptes, opérations, référentiels et virements ainsi que leurs index existants. Les critères et pages restent en mémoire. Le texte consultable provient du registre actif et des virements actifs. Le BLOB de provenance BankPerfect reste conservé selon le même contrat. [Recherche et filtres](SEARCH_AND_FILTERS.md)
+
 ## Comptes et schéma courant
 
 Le schéma **6** ajoute à `Accounts` les colonnes texte facultatives `bank_name`, `bank_reference` et `holder`. Une migration de v5 vers v6 les initialise à NULL et compare le contenu avant et après, en incluant le condensat du registre et l’empreinte de provenance. Le schéma 6 inclut ces champs et l’ordre des comptes dans le contrôle de sauvegarde. Les sauvegardes v1 à v5 restent vérifiées avec leur représentation d’origine.

@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+La mission 12 active **Édition → Rechercher** pour le focus du texte au-dessus du registre, **Affichage → Filtres avancés…** et le bouton **Filtres** pour les critères détaillés, ainsi que **Comptes → Registre de tous les comptes…**. **F7** ouvre les filtres et **Maj+F7** les efface. Les résultats offrent **Voir dans le registre** et le registre offre **Retour aux résultats**. Les filtres nommés et Ctrl+F restent des références historiques. [Recherche et filtres](SEARCH_AND_FILTERS.md)
+
 La mission 11 livre **Comptes → Propriétés du compte…**, **Archiver le compte…**, **Réactiver le compte…**, **Monter**, **Descendre** et **Supprimer le compte vierge…**. Les actions sont aussi accessibles au clic droit dans la liste de gauche. La case d’affichage des archives contrôle la liste et le sélecteur de la barre d’outils. Les raccourcis en service sont conservés. [Commandes et comportement](ACCOUNT_MANAGEMENT.md)
 
 La cartographie cible s’appuie sur le manuel et la capture privée de mission 4. Les identifiants CMD restent stables. Le README récapitule les commandes en service. [README](../README.md)
