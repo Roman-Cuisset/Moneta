@@ -1,6 +1,6 @@
 # Formats de fichiers Moneta
 
-Le format financier courant utilise le **schéma SQLite 6**. Il couvre les comptes, le registre, les rapprochements, les virements liés avec frais et la provenance des imports BankPerfect. Les cours officiels et leur historique public résident dans un **cache SQLite séparé, schéma 1**. Les préférences locales utilisent le schéma JSON 2. [Architecture](ARCHITECTURE.md)
+Le format financier courant utilise le **schéma SQLite 6**. Il couvre les comptes, le registre, les rapprochements, les virements liés avec frais et la provenance des imports BankPerfect. Les cours officiels et leur historique public résident dans un **cache SQLite séparé, schéma 1**. Les préférences locales utilisent le schéma JSON 3. [Architecture](ARCHITECTURE.md)
 
 Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) utilise un modèle en mémoire et une CLI indépendante du format financier.
 
@@ -178,7 +178,7 @@ Après crash, conserver principal et journaux à leurs noms et emplacements coh�
 5. Publier la base sous un nom neuf, puis son `<nom>.moneta.manifest.json` **en dernier**. Le couple n'est pas une transaction multifichier : sans manifeste final ou en cas de divergence, la copie n'est pas certifiée. Une publication interrompue ne supprime aucune ancienne sauvegarde.
 6. Conserver les deux fichiers ensemble, à l'écart du dossier actif, et tester une restauration. L'empreinte n'est ni chiffrement ni signature d'authenticité. Ne pas ouvrir/enregistrer directement l'archive comme dossier de travail : son hash pourrait changer ; restaurer une nouvelle copie.
 
-La date UTC propre à la sauvegarde, un identifiant de génération distinct du hash, la planification, la rétention et les copies externes automatisées restent à réaliser avant automatisation. Aucun déclenchement automatique ni rotation n’est annoncé.
+La bibliothèque de mission 13 utilise le même manifeste de sauvegarde. Le descripteur `version.json` ajoute à la génération son UUID, sa date UTC, son type, le schéma et l’empreinte de l’archive. La génération est publiée par renommage du répertoire préparé. Le registre financier conserve le schéma 6. [Publication et rotation](AUTOMATIC_BACKUPS.md#publication-et-rotation)
 
 ## FMT-06 — Restaurer réellement, pas seulement vérifier un hash
 

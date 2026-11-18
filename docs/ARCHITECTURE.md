@@ -2,6 +2,8 @@
 
 ## Statut et limites de cette étude
 
+La mission 13 sépare le commit financier de la sauvegarde versionnée. `MainWindow.Backups` coordonne les demandes sur le dernier instantané enregistré. `BackupLibrary` applique la politique locale et publie des générations avec verrou d’accès. `MonetaBackup` fournit à la sauvegarde manuelle et aux générations le même instantané SQLite, le même manifeste et la vérification complète. La restauration ouvre un nouveau fichier. [Sauvegardes automatiques](AUTOMATIC_BACKUPS.md)
+
 La mission 12 sépare le registre chronologique de la consultation filtrée. `LedgerSearchCriteria` valide les critères côté Core. `MonetaFile.SearchOperations` utilise une nouvelle connexion SQLite en lecture seule et un instantané commun au compte de résultats et à sa page. Seules la page demandée et les métadonnées de comptage sont retournées. `LedgerSearchWindow` exécute les requêtes hors du thread d’interface, annule les demandes remplacées et conserve le contexte en mémoire. La recherche renvoie le couple UUID de compte et UUID d’opération. `MainViewModel` charge la page originale en tenant compte des brouillons, puis publie la sélection validée. [Recherche et filtres](SEARCH_AND_FILTERS.md)
 
 La gestion des comptes de mission 11 réutilise le cycle brouillon et Ctrl+S. Les propriétés changent sur l’UUID existant. L’ordre de la collection définit l’ordre SQLite et départage les comptes homonymes dans les sélecteurs. L’archivage conserve le registre et ses relations. La suppression d’un compte exige une preuve d’absence de dépendances, relue dans la transaction d’écriture. [Gestion des comptes](ACCOUNT_MANAGEMENT.md)
@@ -302,15 +304,15 @@ Après migration : contrôles de structure, références, nombre d'opérations, 
 
 La chaîne **1 → 2 → 3 → 4 → 5 → 6** passe par une copie consentie. L’historique vérifie les versions source et cible ainsi que les identifiants de définition. Les archives 1 à 5 gardent leurs algorithmes de certification d’origine. [Format et migrations](FILE_FORMATS.md)
 
-### 7.3 Sauvegarde et restauration : manuel réalisé, automatisation future
+### 7.3 Sauvegarde et restauration
 
 Utiliser une **API de sauvegarde SQLite cohérente**, dont l'[Online Backup API](https://www.sqlite.org/backup.html), au travers du fournisseur retenu ; ne pas copier le seul fichier principal pendant qu'un WAL peut contenir des commits. Produire d'abord une destination temporaire distincte ; ne publier une sauvegarde comme disponible qu'après fermeture réussie et contrôles.
 
-Déclenchements automatiques proposés : avant une migration ou restauration, après les enregistrements/fermetures validés dans l'arbitrage de fidélité, et selon une cadence configurable durant l'utilisation. La planification ne dépend pas d'Internet ; l'absence du support externe ou l'échec de sauvegarde reste visible, sans fausse confirmation ni suppression de la dernière copie valide. Fréquence, rétention et emplacement exacts devront être validés avec l'utilisateur.
+Les déclenchements livrés concernent les enregistrements confirmés et le contrôle quotidien en session. Le support peut être local ou amovible. Un échec du support reste visible, tandis que le commit financier confirmé conserve son état. [Politique, emplacement et rotation](AUTOMATIC_BACKUPS.md)
 
 Chaque sauvegarde doit avoir date UTC, version applicative/format, identifiant du dossier et empreinte de fichier ; le manifeste ne doit pas divulguer noms de tiers, numéros de compte ou soldes. Une empreinte détecte une altération accidentelle, **elle ne chiffre pas et ne prouve pas l'authenticité à elle seule**. Rétention et destination sont visibles, aucune rotation silencieuse de la dernière copie valide. Copie sur support indépendant recommandée selon choix utilisateur.
 
-La sauvegarde manuelle utilise déjà `BackupDatabase`, compare l'intégralité du snapshot financier, registre, virements/liens, rapprochements et historique compris, puis publie le manifeste SHA-256 en dernier. La restauration vérifie taille, hash, identité, structure, clés et empreinte complète du contenu, puis rouvre la nouvelle copie. Ces parcours ont des preuves d’intégration et WPF détaillées dans le README ; la mission 8 n’étend pas cette sauvegarde au cache public ou aux préférences. Le manifeste actuel n'est ni chiffré ni signé ; la date UTC propre à chaque sauvegarde et la rétention seront nécessaires avant automatisation.
+La sauvegarde manuelle et l’historique utilisent `BackupDatabase` et comparent l’intégralité du contenu financier. Le manifeste SHA-256 certifie l’archive. La restauration vérifie la taille, le SHA-256, l’identité, la structure, les clés et l’empreinte complète du contenu, puis rouvre une nouvelle copie. Le cache des cours et les préférences restent distincts du dossier financier et de ses sauvegardes.
 
 ## 8. Migration depuis BankPerfect, sans compatibilité native présumée
 

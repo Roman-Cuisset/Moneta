@@ -2,13 +2,17 @@
 
 ## Portée et règle de lecture
 
-Le format financier courant utilise le **schéma 6** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le total multicomptes dans l’interface, le taux manuel, les budgets, l’échéancier, la sauvegarde automatique et la mise à jour installable restent ouverts.
+Le format financier courant utilise le **schéma 6** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le total multicomptes dans l’interface, le taux manuel, les budgets, l’échéancier et la mise à jour installable restent ouverts.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
 **Priorités :** P0 = préalable bloquant / protection des données ; P1 = parcours central ; P2 = complétude fonctionnelle et qualification. Une priorité ne supprime pas un besoin de parité. Les identifiants dans « Dépendances » désignent des résultats **acceptés**, pas simplement des tâches commencées. Chaque ligne dispose de sa validation. Un désaccord de fidélité reste ouvert jusqu'à arbitrage utilisateur explicite ; ne pas le résoudre en changeant discrètement le comportement.
 
 La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
+
+### Sauvegardes versionnées — mission 13
+
+L’automatisation locale, l’historique et la restauration vers une nouvelle copie sont livrés. Avant Alpha, exercer la récupération sur un deuxième volume physique avec plusieurs systèmes de fichiers, et observer les incidents réels d’espace disque et de permissions. La future Mission 14 doit conserver la validation indépendante du registre et des sauvegardes. [Contrat de récupération](AUTOMATIC_BACKUPS.md)
 
 ### Recherche et registre multicompte — mission 12
 

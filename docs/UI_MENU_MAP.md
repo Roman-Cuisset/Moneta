@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 13.** **Outils → Options → Sauvegardes** règle l’activation, la cadence, la destination locale et la rétention. **Fichier → Sauvegardes → Historique…** ouvre les versions du dossier en cours, avec vérification et restauration vers un nouveau fichier. Ctrl+S confirme le commit financier avant toute demande de sauvegarde. Les commandes de copie manuelle et restauration directe restent dans Fichier. [Sauvegardes automatiques](AUTOMATIC_BACKUPS.md)
+
 La mission 12 active **Édition → Rechercher** pour le focus du texte au-dessus du registre, **Affichage → Filtres avancés…** et le bouton **Filtres** pour les critères détaillés, ainsi que **Comptes → Registre de tous les comptes…**. **F7** ouvre les filtres et **Maj+F7** les efface. Les résultats offrent **Voir dans le registre** et le registre offre **Retour aux résultats**. Les filtres nommés et Ctrl+F restent des références historiques. [Recherche et filtres](SEARCH_AND_FILTERS.md)
 
 La mission 11 livre **Comptes → Propriétés du compte…**, **Archiver le compte…**, **Réactiver le compte…**, **Monter**, **Descendre** et **Supprimer le compte vierge…**. Les actions sont aussi accessibles au clic droit dans la liste de gauche. La case d’affichage des archives contrôle la liste et le sélecteur de la barre d’outils. Les raccourcis en service sont conservés. [Commandes et comportement](ACCOUNT_MANAGEMENT.md)
@@ -49,7 +51,7 @@ La cartographie cible s’appuie sur le manuel et la capture privée de mission 
 |---|---|---|---|---|---|---|---|
 | CMD-001 | Créer un nouveau fichier de comptes | **Comptes** > Créer un nouveau fichier de comptes, pas Fichier d'après M02 | Ctrl+N | SCREEN-004, SCREEN-003 | BP demande nom et solde initial ; Moneta crée un dossier natif `.moneta`, pas un `.bp` | P0 | M02/M18 ; adaptation MON |
 | CMD-002 | Ouvrir | Fichier > Ouvrir | Ctrl+O | SCREEN-004, SCREEN-050 | Même entrée Moneta pour `.moneta` et `.bp` ; branchement détaillé ci-dessous | P0 | M02/M18 ; décision MON |
-| CMD-003 | Enregistrer | Fichier > Enregistrer | Ctrl+S | SCREEN-001, SCREEN-004, SCREEN-011 | **Réalisé** : commit SQLite transactionnel des comptes/référentiels, opérations, virements/liens et rapprochements après validation ; brouillons avant Save ; l’ancienne sauvegarde automatique BP selon options reste non reproduite | P0 | M02/M06/M18 ; MON |
+| CMD-003 | Enregistrer | Fichier > Enregistrer | Ctrl+S | SCREEN-001, SCREEN-004, SCREEN-011 | **Réalisé.** Commit SQLite après validation. Sauvegarde après enregistrement selon la politique Moneta | P0 | M02/M06/M18 ; MON |
 | CMD-004 | Enregistrer sous | Groupe exact à relever ; Fichier non garanti par M18 seul | F12 | SCREEN-004 | **Réalisé dans Fichier** : nouvelle destination exclusive, même UUID de dossier, original intact ; emplacement historique BP non prouvé | P0 | M18 ; MON pour protection BP |
 | CMD-005 | Imprimer | Menu exact inconnu | Ctrl+P | SCREEN-054 | Périmètre et dialogue natif à capturer, ne pas assimiler à l'export | P1 | M18 ; ? |
 | CMD-006 | Fermer le dossier courant | Emplacement inconnu | — | SCREEN-004 | M02 décrit proposition d'enregistrer les modifications ou option automatique ; libellé exact inconnu | P0 | M02 ; ? |
@@ -149,7 +151,7 @@ La cartographie cible s’appuie sur le manuel et la capture privée de mission 
 | CMD-076 | Cacher / afficher les lignes inutiles | Affichage | Ctrl+H | SCREEN-001 | Deux règles de frontière contradictoires M03/M04 ; masque sans supprimer | P0 | M03/M04/M18 ; ? |
 | CMD-077 | Trier le tableau | Tableau, accès exact à relever | — | SCREEN-001 | Colonne/sens mémorisables par option ; geste sur en-tête non confirmé ici | P0 | M17 ; ? |
 | CMD-078 | Afficher monnaie principale / secondaire | BP : deux boutons de barre d’outils ; Moneta : sélecteur **Devise d’affichage** près du solde actuel | — | SCREEN-001, SCREEN-046 | **Réalisé mission 8 selon convention MON** : natif réel + estimation, source/date d’effet/récupération/cache, cours absent explicite ; aucune réécriture ni modification de l’état du dossier | P1 | M15 ; MON pour sélecteur/valorisation |
-| CMD-079 | Options | Outils > Options | — | SCREEN-040 | **Opérationnel Moneta** : cinq rubriques, dont **Devises et taux** pour source/option automatique au prochain lancement, désactivée par défaut ; mise à jour préférence seule, sauvegardes manuelles | P0 | M17 ; rubriques MON distinctes |
+| CMD-079 | Options | Outils > Options | — | SCREEN-040 | **Opérationnel Moneta.** Cinq rubriques, dont **Devises et taux** et **Sauvegardes** avec activation explicite | P0 | M17 ; rubriques MON distinctes |
 | CMD-080 | Configurer soldes filtrés, saisie et pointage | Onglet Général de SCREEN-040 | — | SCREEN-040 | Ignorer filtre pour solde, séparé, autocomplete, deux états, décimales, centimes, tri/filtres mémorisés, nombre d'annulations | P0 | M17 |
 | CMD-081 | Configurer sauvegardes | Onglet Sauvegarde de SCREEN-040 | — | SCREEN-040, SCREEN-041 | Fermeture automatique, répertoires, externe ; champs réseau historiques à ne pas renseigner avec secrets | P0 | M17 |
 | CMD-082 | Configurer dates, colonnes de montants et infobulles | Onglet Affichage de SCREEN-040 | — | SCREEN-040 | Une/deux/trois colonnes, format date, infobulles | P0 | M17 |
