@@ -1,5 +1,7 @@
 # Sauvegardes automatiques et récupération
 
+La mission 14 étend le contrôle du contenu au schéma 7. La sauvegarde certifie les programmations, les suspensions, les reports, les décisions finales et leurs liens avec le registre. Elle prend l’état enregistré lors du même commit que l’écriture ou le virement. La restauration vérifie l’ensemble dans une nouvelle copie et préserve les identifiants qui empêchent un deuxième traitement. Le manifeste garde sa version 1 et les certificats des anciens schémas gardent leur algorithme d’origine. [Échéancier](SCHEDULED_TRANSACTIONS.md)
+
 ## Choisir la politique
 
 Dans **Outils → Options → Sauvegardes**, activer les sauvegardes et choisir **Après un enregistrement réussi**, **Chaque jour où le dossier est ouvert**, ou les deux. Les sauvegardes automatiques sont désactivées au départ. Les deux déclenchements sont proposés, avec 30 minutes entre deux publications après Ctrl+S et 10 versions par dossier. L’intervalle est réglable de 1 à 1 440 minutes et la rétention de 1 à 100 versions. Les préférences utilisent le format JSON 3. Les anciens fichiers d’options conservent leurs réglages et reviennent aux valeurs de sauvegarde par défaut.

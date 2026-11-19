@@ -2,7 +2,7 @@
 
 ## Portée et règle de lecture
 
-Le format financier courant utilise le **schéma 6** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le total multicomptes dans l’interface, le taux manuel, les budgets, l’échéancier et la mise à jour installable restent ouverts.
+Le format financier courant utilise le **schéma 7** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le total multicomptes dans l’interface, le taux manuel, les budgets et la mise à jour installable restent ouverts.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
@@ -10,9 +10,20 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Échéancier — mission 14
+
+Les programmations de recette, dépense et virement, les retards, les reports et le journal de décisions sont intégrés au schéma 7. La confirmation suivie de Ctrl+S utilise la transaction du registre. [Échéancier](SCHEDULED_TRANSACTIONS.md)
+
+### Missions 15 à 18 — exigences restantes pour l’Alpha 0.1.0
+
+- **Mission 15 — Cours historiques.** Valoriser chaque flux au cours officiel applicable à la date de l’opération et les soldes au cours applicable à la date d’arrêté. Conserver la date, la source, les références et les unités de cotation pour reproduire le résultat. Toute valorisation future relève d’une méthode prévisionnelle explicite. Une donnée absente doit rester identifiable.
+- **Mission 16 — Budgets et rapports.** Distinguer le réalisé et le prévisionnel, en devise native ou selon les règles de valorisation validées. Conserver la date de chaque dépense pour sa conversion et éviter le double comptage des virements.
+- **Mission 17 — Installation et mises à jour Windows.** Préserver les dossiers et préférences lors d’une mise à jour. Activer la recherche de mise à jour par défaut, avec désactivation dans les paramètres. Signaler une nouvelle version au démarrage, afficher **Quoi de neuf**, puis proposer **Télécharger et installer** depuis Moneta. Vérifier l’authenticité de la mise à jour avant installation.
+- **Mission 18 — Qualification et publication de l’Alpha.** Tester l’installation, les mises à jour, la récupération et les scénarios financiers. Auditer l’historique Git et les livrables avant d’ouvrir le dépôt, uniquement au moment de publier l’Alpha 0.1.0.
+
 ### Sauvegardes versionnées — mission 13
 
-L’automatisation locale, l’historique et la restauration vers une nouvelle copie sont livrés. Avant Alpha, exercer la récupération sur un deuxième volume physique avec plusieurs systèmes de fichiers, et observer les incidents réels d’espace disque et de permissions. La future Mission 14 doit conserver la validation indépendante du registre et des sauvegardes. [Contrat de récupération](AUTOMATIC_BACKUPS.md)
+L’automatisation locale, l’historique et la restauration vers une nouvelle copie sont livrés. Avant Alpha, exercer la récupération sur un deuxième volume physique avec plusieurs systèmes de fichiers, et observer les incidents réels d’espace disque et de permissions. [Contrat de récupération](AUTOMATIC_BACKUPS.md)
 
 ### Recherche et registre multicompte — mission 12
 

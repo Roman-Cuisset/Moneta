@@ -2,6 +2,8 @@
 
 ## Statut et limites de cette étude
 
+La mission 14 ajoute un calendrier local et un journal de décisions à l’instantané financier. `ScheduleRule` calcule à partir d’une date d’ancrage. `ScheduleCalendar` compte par bornes et fusionne les suites pour produire des pages. `MainViewModel.Scheduling` prépare l’occurrence par les chemins de saisie et de virement existants. `MonetaFile.Scheduling` écrit programmation, décision et liens dans la transaction du registre. Les sauvegardes vérifient aussi les règles et l’historique. [Échéancier](SCHEDULED_TRANSACTIONS.md)
+
 La mission 13 sépare le commit financier de la sauvegarde versionnée. `MainWindow.Backups` coordonne les demandes sur le dernier instantané enregistré. `BackupLibrary` applique la politique locale et publie des générations avec verrou d’accès. `MonetaBackup` fournit à la sauvegarde manuelle et aux générations le même instantané SQLite, le même manifeste et la vérification complète. La restauration ouvre un nouveau fichier. [Sauvegardes automatiques](AUTOMATIC_BACKUPS.md)
 
 La mission 12 sépare le registre chronologique de la consultation filtrée. `LedgerSearchCriteria` valide les critères côté Core. `MonetaFile.SearchOperations` utilise une nouvelle connexion SQLite en lecture seule et un instantané commun au compte de résultats et à sa page. Seules la page demandée et les métadonnées de comptage sont retournées. `LedgerSearchWindow` exécute les requêtes hors du thread d’interface, annule les demandes remplacées et conserve le contexte en mémoire. La recherche renvoie le couple UUID de compte et UUID d’opération. `MainViewModel` charge la page originale en tenant compte des brouillons, puis publie la sélection validée. [Recherche et filtres](SEARCH_AND_FILTERS.md)

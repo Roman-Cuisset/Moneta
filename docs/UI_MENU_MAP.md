@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 14.** **Comptes → Échéancier…**, le bouton **Échéancier** et **Ctrl+E** ouvrent les onglets Occurrences, Programmations et Historique. Le bouton affiche le nombre d’échéances à traiter. L’utilisateur peut préparer une occurrence depuis son formulaire de confirmation et enregistrer depuis l’échéancier avec **Ctrl+S**. [Échéancier et raccourcis](SCHEDULED_TRANSACTIONS.md)
+
 **Mission 13.** **Outils → Options → Sauvegardes** règle l’activation, la cadence, la destination locale et la rétention. **Fichier → Sauvegardes → Historique…** ouvre les versions du dossier en cours, avec vérification et restauration vers un nouveau fichier. Ctrl+S confirme le commit financier avant toute demande de sauvegarde. Les commandes de copie manuelle et restauration directe restent dans Fichier. [Sauvegardes automatiques](AUTOMATIC_BACKUPS.md)
 
 La mission 12 active **Édition → Rechercher** pour le focus du texte au-dessus du registre, **Affichage → Filtres avancés…** et le bouton **Filtres** pour les critères détaillés, ainsi que **Comptes → Registre de tous les comptes…**. **F7** ouvre les filtres et **Maj+F7** les efface. Les résultats offrent **Voir dans le registre** et le registre offre **Retour aux résultats**. Les filtres nommés et Ctrl+F restent des références historiques. [Recherche et filtres](SEARCH_AND_FILTERS.md)
@@ -22,7 +24,7 @@ La cartographie cible s’appuie sur le manuel et la capture privée de mission 
 
 ### Présentation Moneta — historique jusqu’à la mission 8
 
-- Barre d'outils : emplacement du dossier/compte, Comptes (ajout), Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, **Virement**. Comptes/Ouvrir/Enregistrer, Virement et la sélection sont opérationnels ; les autres outils restent explicitement désactivés, avec débordement en fenêtre étroite. Le bouton Virement reprend l’emplacement transfert existant, sans nouvelle barre.
+- Barre d'outils : emplacement du dossier/compte, Comptes (ajout), Ouvrir, Enregistrer, Annuler, Refaire, Verrouiller, Budget, Totaux, Graphiques, Filtres, Échéancier, **Virement**. Comptes/Ouvrir/Enregistrer, Virement, Filtres, Échéancier et la sélection sont opérationnels, avec débordement en fenêtre étroite. Le bouton Virement reprend l’emplacement transfert existant, sans nouvelle barre.
 - Les sous-menus et indications de touches documentés sont conservés, sans activer des raccourcis financiers inexistants. Quitter sous Fichier et À propos sous ? restent des décisions Moneta, pas des observations de menus ouverts BankPerfect.
 - Mission 5 : **Affichage → Thème → Clair / Sombre**, sélecteur supérieur supprimé, préférence locale conservée et contraste Windows prioritaire. **Outils → Options** opérationnel ; les thèmes restent la seule préférence visuelle.
 - Mission 6 : **Fichier → Nouveau dossier / Ouvrir / Enregistrer / Enregistrer sous / Sauvegarder le dossier / Restaurer une sauvegarde / Mode démonstration**, et **Comptes → Ajouter un compte**. Dossiers `.moneta` persistants limités aux comptes/devises/métadonnées ; édition/suppression de compte et opérations persistantes non réalisées.
