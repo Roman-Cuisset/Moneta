@@ -231,10 +231,11 @@ public sealed class AccountManagementTests
             provenance = initial.ReadBankPerfectProvenance()!;
         }
         Execute(FileName, """
+            DROP TABLE ScheduleDecisions; DROP TABLE SchedulePlans;
             ALTER TABLE Accounts DROP COLUMN holder;
             ALTER TABLE Accounts DROP COLUMN bank_reference;
             ALTER TABLE Accounts DROP COLUMN bank_name;
-            UPDATE Document SET schema_version=5,min_reader=5,min_writer=5;
+            UPDATE Document SET schema_version=5,min_reader=5,min_writer=5,creator_version='Moneta-6';
             PRAGMA user_version=5;
             UPDATE MigrationHistory SET version=5,migration_id='create-v5',definition='native-accounts-v5+bankperfect-v1';
             """);

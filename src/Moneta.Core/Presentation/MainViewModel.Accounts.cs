@@ -72,6 +72,8 @@ public sealed partial class MainViewModel
     public void ValidateAccountDeletion(Guid id)
     {
         var account = ManagedAccount(id).Account;
+        if (ScheduleUsesAccount(id))
+            throw new InvalidOperationException("Ce compte est utilisé par l’échéancier. Archivez-le pour conserver ses références.");
         var persisted = _document!.Accounts.Any(item => item.Id == id);
         if (account.OpeningBalance != 0 || HasAccountDrafts(id) ||
             (persisted && (_source is not IAccountHistorySource history || history.HasAccountHistory(id))))

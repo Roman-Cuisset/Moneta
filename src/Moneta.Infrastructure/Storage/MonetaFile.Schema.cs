@@ -62,7 +62,8 @@ public sealed partial class MonetaFile
     {
         if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, "Schéma inconnu.");
         return string.Join(";\n", DocumentSql, CurrenciesSql, AccountsSql(version), HistorySql) + ";" +
-            (version >= 4 ? LedgerSchemaSql4 : version == 3 ? LedgerSchemaSql : "") + (version >= 5 ? TransferSchemaSql : "");
+            (version >= 4 ? LedgerSchemaSql4 : version == 3 ? LedgerSchemaSql : "") + (version >= 5 ? TransferSchemaSql : "") +
+            (version >= 7 ? SchedulingSql : "");
     }
 
     internal static FinancialDocument ReadValidated(SqliteConnection connection, bool allowVersion1 = false)
@@ -109,7 +110,9 @@ public sealed partial class MonetaFile
             command.Transaction = transaction;
             command.CommandText = "SELECT singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id FROM Document;";
             using var reader = command.ExecuteReader();
-            if (!reader.Read() || reader.GetInt64(0) != 1 || reader.GetString(1) != "Moneta" || reader.GetInt64(4) != version || reader.GetInt64(5) != version || reader.GetInt64(6) != version || reader.GetString(7) != "Moneta-6")
+            if (!reader.Read() || reader.GetInt64(0) != 1 || reader.GetString(1) != "Moneta" || reader.GetInt64(4) != version ||
+                reader.GetInt64(5) != version || reader.GetInt64(6) != version ||
+                (reader.GetString(7) != "Moneta-6" && !(version >= 7 && reader.GetString(7) == "Moneta-7")))
                 throw Error(DocumentError.InvalidFormat, "Métadonnées Moneta incohérentes.");
             id = ReadGuid(reader.GetString(2));
             name = reader.GetString(3);
@@ -170,6 +173,7 @@ public sealed partial class MonetaFile
         if (version >= 3) document = ReadLedgerMetadata(connection, document, transaction);
         if (hasProvenance)
             document = document with { BankPerfectProvenanceHash = VerifyBankPerfectProvenance(connection, transaction) };
+        if (version >= 7) document = ReadSchedule(connection, document, transaction);
         if (version < CurrentSchemaVersion && !allowVersion1) throw Error(DocumentError.MigrationRequired, "Ce dossier doit être migré sur une nouvelle copie avec consentement.");
         return Freeze(document);
     }
@@ -215,6 +219,7 @@ public sealed partial class MonetaFile
         var declaredIndexes = version >= 3 ? new Dictionary<string, (string Table, string Sql)>(LedgerIndexes, StringComparer.Ordinal) : new Dictionary<string, (string Table, string Sql)>();
         if (version >= 4)
             foreach (var entry in ReconciliationIndexes) declaredIndexes.Add(entry.Key, entry.Value);
+        if (version >= 7) AddScheduleSchema(expected, indexes, declaredIndexes);
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = "SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY name;";
@@ -264,7 +269,8 @@ public sealed partial class MonetaFile
         try
         {
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is >= 1 and <= 5)) throw new ArgumentException("Version du snapshot invalide.");
+            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is >= 1 and <= 6)) throw new ArgumentException("Version du snapshot invalide.");
+            if (snapshot.SchemaVersion >= 7) ValidateSchedule(snapshot);
             if (snapshot.Id == Guid.Empty) throw new ArgumentException("Identifiant du dossier vide.");
             ValidateText(snapshot.Name, true);
             ValidateTimes(snapshot.CreatedUtc, snapshot.ModifiedUtc);
@@ -381,6 +387,12 @@ public sealed partial class MonetaFile
                 throw Error(DocumentError.Corrupt, "Historique des propriétés de comptes incomplet.");
             _ = ReadTimestamp(reader.GetString(4));
         }
+        if (first <= 6 && version >= 7)
+        {
+            if (!reader.Read() || reader.GetInt64(0) != 7 || reader.GetInt64(1) != 6 || reader.GetString(2) != "v6-to-v7-schedule" || reader.GetString(3) != "schedule-and-decisions-v7")
+                throw Error(DocumentError.Corrupt, "Historique de migration de l’échéancier incomplet.");
+            _ = ReadTimestamp(reader.GetString(4));
+        }
         if (reader.Read()) throw Error(DocumentError.Corrupt, "Migration inconnue.");
     }
 
@@ -413,7 +425,7 @@ public sealed partial class MonetaFile
         using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
-            command.CommandText = "INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id) VALUES(1,'Moneta',$id,$name,$version,$version,$version,'Moneta-6',$created,$modified,$selected) ON CONFLICT(singleton) DO UPDATE SET name=excluded.name,modified_utc=excluded.modified_utc,selected_account_id=excluded.selected_account_id;";
+            command.CommandText = "INSERT INTO Document(singleton,format,document_id,name,schema_version,min_reader,min_writer,creator_version,created_utc,modified_utc,selected_account_id) VALUES(1,'Moneta',$id,$name,$version,$version,$version,'Moneta-7',$created,$modified,$selected) ON CONFLICT(singleton) DO UPDATE SET name=excluded.name,modified_utc=excluded.modified_utc,selected_account_id=excluded.selected_account_id;";
             command.Parameters.AddWithValue("$version", CurrentSchemaVersion);
             command.Parameters.AddWithValue("$id", snapshot.Id.ToString("D"));
             command.Parameters.AddWithValue("$name", snapshot.Name);

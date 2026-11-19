@@ -59,6 +59,7 @@ public partial class MainWindow : Window
         ApplyRateState();
         IsEnabled = !_busy && !_stopBackupRequests;
         UpdateBackupContext();
+        RefreshScheduleReminder();
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -128,14 +129,14 @@ public partial class MainWindow : Window
         CheckPathExists = true, FileName = fileName
     };
 
-    private async Task<bool> SaveAsync(bool saveAs = false)
+    private async Task<bool> SaveAsync(bool saveAs = false, Window? dialogOwner = null)
     {
         if (!_workspace.CanSave) return false;
         string? path = null;
         if (saveAs || _workspace.FilePath is null)
         {
             var dialog = Destination(saveAs ? "Enregistrer sous" : "Enregistrer le dossier");
-            if (dialog.ShowDialog(this) != true) return false;
+            if (dialog.ShowDialog(dialogOwner ?? this) != true) return false;
             path = dialog.FileName;
         }
         var saved = await RunIo(() => _workspace.Save(path), "Enregistrement…");
@@ -176,7 +177,7 @@ public partial class MainWindow : Window
             catch (DocumentException error) when (error.Error == DocumentError.MigrationRequired) { migration = true; }
         }, "Vérification et ouverture…");
         if (!migration) return;
-        if (MessageBox.Show(this, "Ce dossier utilise une ancienne version de schéma connue. Moneta peut créer une copie migrée et vérifiée. L’original restera inchangé. Continuer ?", "Moneta — migration sur copie", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(this, "Moneta peut ouvrir une copie migrée et vérifiée. Une sauvegarde certifiée « avant-migration » sera créée au même emplacement que la nouvelle copie. L’original est conservé. Continuer ?", "Moneta — migration sur copie", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         var target = Destination("Copie migrée", "Dossier migré.moneta");
         if (target.ShowDialog(this) == true)
             await RunIo(() => _workspace.OpenMigratedCopy(dialog.FileName, target.FileName), "Migration sur une nouvelle copie…");

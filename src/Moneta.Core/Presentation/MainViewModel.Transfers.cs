@@ -111,6 +111,7 @@ public sealed partial class MainViewModel
 
     private TransferDetails EditableTransfer(Guid id, long revision)
     {
+        ProtectScheduledDraft(id, transfer: true);
         var details = GetTransfer(id);
         if (details.Value.IsDeleted) throw new InvalidOperationException("Ce virement est supprimé.");
         if (details.Value.Revision != revision)

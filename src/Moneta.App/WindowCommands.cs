@@ -6,6 +6,8 @@ public static class WindowCommands
 {
     public static RoutedUICommand About { get; } = new("À propos de Moneta", nameof(About), typeof(WindowCommands));
     public static RoutedUICommand Settings { get; } = new("Paramètres", nameof(Settings), typeof(WindowCommands));
+    public static RoutedUICommand Schedule { get; } = new("Échéancier", nameof(Schedule), typeof(WindowCommands),
+        [new KeyGesture(Key.E, ModifierKeys.Control)]);
     public static RoutedUICommand AddAccount { get; } = new("Ajouter un compte", nameof(AddAccount), typeof(WindowCommands));
     public static RoutedUICommand AccountProperties { get; } = new("Propriétés du compte", nameof(AccountProperties), typeof(WindowCommands));
     public static RoutedUICommand ArchiveAccount { get; } = new("Archiver le compte", nameof(ArchiveAccount), typeof(WindowCommands));

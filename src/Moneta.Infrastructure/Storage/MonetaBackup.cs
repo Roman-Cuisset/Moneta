@@ -40,7 +40,7 @@ public static class MonetaBackup
     }, "Création de la sauvegarde impossible.");
 
     private static BackupResult CreateCore(SqliteConnection source, FinancialDocument snapshot, string destination,
-        CancellationToken cancellation, Action<BackupPhase>? phase)
+        CancellationToken cancellation, Action<BackupPhase>? phase, bool allowLegacy = false)
     {
         var target = NewDestination(destination, requireManifest: true);
         string? temporary = null;
@@ -50,11 +50,11 @@ public static class MonetaBackup
             phase?.Invoke(BackupPhase.Capture);
             cancellation.ThrowIfCancellationRequested();
             var expected = Digest(snapshot);
-            var live = MonetaFile.ReadValidated(source);
+            var live = MonetaFile.ReadValidated(source, allowLegacy);
             RequireEqual(expected, Digest(live), "Le dossier actif a changé depuis son ouverture ou sa dernière sauvegarde.");
             cancellation.ThrowIfCancellationRequested();
             temporary = ReserveTemporary(target);
-            var copied = CopyDatabase(source, temporary, beforeVerification: () =>
+            var copied = CopyDatabase(source, temporary, allowLegacy, beforeVerification: () =>
             {
                 phase?.Invoke(BackupPhase.Verification);
                 cancellation.ThrowIfCancellationRequested();
@@ -136,7 +136,7 @@ public static class MonetaBackup
         finally { DeleteTemporary(temporary); }
     }, "Restauration de la sauvegarde impossible.");
 
-    public static MonetaFile Migrate(string source, string destination) => Execute(() =>
+    public static MonetaFile Migrate(string source, string destination, string? preMigrationBackup = null) => Execute(() =>
     {
         var target = NewDestination(destination, requireManifest: false);
         var sourcePath = ExistingPath(source);
@@ -151,6 +151,8 @@ public static class MonetaBackup
                 var original = MonetaFile.ReadValidated(connection, allowVersion1: true);
                 if (original.SchemaVersion is < 1 or >= MonetaFile.CurrentSchemaVersion)
                     throw new DocumentException(DocumentError.InvalidData, "Le dossier ne nécessite pas de migration par copie.");
+                if (preMigrationBackup is not null)
+                    _ = CreateCore(connection, original, preMigrationBackup, default, null, allowLegacy: true);
                 temporary = ReserveTemporary(target);
                 var copied = CopyDatabase(connection, temporary, allowLegacy: true);
                 RequireEqual(Digest(original), Digest(copied), "La copie avant migration diffère du dossier source.");
@@ -202,7 +204,8 @@ public static class MonetaBackup
         if (original.SchemaVersion <= 2) MonetaFile.UpgradeV2(connection);
         if (original.SchemaVersion <= 3) MonetaFile.UpgradeV3(connection);
         if (original.SchemaVersion <= 4) MonetaFile.UpgradeV4(connection);
-        MonetaFile.UpgradeV5(connection);
+        if (original.SchemaVersion <= 5) MonetaFile.UpgradeV5(connection);
+        MonetaFile.UpgradeV6(connection);
         var upgraded = MonetaFile.ReadValidated(connection);
         // Compare historical ledgers through their original canonical projection;
         // newer digests additionally certify reconciliation history and transfer links.
@@ -399,6 +402,13 @@ public static class MonetaBackup
                 writer.WriteNumber("transferCount", snapshot.TransferCount);
             if (snapshot.BankPerfectProvenanceHash is { } provenance)
                 writer.WriteString("bankPerfectProvenance", provenance);
+            if (snapshot.SchemaVersion >= 7)
+            {
+                writer.WritePropertyName("schedules");
+                JsonSerializer.Serialize(writer, snapshot.Schedules.OrderBy(value => value.Id));
+                writer.WritePropertyName("scheduleHistory");
+                JsonSerializer.Serialize(writer, snapshot.ScheduleHistory.OrderBy(value => (value.PlanId, value.Number, value.Step)));
+            }
             writer.WriteEndObject();
         }
         return Convert.ToHexString(SHA256.HashData(buffer.GetBuffer().AsSpan(0, checked((int)buffer.Length))));

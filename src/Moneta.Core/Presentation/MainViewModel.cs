@@ -92,6 +92,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     {
         ArgumentNullException.ThrowIfNull(document);
         _document = document;
+        _savedScheduleState = document;
         FinancialRules.ValidateCatalog(document);
         _source = source;
         CurrencyRegistry = new CurrencyRegistry(document.Currencies);
@@ -153,6 +154,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         FinancialRules.ValidateCatalog(snapshot);
         // SQL has already committed. A refresh error must not resurrect committed drafts.
         _document = snapshot;
+        _savedScheduleState = snapshot;
         _pending.Clear();
         _pendingTransfers.Clear();
         _pendingReconciliations = ReconciliationBatch.Empty;
@@ -180,6 +182,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
             PropertyChanged?.Invoke(this, DirtyChanged);
         }
         NotifyReconciliationChanged();
+        NotifySchedules();
     }
 
     public void SetLedgerSource(ILedgerSource? source)
@@ -259,6 +262,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     private Transaction FindEditable(Guid id, long revision, Account account)
     {
+        ProtectScheduledDraft(id, transfer: false);
         var value = _pending.TryGetValue(id, out var change) ? change.Value
             : _rows.FirstOrDefault(row => row.Transaction.Id == id)?.Transaction;
         if (value is null || value.AccountId != account.Id || value.IsDeleted)
@@ -275,11 +279,21 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         var proposed = new Dictionary<Guid, TransactionChange>(_pending);
         if (removeId is { } removed) proposed.Remove(removed);
         if (change is not null) proposed[change.Value.Id] = change;
-        var page = ReadPage(_selectedAccount!.Account, _pageOffset, proposed.Values.ToArray(), anchorId);
+        var pending = proposed.Values.ToArray();
+        var selected = _selectedAccount ?? _ledgers[change!.Value.AccountId].Summary;
+        LedgerPage? affected = null;
+        if (change is not null && change.Value.AccountId != selected.Account.Id)
+        {
+            affected = ReadPage(_ledgers[change.Value.AccountId].Summary.Account, 0, pending);
+            anchorId = _selectedRow?.Transaction.Id;
+        }
+        var page = ReadPage(selected.Account, _pageOffset, pending, anchorId);
         var rows = BuildRows(page);
         // Publish only after validation, source reads and exact progressive balances succeeded.
         _document = metadata;
         _pending = proposed;
+        if (affected is not null) _ledgers[change!.Value.AccountId].Summary.UpdateBalance(affected.AccountBalance);
+        SelectAccount(selected, page, rows);
         ApplyPage(page, rows, anchorId);
         SetLedgerError(string.Empty);
         MarkDirty();

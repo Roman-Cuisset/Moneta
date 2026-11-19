@@ -32,7 +32,9 @@ public sealed class DocumentWorkspace : IDisposable
 
     public void OpenMigratedCopy(string source, string destination)
     {
-        var candidate = MonetaBackup.Migrate(source, destination);
+        var target = Path.GetFullPath(destination);
+        var recovery = Path.Combine(Path.GetDirectoryName(target)!, Path.GetFileNameWithoutExtension(target) + ".avant-migration.moneta");
+        var candidate = MonetaBackup.Migrate(source, target, recovery);
         try { Replace(CreateModel(candidate), candidate); }
         catch { candidate.Dispose(); throw; }
     }

@@ -8,7 +8,9 @@ public sealed record FinancialDocument(
     IReadOnlyList<Currency> Currencies,
     IReadOnlyList<Account> Accounts)
 {
-    public int SchemaVersion { get; init; } = 6;
+    public int SchemaVersion { get; init; } = 7;
+    public IReadOnlyList<SchedulePlan> Schedules { get; init; } = Array.Empty<SchedulePlan>();
+    public IReadOnlyList<ScheduleDecision> ScheduleHistory { get; init; } = Array.Empty<ScheduleDecision>();
     public Guid? SelectedAccountId { get; init; }
     public IReadOnlyList<LedgerCategory> Categories { get; init; } = Array.Empty<LedgerCategory>();
     public IReadOnlyList<LedgerPayee> Payees { get; init; } = Array.Empty<LedgerPayee>();

@@ -1,0 +1,65 @@
+<Window x:Class="Moneta.App.ScheduleEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Échéance — Moneta"
+        Width="600" Height="720" MinWidth="440" MinHeight="430" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="Heading" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,8,0">
+                <Label Content="_Type" Target="{Binding ElementName=Kind}"/>
+                <ComboBox x:Name="Kind" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Type d’échéance"/>
+                <Label Content="_Libellé" Target="{Binding ElementName=LabelText}"/>
+                <TextBox x:Name="LabelText" MaxLength="240" AutomationProperties.Name="Libellé"/>
+                <Label Content="_Compte" Target="{Binding ElementName=Source}"/>
+                <ComboBox x:Name="Source" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Compte ou compte débité"/>
+                <Label x:Name="SourceLabel" Content="_Montant" Target="{Binding ElementName=Amount}"/>
+                <TextBox x:Name="Amount" MaxLength="50" AutomationProperties.Name="Montant du compte source"/>
+                <StackPanel x:Name="OrdinaryFields">
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,8,0"><Label Content="_Tiers"/><TextBox x:Name="Payee" MaxLength="120" AutomationProperties.Name="Tiers"/></StackPanel>
+                        <StackPanel><Label Content="Mode de paiement"/><TextBox x:Name="Method" MaxLength="120" AutomationProperties.Name="Mode de paiement"/></StackPanel>
+                        <StackPanel Margin="0,0,8,0"><Label Content="Catégorie"/><TextBox x:Name="Category" MaxLength="120" AutomationProperties.Name="Catégorie"/></StackPanel>
+                        <StackPanel><Label Content="Sous-catégorie"/><TextBox x:Name="Subcategory" MaxLength="120" AutomationProperties.Name="Sous-catégorie"/></StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+                <StackPanel x:Name="TransferFields" Visibility="Collapsed">
+                    <Label Content="Compte _destinataire" Target="{Binding ElementName=Destination}"/>
+                    <ComboBox x:Name="Destination" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Compte destinataire"/>
+                    <Label x:Name="ReceivedLabel" Content="Montant reçu" Target="{Binding ElementName=Received}"/>
+                    <TextBox x:Name="Received" MaxLength="50" AutomationProperties.Name="Montant reçu"/>
+                    <TextBlock x:Name="RateNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,6"/>
+                    <StackPanel x:Name="RateFields" Visibility="Collapsed">
+                        <Label Content="Provenance du taux (facultative)"/>
+                        <TextBox x:Name="RateSource" MaxLength="120" AutomationProperties.Name="Provenance du taux effectif"/>
+                    </StackPanel>
+                    <Label Content="Compte des frais"/>
+                    <ComboBox x:Name="FeeAccount" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Compte des frais"/>
+                    <Label x:Name="FeeLabel" Content="Montant des frais"/>
+                    <TextBox x:Name="Fee" MaxLength="50" AutomationProperties.Name="Montant des frais"/>
+                </StackPanel>
+                <UniformGrid Columns="2">
+                    <StackPanel Margin="0,0,8,0"><Label x:Name="StartLabel" Content="Première date (jj/mm/aaaa)"/><TextBox x:Name="Start" MaxLength="10" AutomationProperties.Name="Date de l’échéance"/></StackPanel>
+                    <StackPanel x:Name="EndFields"><Label Content="Date de fin facultative"/><TextBox x:Name="End" MaxLength="10" AutomationProperties.Name="Date de fin facultative"/></StackPanel>
+                </UniformGrid>
+                <StackPanel x:Name="FrequencyFields">
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,8,0"><Label Content="Périodicité"/><ComboBox x:Name="Unit" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Périodicité"/></StackPanel>
+                        <StackPanel><Label Content="Intervalle"/><TextBox x:Name="Interval" MaxLength="3" AutomationProperties.Name="Intervalle de répétition"/></StackPanel>
+                    </UniformGrid>
+                    <CheckBox x:Name="LastDay" Content="Dernier jour du mois" Margin="0,6,0,0"/>
+                </StackPanel>
+                <Label Content="_Notes" Target="{Binding ElementName=Notes}"/>
+                <TextBox x:Name="Notes" MaxLength="2000" AcceptsReturn="True" MinHeight="58" TextWrapping="Wrap" AutomationProperties.Name="Notes de l’échéance"/>
+            </StackPanel>
+        </ScrollViewer>
+        <DockPanel Grid.Row="2" Margin="0,12,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="Annuler" IsCancel="True" Margin="8,0"/>
+                <Button x:Name="Accept" Content="Appliquer" IsDefault="True" Click="Accept_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="ErrorText" TextWrapping="Wrap" VerticalAlignment="Center"
+                       Foreground="{DynamicResource NegativeBrush}" AutomationProperties.LiveSetting="Polite"/>
+        </DockPanel>
+    </Grid>
+</Window>

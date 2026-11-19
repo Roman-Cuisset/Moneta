@@ -25,6 +25,7 @@
         <CommandBinding Command="{x:Static local:WindowCommands.SaveAs}" Executed="SaveAs_Executed" CanExecute="Save_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Backup}" Executed="Backup_Executed" CanExecute="Backup_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.BackupHistory}" Executed="BackupHistory_Executed" CanExecute="BackupHistory_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Schedule}" Executed="Schedule_Executed" CanExecute="Schedule_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Restore}" Executed="Restore_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Demo}" Executed="Demo_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Search}" Executed="Search_Executed" CanExecute="Search_CanExecute" />
@@ -163,7 +164,7 @@
                         <MenuItem Header="_Catégories…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="_Tiers…" InputGestureText="F5" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Modes de paiement…" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="_Échéancier…" InputGestureText="Ctrl+E" Style="{StaticResource UnavailableMenuItem}" /><Separator />
+                        <MenuItem Header="_Échéancier…" Command="{x:Static local:WindowCommands.Schedule}" /><Separator />
                         <MenuItem Header="Total des comptes…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Relevé multi-comptes…" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Sauvegardes…" Style="{StaticResource UnavailableMenuItem}" />
@@ -249,7 +250,7 @@
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Totaux"><StackPanel><Path Data="{StaticResource TotalsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Totaux" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Graphiques"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Graphiques" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.SearchFilters}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Échéancier"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Échéancier" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Command="{x:Static local:WindowCommands.Schedule}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Échéancier"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Échéancier" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.NewTransfer}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Virement" AutomationProperties.AutomationId="NewTransferButton" ToolTip="Virement lié dans le dossier : deux montants natifs exacts, frais séparés."><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Virement" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                 </ToolBar>
             </ToolBarTray>
@@ -320,7 +321,8 @@
                         <TextBlock Text="{Binding SelectedAccount.CurrencyCode}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,5,0,18" />
                         <DockPanel Margin="0,0,0,9"><TextBlock Text="Solde pointé" /><TextBlock Text="{Binding SelectedPointedBalanceText}" FontWeight="SemiBold" TextAlignment="Right" TextWrapping="Wrap" ToolTip="Solde initial + opérations pointées ou rapprochées, dans la devise native." AutomationProperties.AutomationId="PointedBalance" /></DockPanel>
                         <DockPanel Margin="0,0,0,9"><TextBlock Text="Non pointé" /><TextBlock Text="{Binding SelectedUnmarkedAmountText}" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Somme signée des opérations non pointées, sans le solde initial." AutomationProperties.AutomationId="UnmarkedAmount" /></DockPanel>
-                        <DockPanel Margin="0,0,0,14"><TextBlock Text="À venir" /><TextBlock Text="Indisponible" Style="{StaticResource MutedText}" TextAlignment="Right" ToolTip="Échéancier non implémenté." /></DockPanel>
+                        <Button x:Name="ScheduleReminder" Margin="0,0,0,14" Content="Échéancier"
+                                Command="{x:Static local:WindowCommands.Schedule}" AutomationProperties.LiveSetting="Polite"/>
                         <TextBlock Text="Solde actuel" Style="{StaticResource MutedText}" />
                         <Grid Margin="0,4,0,4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="64" /></Grid.ColumnDefinitions>
                             <TextBlock Text="{Binding DisplayBalanceText}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="AccountBalance" />

@@ -19,8 +19,8 @@ public sealed partial class MonetaFile
             PRAGMA user_version=6;
             """, transaction);
         InsertHistory(connection, transaction, 6, 5, "v5-to-v6-account-properties", "account-descriptions-v6");
-        var migrated = ReadWithinTransaction(connection, false, transaction);
-        VerifySnapshot(original with { SchemaVersion = CurrentSchemaVersion }, migrated);
+        var migrated = ReadWithinTransaction(connection, true, transaction);
+        VerifySnapshot(original with { SchemaVersion = 6 }, migrated);
         transaction.Commit();
     }
 
