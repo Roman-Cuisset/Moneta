@@ -11,7 +11,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,18">
-            <TextBlock Text="Paramètres" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Text="Paramètres" Style="{StaticResource WindowHeading}" />
             <TextBlock Text="Préférences locales non financières. Les changements ne sont appliqués qu'après enregistrement."
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0" />
         </StackPanel>
@@ -104,7 +104,7 @@
             </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-            <Button Content="_Enregistrer" MinWidth="120" IsDefault="True" Click="Save_Click" Margin="0,0,10,0" AutomationProperties.AutomationId="SaveSettings" />
+            <Button Content="_Enregistrer" MinWidth="120" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Save_Click" Margin="0,0,10,0" AutomationProperties.AutomationId="SaveSettings" />
             <Button Content="_Annuler" MinWidth="110" IsCancel="True" />
         </StackPanel>
     </Grid>

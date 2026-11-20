@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">Symbole Moneta</title>
+  <rect x="2" y="2" width="252" height="252" rx="63" fill="#08152B"/>
+  <path d="M102 117 L154 117 L154 211 L128 192 L102 211 Z" fill="#35D5BE"/>
+  <path d="M43 51 L128 108 L213 51 L213 198 L191 198 L191 102 L128 145 L65 102 L65 198 L43 198 Z" fill="#FFFFFF"/>
+  <path d="M72 138 L95 146 L95 155 L72 147 Z M72 160 L95 168 L95 177 L72 169 Z M184 138 L161 146 L161 155 L184 147 Z M184 160 L161 168 L161 177 L184 169 Z" fill="#FFFFFF"/>
+  <path d="M110 166 L115 161 L123 169 L141 151 L146 156 L123 179 Z" fill="#08152B"/>
+</svg>

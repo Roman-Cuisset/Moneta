@@ -12,7 +12,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,14">
-            <TextBlock x:Name="Heading" Text="Nouvelle opération" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock x:Name="Heading" Text="Nouvelle opération" Style="{StaticResource WindowHeading}" />
             <TextBlock Text="Brouillon – Enregistrer (Ctrl+S) pour écriture SQLite après validation."
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"
                        AutomationProperties.AutomationId="TransactionDraftNotice" />
@@ -98,7 +98,7 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
                 <Button x:Name="CancelTransaction" Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"
                         AutomationProperties.AutomationId="CancelTransaction" />
-                <Button x:Name="ConfirmTransaction" Content="Valider le brouillon" IsDefault="True" Click="Confirm_Click"
+                <Button x:Name="ConfirmTransaction" Content="Valider le brouillon" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Confirm_Click"
                         AutomationProperties.AutomationId="ConfirmTransaction" AutomationProperties.Name="Valider le brouillon, sans enregistrer sur disque" />
             </StackPanel>
         </StackPanel>

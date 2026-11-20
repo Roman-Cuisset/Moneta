@@ -8,6 +8,7 @@
 /exports/
 /backups/
 /screenshots-private/
+/design/moneta-logo-source.png
 *.bp
 *.bp[0-9]*
 *.bpa

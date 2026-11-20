@@ -6,8 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../../assets/branding/moneta.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Resource Include="../../assets/branding/moneta.ico" Link="Branding/moneta.ico" />
+    <Resource Include="../../assets/branding/moneta-256.png" Link="Branding/moneta-256.png" />
     <ProjectReference Include="../Moneta.Core/Moneta.Core.csproj" />
     <ProjectReference Include="../Moneta.Infrastructure/Moneta.Infrastructure.csproj" />
   </ItemGroup>

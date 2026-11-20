@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -8,6 +9,7 @@ namespace Moneta.App;
 /// <summary>Switches presentation resources without recreating windows or their view models.</summary>
 public sealed class ThemeController : IDisposable
 {
+    private static readonly ConditionalWeakTable<Window, WindowWorkArea> WorkAreas = new();
     private Application? _application;
     private ResourceDictionary? _lightPalette;
     private ResourceDictionary? _darkPalette;
@@ -134,6 +136,12 @@ public sealed class ThemeController : IDisposable
     {
         if (sender is Window window && Application.Current is App)
         {
+            _ = WorkAreas.GetValue(window, static view =>
+            {
+                var workArea = new WindowWorkArea(view);
+                workArea.Track();
+                return workArea;
+            });
             App.ThemeController.RefreshCaption(window);
         }
     }

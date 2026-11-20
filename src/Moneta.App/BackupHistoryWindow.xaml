@@ -8,7 +8,10 @@
             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" />
             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock x:Name="Notice" TextWrapping="Wrap" Margin="0,0,0,8" />
+        <StackPanel Margin="0,0,0,8">
+            <TextBlock Text="Historique des sauvegardes" Style="{StaticResource WindowHeading}" Margin="0,0,0,6" />
+            <TextBlock x:Name="Notice" Style="{StaticResource BodyMuted}" />
+        </StackPanel>
         <TextBlock x:Name="DestinationText" Grid.Row="1" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"
                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
         <DataGrid x:Name="Versions" Grid.Row="2" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
@@ -26,7 +29,7 @@
         <TextBlock x:Name="HistoryState" Grid.Row="3" Margin="0,8,0,4" TextWrapping="Wrap"
                    AutomationProperties.LiveSetting="Polite" />
         <WrapPanel Grid.Row="4" Margin="0,6,0,0">
-            <Button x:Name="Manual" Content="Sauvegarder _maintenant" Click="Manual_Click" Margin="0,0,8,4" />
+            <Button x:Name="Manual" Content="Sauvegarder _maintenant" Style="{StaticResource PrimaryButton}" Click="Manual_Click" Margin="0,0,8,4" />
             <Button x:Name="CancelBackup" Content="Annuler la sauvegarde" Click="CancelBackup_Click"
                     Margin="0,0,8,4" Visibility="Collapsed" />
             <Button x:Name="Reload" Content="_Actualiser" Click="Reload_Click" Margin="0,0,8,4" />

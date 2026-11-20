@@ -4,7 +4,7 @@
         ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
     <Grid Margin="20">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <TextBlock x:Name="Heading" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/>
+        <TextBlock x:Name="Heading" Style="{StaticResource WindowHeading}" Margin="0,0,0,10" TextWrapping="Wrap"/>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,8,0">
                 <Label Content="_Type" Target="{Binding ElementName=Kind}"/>
@@ -56,7 +56,7 @@
         <DockPanel Grid.Row="2" Margin="0,12,0,0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                 <Button Content="Annuler" IsCancel="True" Margin="8,0"/>
-                <Button x:Name="Accept" Content="Appliquer" IsDefault="True" Click="Accept_Click"/>
+                <Button x:Name="Accept" Content="Appliquer" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Accept_Click"/>
             </StackPanel>
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" VerticalAlignment="Center"
                        Foreground="{DynamicResource NegativeBrush}" AutomationProperties.LiveSetting="Polite"/>

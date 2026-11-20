@@ -14,7 +14,7 @@
     <Grid Margin="16">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel x:Name="Header">
-            <TextBlock Text="Rapports et budgets" FontSize="23" FontWeight="SemiBold" Margin="0,0,0,5" />
+            <TextBlock Text="Rapports et budgets" Style="{StaticResource WindowHeading}" Margin="0,0,0,5" />
             <Expander x:Name="ScopePanel" IsExpanded="True" Margin="0,0,0,7">
                 <Expander.Header><TextBlock Text="Périmètre et cours" Foreground="{DynamicResource TextBrush}" /></Expander.Header>
                 <Grid Margin="0,2,0,0">
@@ -34,7 +34,7 @@
                         <WrapPanel Margin="0,2,0,3">
                             <StackPanel Margin="0,0,8,0"><Label Content="_Catégorie des flux" Target="{Binding ElementName=Category}" /><ComboBox x:Name="Category" Width="178" DisplayMemberPath="Label" AutomationProperties.Name="Filtre sur la catégorie" /></StackPanel>
                             <CheckBox x:Name="Network" Content="Rechercher les cours manquants en ligne" VerticalAlignment="Bottom" Margin="0,0,8,7" />
-                            <Button x:Name="Generate" Content="_Générer" VerticalAlignment="Bottom" Click="Generate_Click" Margin="0,0,6,0" />
+                            <Button x:Name="Generate" Content="_Générer" Style="{StaticResource PrimaryButton}" VerticalAlignment="Bottom" Click="Generate_Click" Margin="0,0,6,0" />
                             <Button x:Name="CancelRun" Content="Annuler le calcul" VerticalAlignment="Bottom" Click="CancelRun_Click" IsEnabled="False" />
                         </WrapPanel>
                     </StackPanel>
@@ -52,14 +52,16 @@
         <TabControl x:Name="Views" Grid.Row="1" AutomationProperties.Name="Vues du rapport">
             <TabItem Header="Synthèse">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="12">
-                    <TextBlock x:Name="ScopeText" TextWrapping="Wrap" FontSize="15" FontWeight="SemiBold" />
-                    <TextBlock x:Name="Coverage" TextWrapping="Wrap" Margin="0,7,0,12" AutomationProperties.LiveSetting="Polite" />
+                    <TextBlock x:Name="ScopeText" Style="{StaticResource SectionHeading}" />
+                    <Border x:Name="CoverageCard" Style="{StaticResource MetricCard}" Margin="0,7,0,12" Visibility="Collapsed">
+                        <TextBlock x:Name="Coverage" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                    </Border>
                     <UniformGrid Columns="3" Margin="0,0,0,16">
-                        <StackPanel><TextBlock Text="Recettes connues" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="IncomeText" FontSize="21" /></StackPanel>
-                        <StackPanel><TextBlock Text="Dépenses connues" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="ExpenseText" FontSize="21" /></StackPanel>
-                        <StackPanel><TextBlock Text="Flux net" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="NetText" FontSize="21" /></StackPanel>
+                        <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Recettes connues" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="IncomeText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
+                        <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Dépenses connues" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="ExpenseText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
+                        <Border Style="{StaticResource MetricCard}"><StackPanel><TextBlock Text="Flux net" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="NetText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
                     </UniformGrid>
-                    <TextBlock Text="Principales dépenses par catégorie" FontWeight="SemiBold" />
+                    <TextBlock Text="Principales dépenses par catégorie" Style="{StaticResource SectionHeading}" />
                     <TextBlock x:Name="TopCategories" TextWrapping="Wrap" Margin="0,5,0,12" />
                     <TextBlock x:Name="BudgetAlert" TextWrapping="Wrap" Margin="0,0,0,8" />
                     <TextBlock x:Name="UpcomingText" TextWrapping="Wrap" />
@@ -141,7 +143,7 @@
                     <Button Content="‹" AutomationProperties.Name="Budget du mois précédent" Click="PreviousBudget_Click" Margin="0,0,4,0" /><Button Content="›" AutomationProperties.Name="Budget du mois suivant" Click="NextBudget_Click" Margin="0,0,7,0" />
                     <Button x:Name="BudgetCalculate" Content="Calculer le réalisé" Click="Budgets_Click" Margin="0,0,5,0" /><Button x:Name="NewBudget" Content="Nouveau…" Click="EditBudget_Click" Margin="0,0,5,0" />
                     <Button x:Name="EditBudget" Content="Modifier…" Click="EditBudget_Click" Margin="0,0,5,0" /><Button x:Name="DuplicateBudget" Content="Dupliquer…" Click="EditBudget_Click" Margin="0,0,5,0" />
-                    <Button x:Name="DeleteBudget" Content="Supprimer…" Click="DeleteBudget_Click" />
+                    <Button x:Name="DeleteBudget" Content="Supprimer…" Style="{StaticResource DangerButton}" Click="DeleteBudget_Click" />
                 </WrapPanel>
                 <TextBlock x:Name="BudgetSummary" DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,7" />
                 <DataGrid x:Name="BudgetGrid" Style="{StaticResource ReportGrid}" AutomationProperties.Name="Budgets mensuels et réalisé" SelectionChanged="BudgetSelection_Changed">

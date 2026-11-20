@@ -44,7 +44,6 @@ public partial class AccountWindow : Window
         AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, _) => ErrorText.Text = string.Empty));
         Loaded += (_, _) =>
         {
-            MaxHeight = SystemParameters.WorkArea.Height;
             AccountName.Focus();
         };
     }

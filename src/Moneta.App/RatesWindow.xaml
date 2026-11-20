@@ -16,7 +16,7 @@
             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel>
-            <TextBlock Text="Cours officiels et conversions indicatives" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock Text="Cours officiels et conversions indicatives" Style="{StaticResource WindowHeading}" />
             <TextBlock Text="Valorisation seulement : les comptes, opérations et montants des virements ne sont jamais modifiés."
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,12" />
             <WrapPanel>

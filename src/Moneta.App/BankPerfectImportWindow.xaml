@@ -9,7 +9,7 @@
             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Text="Importer un fichier BankPerfect" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12"/>
+        <TextBlock Text="Importer un fichier BankPerfect" Style="{StaticResource WindowHeading}" Margin="0,0,0,12"/>
         <Grid Grid.Row="1" Margin="0,0,0,12">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <TextBlock x:Name="SourceText" Text="Choisissez le fichier source à analyser." TextTrimming="CharacterEllipsis"

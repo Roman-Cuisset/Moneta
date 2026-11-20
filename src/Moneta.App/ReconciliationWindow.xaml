@@ -7,15 +7,15 @@
     <Grid Margin="24">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,12">
-            <TextBlock x:Name="AccountHeading" FontSize="20" FontWeight="SemiBold" AutomationProperties.AutomationId="ReconciliationAccount" />
+            <TextBlock x:Name="AccountHeading" Style="{StaticResource WindowHeading}" AutomationProperties.AutomationId="ReconciliationAccount" />
             <TextBlock x:Name="ReconciliationNotice" Text="Ctrl+S enregistre les rapprochements validés ou rouverts après fermeture de cette fenêtre."
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReconciliationDraftNotice" />
         </StackPanel>
         <TabControl Grid.Row="1" x:Name="ReconciliationTabs" AutomationProperties.AutomationId="ReconciliationTabs">
             <TabItem x:Name="StatementTab" Header="Nouveau relevé" AutomationProperties.AutomationId="ReconciliationStatementTab">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
-                <Grid MinHeight="480" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <Grid MinHeight="285" Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" MinHeight="80" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                         <StackPanel Margin="0,0,12,0"><Label Content="_Date du relevé (jj/mm/aaaa)" Target="{Binding ElementName=StatementDate}" /><TextBox x:Name="StatementDate" MaxLength="10" TextChanged="StatementDate_Changed" AutomationProperties.AutomationId="StatementDate" AutomationProperties.Name="Date de fin du relevé bancaire, jour mois année" /></StackPanel>
@@ -55,13 +55,6 @@
                             <Button Content="Actualiser" Click="RefreshCandidates_Click" Margin="6,0,0,0" AutomationProperties.AutomationId="RefreshReconciliationCandidates" />
                         </StackPanel>
                     </DockPanel>
-                    <Grid Grid.Row="5" Margin="0,12,0,0">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <TextBlock x:Name="ReconciliationSelectedCount" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationSelectedCount" />
-                        <TextBlock Grid.Column="1" x:Name="ReconciliationSelectedNet" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationSelectedNet" />
-                        <TextBlock Grid.Column="2" x:Name="ReconciliationGap" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationGap" />
-                        <Button Grid.Column="3" x:Name="ValidateReconciliation" Content="Valider au brouillon" IsEnabled="False" Click="Validate_Click" AutomationProperties.AutomationId="ValidateReconciliation" AutomationProperties.Name="Valider au brouillon, Ctrl S pour enregistrer" />
-                    </Grid>
                 </Grid>
                 </ScrollViewer>
             </TabItem>
@@ -125,8 +118,20 @@
                 </ScrollViewer>
             </TabItem>
         </TabControl>
-        <TextBlock Grid.Row="2" x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,10,0,0"
-                   AutomationProperties.AutomationId="ReconciliationError" AutomationProperties.LiveSetting="Assertive" />
+        <StackPanel Grid.Row="2">
+            <Grid Margin="0,10,0,0">
+                <Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected, ElementName=StatementTab}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                </Style.Triggers></Style></Grid.Style>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="ReconciliationSelectedCount" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="ReconciliationSelectedCount" />
+                <TextBlock Grid.Column="1" x:Name="ReconciliationSelectedNet" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="ReconciliationSelectedNet" />
+                <TextBlock Grid.Column="2" x:Name="ReconciliationGap" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="ReconciliationGap" />
+                <Button Grid.Column="3" x:Name="ValidateReconciliation" Content="Valider au brouillon" Style="{StaticResource PrimaryButton}" IsEnabled="False" Click="Validate_Click" AutomationProperties.AutomationId="ValidateReconciliation" AutomationProperties.Name="Valider au brouillon, Ctrl S pour enregistrer" />
+            </Grid>
+            <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" Margin="0,7,0,0"
+                       AutomationProperties.AutomationId="ReconciliationError" AutomationProperties.LiveSetting="Assertive" />
+        </StackPanel>
         <Button Grid.Row="3" Content="Annuler / Fermer sans changement" IsCancel="True" HorizontalAlignment="Right" Margin="0,12,0,0" AutomationProperties.AutomationId="CancelReconciliation" />
     </Grid>
 </Window>

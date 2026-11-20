@@ -39,8 +39,6 @@ public partial class HistoricalValuationWindow : Window
         if (flow is not null) DateFields.Visibility = Visibility.Collapsed;
         Loaded += (_, _) =>
         {
-            MaxHeight = SystemParameters.WorkArea.Height;
-            MaxWidth = SystemParameters.WorkArea.Width;
             if (flow is not null) TargetChoice.Focus();
             else if (balance is not null) DateInput.Focus();
             else AmountInput.Focus();

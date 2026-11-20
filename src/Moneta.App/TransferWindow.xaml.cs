@@ -88,9 +88,6 @@ public partial class TransferWindow : Window
         }
         Loaded += (_, _) =>
         {
-            // WorkArea is in WPF units, including the current desktop scaling.
-            MaxHeight = SystemParameters.WorkArea.Height;
-            MaxWidth = SystemParameters.WorkArea.Width;
             if (editing is null) SourceAccount.Focus();
             else { EntryDate.Focus(); EntryDate.SelectAll(); }
         };

@@ -9,11 +9,16 @@ public sealed class ReportPlots : FrameworkElement
 {
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
     private static readonly Typeface Face = new("Segoe UI");
-    private static readonly Brush[] SliceBrushes = [Brushes.MediumPurple, Brushes.DarkCyan, Brushes.IndianRed, Brushes.OliveDrab,
-        Brushes.DodgerBlue, Brushes.DarkOrange, Brushes.MediumVioletRed, Brushes.SlateGray];
+    private static readonly string[] SliceBrushKeys = ["ChartIncomeBrush", "ChartExpenseBrush", "ChartBlueBrush",
+        "ChartGoldBrush", "ChartGreenBrush", "ChartRoseBrush"];
     private IReadOnlyList<ReportGroup> _groups = [];
     private Currency? _currency;
     private int _mode;
+
+    private static readonly DependencyProperty PaletteTextProperty = DependencyProperty.Register(
+        "PaletteText", typeof(Brush), typeof(ReportPlots), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public ReportPlots() => SetResourceReference(PaletteTextProperty, "TextBrush");
 
     public void SetData(IReadOnlyList<ReportGroup> groups, Currency currency, int mode)
     {
@@ -29,11 +34,10 @@ public sealed class ReportPlots : FrameworkElement
     {
         base.OnRender(drawing);
         if (_groups.Count == 0) return;
-        var text = TryFindResource("TextBrush") as Brush ?? SystemColors.ControlTextBrush;
+        var text = GetValue(PaletteTextProperty) as Brush ?? SystemColors.ControlTextBrush;
         var muted = TryFindResource("MutedBrush") as Brush ?? text;
-        var accent = TryFindResource("AccentBrush") as Brush ?? Brushes.MediumPurple;
         if (_mode == 0) DrawDonut(drawing, text);
-        else DrawColumns(drawing, text, muted, accent);
+        else DrawColumns(drawing, text, muted);
     }
 
     private void DrawDonut(DrawingContext drawing, Brush text)
@@ -48,7 +52,7 @@ public sealed class ReportPlots : FrameworkElement
         {
             var row = active[index];
             var next = angle + (double)(row.Total.Expense / total) * (2 * Math.PI);
-            var color = SliceBrushes[index % SliceBrushes.Length];
+            var color = TryFindResource(SliceBrushKeys[index % SliceBrushKeys.Length]) as Brush ?? text;
             if (active.Length == 1) drawing.DrawEllipse(null, new Pen(color, 32), center, radius, radius);
             else if (next > angle)
             {
@@ -68,13 +72,14 @@ public sealed class ReportPlots : FrameworkElement
         Point PointAt(double value) => new(center.X + radius * Math.Cos(value), center.Y + radius * Math.Sin(value));
     }
 
-    private void DrawColumns(DrawingContext drawing, Brush text, Brush muted, Brush accent)
+    private void DrawColumns(DrawingContext drawing, Brush text, Brush muted)
     {
         const double origin = 100, baseline = 248, height = 187;
         var spacing = Math.Clamp((ActualWidth - origin - 10) / _groups.Count, 70, 180);
         var expenses = _groups.Max(row => row.Total.Expense);
         var maximum = _mode == 1 ? expenses : Math.Max(expenses, _groups.Max(row => row.Total.Income));
-        var costs = TryFindResource("NegativeBrush") as Brush ?? Brushes.IndianRed;
+        var costs = TryFindResource("ChartExpenseBrush") as Brush ?? text;
+        var accent = TryFindResource("ChartIncomeBrush") as Brush ?? SystemColors.HighlightBrush;
         var axis = new Pen(muted, 0.7);
         drawing.DrawLine(axis, new Point(origin, 61), new Point(origin, baseline));
         drawing.DrawLine(axis, new Point(origin, baseline), new Point(origin + spacing * _groups.Count, baseline));

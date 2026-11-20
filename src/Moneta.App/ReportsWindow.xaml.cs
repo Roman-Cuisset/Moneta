@@ -48,7 +48,7 @@ public partial class ReportsWindow : Window
         UpdateArchives();
         Views.SelectedIndex = Math.Clamp(tab, 0, Views.Items.Count - 1);
         Status.Text = "Choisissez le périmètre, puis générez le rapport. Les écritures enregistrées sont utilisées.";
-        Loaded += (_, _) => { MaxHeight = SystemParameters.WorkArea.Height; MaxWidth = SystemParameters.WorkArea.Width; Generate.Focus(); };
+        Loaded += (_, _) => Generate.Focus();
         Closed += (_, _) => { _closed = true; _operation?.Cancel(); };
         UpdateActions();
     }
@@ -158,7 +158,11 @@ public partial class ReportsWindow : Window
         var coverage = total.Eligible == 0 ? "Aucun flux éligible." :
             $"{total.Valued:N0}/{total.Eligible:N0} flux valorisés ({(decimal)total.Valued * 100 / total.Eligible:N1} %)." +
             (total.Missing == 0 ? "" : $" {total.Missing:N0} sans valeur, voir Flux et cours.");
-        Coverage.Text = (total.Complete && missingStock == 0 ? "Rapport complet. " : "Rapport incomplet · montants connus seulement. ") +
+        var complete = total.Complete && missingStock == 0;
+        CoverageCard.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, complete ? "AccentSoftBrush" : "WarningSurfaceBrush");
+        Coverage.SetResourceReference(ForegroundProperty, complete ? "TextBrush" : "WarningBrush");
+        CoverageCard.Visibility = Visibility.Visible;
+        Coverage.Text = (complete ? "Rapport complet. " : "Rapport incomplet · montants connus seulement. ") +
             coverage + (missingStock == 0 ? "" : $" {missingStock:N0} solde(s) sans conversion, voir Soldes à date.");
         IncomeText.Text = Money(total.Income, target);
         ExpenseText.Text = Money(total.Expense, target);

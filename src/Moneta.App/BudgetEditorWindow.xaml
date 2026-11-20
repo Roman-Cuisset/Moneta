@@ -5,7 +5,7 @@
     <Grid Margin="18">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel>
-            <TextBlock x:Name="Heading" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock x:Name="Heading" Style="{StaticResource WindowHeading}" />
             <Label Content="_Nom" Target="{Binding ElementName=NameInput}" />
             <TextBox x:Name="NameInput" MaxLength="120" AutomationProperties.Name="Nom du budget" />
             <WrapPanel Margin="0,4,0,12">
@@ -24,7 +24,7 @@
         </Grid>
         <StackPanel Grid.Row="2" Margin="0,10,0,0">
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite" />
-            <WrapPanel HorizontalAlignment="Right"><Button Content="Annuler" IsCancel="True" Margin="0,0,8,0" /><Button Content="_Appliquer" IsDefault="True" Click="Apply_Click" /></WrapPanel>
+            <WrapPanel HorizontalAlignment="Right"><Button Content="Annuler" IsCancel="True" Margin="0,0,8,0" /><Button Content="_Appliquer" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Apply_Click" /></WrapPanel>
         </StackPanel>
     </Grid>
 </Window>

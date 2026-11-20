@@ -17,7 +17,7 @@
         <ScrollViewer Name="SearchInputs" VerticalScrollBarVisibility="Auto" MaxHeight="300">
             <StackPanel>
                 <DockPanel Margin="0,0,0,6">
-                    <Button Name="ApplySearch" Content="_Rechercher" Click="Apply_Click" DockPanel.Dock="Right" Margin="8,0,0,0"/>
+                    <Button Name="ApplySearch" Content="_Rechercher" Style="{StaticResource PrimaryButton}" Click="Apply_Click" DockPanel.Dock="Right" Margin="8,0,0,0"/>
                     <TextBox Name="Words" KeyDown="Words_KeyDown" MaxLength="240" AutomationProperties.Name="Texte dans les opérations enregistrées"
                              ToolTip="Libellé, notes, référence de virement, tiers, catégories et mode de paiement."/>
                 </DockPanel>

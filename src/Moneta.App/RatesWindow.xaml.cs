@@ -31,8 +31,6 @@ public partial class RatesWindow : Window
         };
         Loaded += (_, _) =>
         {
-            MaxHeight = SystemParameters.WorkArea.Height;
-            MaxWidth = SystemParameters.WorkArea.Width;
             ProviderChoice.Focus();
         };
         RefreshView();
