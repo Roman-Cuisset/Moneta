@@ -1,6 +1,78 @@
 # Identité visuelle Moneta — décisions et principes
 
-## Statut et périmètre
+## Identité officielle de la mission 17
+
+![Symbole officiel Moneta](../assets/branding/moneta-128.png)
+
+Le symbole reprend la référence approuvée avec des tracés redessinés. Le M blanc et les traits du registre encadrent le ruban turquoise et sa coche bleu nuit. Les angles extérieurs restent transparents. Le SVG principal est la source à partir de 32 pixels. Le SVG compact renforce les formes et conserve un seul trait de registre de chaque côté à 16 et 24 pixels. Le nom Moneta conserve un traitement typographique séparé dans la fenêtre principale et dans **À propos**.
+
+| Ressource | Usage |
+|---|---|
+| `design/moneta-logo-source.png` | Référence approuvée, conservée inchangée localement et exclue de Git |
+| `assets/branding/moneta.svg` et `moneta-compact.svg` | Tracés originaux Moneta, dessin maître et variante compacte |
+| `assets/branding/moneta-{16,24,32,48,64,128,256,512,1024}.png` | Exports transparents, documentation et interfaces à différentes densités |
+| `assets/branding/moneta.ico` | Sept images de 16 à 256 pixels, intégrées à l’exécutable et aux fenêtres WPF, disponibles pour les futurs raccourcis Windows et l’installateur |
+
+La génération utilise les tracés SVG et le moteur WPF de Windows. Aucune ressource graphique ni police tierce à redistribuer. Régénérer depuis la racine avec la commande suivante.
+
+```powershell
+powershell -NoProfile -NonInteractive -Sta -File tools/Export-MonetaBranding.ps1
+```
+
+### Palette et contrastes
+
+La marque utilise `#08152B` (bleu nuit), `#35D5BE` (turquoise) et `#FFFFFF` (blanc). L’interface décline ces couleurs pour la lecture et les états. Les valeurs suivantes sont les rapports de luminance des couleurs opaques déclarées, calculés sur les paires indiquées. La cible de conception est de 4,5:1 pour le texte courant et de 3:1 pour le contour actif des champs, le tableau ne constitue pas une qualification globale de l’accessibilité.
+
+| Rôle | Clair | Sombre |
+|---|---|---|
+| Texte / surface | `#08152B` / `#FFFFFF` · 18,22:1 | `#F0F7FA` / `#16222D` · 14,91:1 |
+| Secondaire / fond | `#485C6C` / `#EFF4F7` · 6,27:1 | `#AABEC9` / `#101820` · 9,30:1 |
+| Accent / surface | `#00665B` / `#FFFFFF` · 6,88:1 | `#65E7D4` / `#16222D` · 10,71:1 |
+| Texte de sélection / sélection | `#103C35` / `#CCEEE7` · 9,86:1 | `#F3FFFF` / `#235247` · 8,68:1 |
+| Texte / bouton principal | `#FFFFFF` / `#006B5E` · 6,43:1 | `#08152B` / `#35D5BE` · 9,90:1 |
+| Avertissement / encart | `#804514` / `#FFF2DD` · 6,84:1 | `#FFD393` / `#382B22` · 9,75:1 |
+| Contour de champ / surface | `#8194A2` / `#FFFFFF` · 3,14:1 | `#718895` / `#16222D` · 4,35:1 |
+
+Le contraste élevé prend ses surfaces, son texte, son accent et la sélection dans `SystemColors`. L’interface conserve les libellés NP/P/R, les signes et les noms de séries. Les nuances du graphique regroupé correspondent aux catégories de la légende. L’onglet **Répartition** présente les mêmes regroupements sous forme de tableau.
+
+### Typographie et interactions
+
+- Segoe UI Variable Text, avec repli Segoe UI, à 13 DIP pour la lecture. Titres jusqu’à 26 DIP, sections à 16 ou 18 DIP, chiffres tabulaires dans les cartes et montants du registre alignés à droite.
+- Boutons aux coins arrondis, avec styles principal, secondaire et destructif. Survol et appui ont des teintes distinctes. Le focus clavier reste visible par le contour ou le cadre pointillé. Les confirmations système conservent leur présentation native.
+- En-têtes de tableaux à 36 DIP, lignes de 40 DIP par défaut et 42 DIP pour le registre à deux lignes. Sélection contrastée, séparateurs fins, lignes virtualisées et défilement conservés. Les formulaires longs offrent un défilement indépendant de leurs boutons de validation.
+- Le registre conserve ses colonnes, ses menus et ses raccourcis. **Nouvelle**, **Modifier** et la pagination restent hors de la zone défilante des champs. Au besoin, les commandes secondaires de la barre d’outils passent dans son menu de débordement.
+- La synthèse des rapports regroupe recettes, dépenses et flux net en cartes. Une couverture incomplète reste nommée dans un encart distinct. Les prévisions, les valeurs absentes et les séries conservent leurs libellés.
+
+### Mise à l’échelle Windows
+
+Le manifeste déclare `PerMonitorV2`. Les fenêtres se bornent à la zone de travail disponible rapportée par le moniteur, convertie en DIP. WPF communique les changements de DPI via `Window.DpiChanged`. [Événement WPF](https://learn.microsoft.com/en-us/dotnet/api/system.windows.window.dpichanged?view=windowsdesktop-10.0), [zone de travail du moniteur](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmonitorinfow)
+
+### Qualification Windows en Release
+
+- Builds Debug et Release avec zéro erreur et zéro avertissement. Les 666 tests MSTest existants passent dans chaque configuration. Les contrôles WPF ci-dessous ont été exécutés séparément et utilisent des dossiers fictifs locaux.
+- Parcours exécutés dans les vraies fenêtres WPF, en clair et sombre, sous Windows 11, sur un moniteur 1920 × 1080 à **125 % natifs**. Vérifications avec comptes fictifs EUR/BYN/RUB, création et modification, recette et dépense, virement lié avec frais sur un troisième compte, pointage P, rapprochement R, recherche multicompte depuis une autre page, échéancier, historique des sauvegardes et réouverture d’une copie restaurée. Les empreintes de l’instantané source et de l’instantané restauré concordent au schéma 8. La consultation laisse le dossier propre.
+- Les fenêtres de change, de valorisation historique, de paramètres et **À propos** ont été ouvertes et examinées. Les tests de présentation exercent les commandes routées correspondant à Ctrl+S, Ctrl+E, Ctrl+B, F7, Maj+F7 et P dans le registre, et vérifient le focus de saisie, le passage Tab et des noms UI Automation. Les captures montrent le client WPF sur données fictives.
+- Les quatre facteurs 100 %, 125 %, 150 % et 200 % ont été reproduits par message `WM_DPICHANGED` sur les HWND WPF et confirmés par `VisualTreeHelper.GetDpi`. Registre et douze fenêtres secondaires dans les deux thèmes, soit 104 combinaisons ciblant la visibilité des actions principales. Pour le registre à **960 × 510 DIP** au facteur 200 %, contrôles des actions de saisie et de pagination, du défilement et du menu de débordement. Le pied du rapprochement affiche en permanence les totaux, l’écart et la validation pendant la saisie d’un relevé. Le poste reste configuré à 125 %.
+- Les neuf PNG ont été vérifiés pour leurs dimensions, le canal alpha aux coins et les pixels d’antialiasing. Les tailles 16, 24 et 32 ont été examinées visuellement. Le fichier ICO expose sept tailles, l’icône est extractible du PE et Windows reçoit les petites et grandes icônes sur le HWND de la fenêtre.
+- Le chargement du dictionnaire de contraste élevé et sa correspondance aux couleurs système ont été contrôlés depuis WPF. L’activation du mode dans Windows, les déplacements entre écrans physiques, le lecteur d’écran et l’icône d’un raccourci installé restent à qualifier avant diffusion.
+
+### Comparaison de performances
+
+Windows 11 x64, Core i5-1235U, 32 Gio de RAM, SSD NTFS, écran à 125 %, rendu WPF de niveau 2. Même dossier fictif de **50 000 opérations** et même taille 1 280 × 800 DIP, thème clair, mêmes commandes dans les deux binaires Release. L’empreinte SHA-256 du dossier concorde avant et après. Médianes de six répétitions par binaire après une répétition de chauffe. L’ouverture chronométrée du dossier inclut sa vérification SQLite et la première page. Le défilement alterne douze fois entre le début et la fin d’une même page. La recherche inclut l’ouverture de la fenêtre et l’affichage des 100 premiers résultats. Le graphique représente douze mois et la mesure inclut son rendu bitmap WPF.
+
+| Mesure | Avant `1642c3a` | Mission 17 |
+|---|---:|---:|
+| Affichage WPF de la fenêtre principale vide | 224 ms | 130 ms |
+| Ouverture du dossier et première page | 6,86 s (6,51–7,42) | 7,10 s (6,75–7,55) |
+| Saut dans la page du registre | 100 ms | 27 ms |
+| Recherche et affichage de la première page | 537 ms | 385 ms |
+| Rendu du graphique | 3,79 ms | 3,18 ms |
+| Lignes réalisées sur une page de 100 / éléments visuels de la grille | 11 / 757 | 11 / 757 |
+| Mémoire résidente du processus après parcours | 337 Mio | 335 Mio |
+
+Les plages d’ouverture du dossier se recouvrent. Le dossier est ouvert une fois par répétition. La mémoire inclut le processus entier et les fenêtres déjà exercées. Une prise courte immédiatement après une séquence a observé un pic CPU de 1 406 ms dans la nouvelle version. Une seconde mesure avec processus distinct, huit secondes de stabilisation et trois intervalles de trois secondes donne 31 ms CPU cumulées avant et 0 ms mesurables après. À la fin de ce contrôle, la mémoire est de 230 et 231 Mio respectivement. Cette séquence décrit le poste utilisé, avec cache système et compilation JIT. Le pic transitoire reste sans attribution.
+
+## Historique des missions 4 et 5
 
 **Mission 4 autorise la refonte graphique fonctionnelle du prototype existant**, pas un logo définitif ni l'extension du moteur financier. La structure est guidée par la capture BankPerfect privée fournie par l'utilisateur ; aucun nom, montant, chemin personnel, logo ou dessin de cette image n'est reproduit dans les livrables.
 

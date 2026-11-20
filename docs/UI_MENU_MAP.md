@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 17.** Le solde en carte et son choix de devise restent dans la colonne Comptes. **Nouvelle**, **Modifier** et la pagination restent accessibles sous le registre pendant son défilement horizontal. Le bouton **Prévisions…** ouvre l’onglet éponyme du menu Rapports. **Affichage → Thème** conserve les variantes Clair et Sombre. **? → À propos de Moneta…** présente le nouveau symbole. Les raccourcis existants restent associés aux mêmes commandes. [Interface et accessibilité](VISUAL_IDENTITY.md)
+
 **Mission 16.** **Rapports** réunit Synthèse, Flux, Répartition, Graphiques, Soldes à date, Prévisions, Budgets et Rapports figés. **Outils → Budget mensuel** et **Ctrl+B**, **Outils → Totaux par catégories** et **Ctrl+T**, ainsi que les boutons de la barre d’outils conservent les accès familiers. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
 
 **Mission 15.** **Outils → Convertisseur historique…**, **Outils → Valoriser le solde à date…** et **Opérations → Valoriser l’opération enregistrée…** ouvrent la consultation à date. La fenêtre peut travailler sur le cache seul et reproduire une preuve exportée. [Valorisation historique](HISTORICAL_FX_ENGINE.md)

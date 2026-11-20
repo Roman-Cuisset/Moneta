@@ -23,7 +23,7 @@ Moteur en lecture seule pour les flux à leur date et les soldes à la date d’
 Budgets mensuels, tableaux, graphiques et rapports figés sont livrés. Les rapports signalent la couverture et séparent le stock, les flux et la prévision. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
 
 ### Missions 17 et 18 — exigences restantes pour l’Alpha 0.1.0
-- **Mission 17 — Finitions et qualification Windows.** Exercer l’interface, l’accessibilité, les parcours financiers, la récupération et les limites sur plusieurs configurations.
+- **Mission 17 — Identité et finitions WPF.** Symbole officiel et icône Windows, palettes bleu nuit et turquoise, contraste élevé, registre, formulaires et synthèse des rapports modernisés. Les parcours et les limites de qualification sont documentés. [Identité visuelle](VISUAL_IDENTITY.md)
 - **Mission 18 — Installateur, mises à jour et Alpha.** Préserver les dossiers, les sauvegardes et les réglages. Activer la recherche de mise à jour par défaut avec désactivation possible. Notifier au démarrage et afficher **Quoi de neuf**, **Télécharger et installer** et **Plus tard**. Télécharger, vérifier l’authenticité puis installer depuis Moneta, avec traitement des erreurs et des autorisations Windows. Auditer les livrables et l’historique avant l’ouverture du dépôt, au moment de publier l’Alpha 0.1.0.
 
 ### Sauvegardes versionnées — mission 13

@@ -1,5 +1,9 @@
 # Moneta
 
+![Symbole Moneta](assets/branding/moneta-64.png)
+
+**Mission 17.** Nouvelle identité bleu nuit et turquoise, thèmes clair et sombre, solde mieux repéré et commandes du registre accessibles près de la pagination. Le logo vectoriel et l’icône Windows se trouvent dans [les ressources de marque](assets/branding/). [Identité visuelle et validation Windows](docs/VISUAL_IDENTITY.md)
+
 **Mission 16.** Le menu **Rapports** ouvre les budgets mensuels, les flux, les répartitions, les graphiques, les soldes à date, les prévisions et les rapports figés. **Ctrl+B** ouvre les budgets et **Ctrl+T** les totaux par catégorie. Les montants partiels sont identifiés et un rapport figé se rejoue hors ligne. [Budgets et rapports](docs/BUDGETS_AND_REPORTS.md)
 
 **Mission 15.** **Outils → Convertisseur historique…** convertit à la date demandée. **Opérations → Valoriser l’opération enregistrée…** utilise la date de l’écriture. **Outils → Valoriser le solde à date…** calcule d’abord le solde natif à la date d’arrêté, jour inclus. Chaque résultat peut être exporté dans une preuve locale et reproduit hors ligne. [Valorisation historique](docs/HISTORICAL_FX_ENGINE.md)
@@ -37,12 +41,13 @@ Preuves, matrice des mesures et réserves : [PERFORMANCE_AUDIT](docs/PERFORMANCE
 - Ouvrir les fichiers natifs `.bp` par **Fichier → Ouvrir** et convertir les dossiers V5 EUR du périmètre qualifié dans un **nouveau `.moneta`** en préservant l’original. [Périmètre de l’import BankPerfect](docs/BANKPERFECT_QUALIFICATION_10E.md)
 - Garantir des montants exacts, une persistance transactionnelle, des sauvegardes automatiques vérifiables et une restauration éprouvée.
 
-C#, **.NET 10 LTS**, WPF et MVVM léger, avec SQLite direct via `Microsoft.Data.Sqlite` **10.0.12** et `SQLitePCLRaw.bundle_e_sqlite3` **3.0.5**. Moteur **3.53.4 observé à l'exécution**, corrigé pour WAL-reset. Interface WPF native, palettes et pictogrammes Moneta originaux ; aucun framework graphique, logo définitif ou actif BankPerfect. Quatre projets conservés, aucun ORM/serveur/service cloud. Voir [ARCHITECTURE](docs/ARCHITECTURE.md) et [FILE_FORMATS](docs/FILE_FORMATS.md).
+C#, **.NET 10 LTS**, WPF et MVVM léger, avec SQLite direct via `Microsoft.Data.Sqlite` **10.0.12** et `SQLitePCLRaw.bundle_e_sqlite3` **3.0.5**. Moteur **3.53.4 observé à l'exécution**, corrigé pour WAL-reset. Interface WPF native avec palettes, pictogrammes et logo originaux Moneta. Voir [ARCHITECTURE](docs/ARCHITECTURE.md) et [FILE_FORMATS](docs/FILE_FORMATS.md).
 
 ## Organisation
 
 ```text
 Moneta/
+├── assets/branding/        # SVG source, PNG et ICO Moneta
 ├── reference-bankperfect/   # Référence locale immuable, exclue de Git
 ├── src/Moneta.App/          # WPF, fenêtre et interactions de présentation
 ├── src/Moneta.Core/         # Modèles, projections de soldes, navigation testable
