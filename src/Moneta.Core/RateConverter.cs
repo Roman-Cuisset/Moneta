@@ -37,6 +37,20 @@ public static class RateConverter
         return (total / destination).Round(target.DecimalPlaces);
     }
 
+    internal static decimal ConvertQuoted(decimal amount, Currency target, OfficialRateQuote? source, OfficialRateQuote? destination)
+    {
+        ValidateTarget(target);
+        return (Fraction.FromDecimal(amount) * Factor(source) / Factor(destination)).Round(target.DecimalPlaces);
+    }
+
+    internal static decimal SumRounded(IEnumerable<decimal> amounts, Currency target)
+    {
+        ValidateTarget(target);
+        var total = Fraction.Zero;
+        foreach (var amount in amounts) total += Fraction.FromDecimal(amount);
+        return total.Round(target.DecimalPlaces);
+    }
+
     private static OfficialRateQuote? FindQuote(string code, OfficialRateSet rates)
     {
         if (code == rates.ReferenceCurrency) return null;

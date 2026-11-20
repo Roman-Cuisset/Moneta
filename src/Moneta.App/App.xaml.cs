@@ -14,7 +14,9 @@ public partial class App : Application
     public static SettingsStore Settings { get; } = new();
     private static readonly OfficialRateClient[] RateClients =
         [new(RateProvider.Nbrb), new(RateProvider.Cbr)];
-    public static ExchangeRateSession Rates { get; } = new(new SqliteRateCache(), RateClients);
+    private static readonly SqliteRateCache RateCache = new();
+    public static ExchangeRateSession Rates { get; } = new(RateCache, RateClients);
+    public static HistoricalValuation HistoricalFx { get; } = new(new HistoricalRateResolver(RateCache, RateClients));
     public static RateProvider SelectedRateProvider => Settings.Current.RateSource == "CBR" ? RateProvider.Cbr : RateProvider.Nbrb;
 
     public static bool ChangeTheme(string mode) =>

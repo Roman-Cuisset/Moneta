@@ -37,3 +37,9 @@ public interface IRateCache
     IReadOnlyList<RateHistoryEntry> ReadHistory(RateProvider provider, int offset = 0, int count = 100,
         CancellationToken cancellationToken = default);
 }
+
+public interface IHistoricalRateCache
+{
+    OfficialRateSet? FindForRequestedDate(RateProvider provider, DateOnly date, CancellationToken cancellationToken = default);
+    void Store(RateDownload download, CancellationToken cancellationToken = default);
+}

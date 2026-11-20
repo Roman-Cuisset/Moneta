@@ -104,6 +104,9 @@ public sealed class BankPerfectImportTests
         Assert.IsNull(credit.MarkedOn);
         var debit = rows.Single(row => row.Label == "Café Démo");
         Assert.AreEqual(-12.34m, FinancialRules.SignedAmount(debit));
+        var historical = MonetaFile.ReadHistoricalFlow(Target, file.Snapshot, debit.Id).Input();
+        Assert.AreEqual((HistoricalFlowKind.Expense, new DateOnly(2024, 1, 16), -12.34m, "EUR", debit.Revision),
+            (historical.FlowKind!.Value, historical.Date, historical.NativeAmount, historical.SourceCode, historical.Revision!.Value));
         Assert.AreEqual("Été à Noël", debit.Details);
         Assert.AreEqual("Carte", debit.PaymentMode);
         Assert.AreEqual("Café Démo", debit.Payee.Name);

@@ -6,7 +6,7 @@ using Moneta.Core;
 namespace Moneta.Infrastructure.ExchangeRates;
 
 // This is an independent public-data cache, never a financial document or a migration target.
-public sealed class SqliteRateCache : IRateCache
+public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
 {
     private const int ApplicationId = 0x4D465831;
     private const int SchemaVersion = 1;
@@ -41,6 +41,18 @@ public sealed class SqliteRateCache : IRateCache
         if (date == default) throw new ArgumentOutOfRangeException(nameof(date));
         if (maximumAgeDays is < 0 or > RateRules.MaximumAgeDays) throw new ArgumentOutOfRangeException(nameof(maximumAgeDays));
         var earliest = DateOnly.FromDayNumber(Math.Max(0, date.DayNumber - maximumAgeDays));
+        return Find(provider, date, earliest, cancellationToken);
+    }
+
+    public OfficialRateSet? FindForRequestedDate(RateProvider provider, DateOnly date, CancellationToken cancellationToken = default)
+    {
+        ValidateProvider(provider);
+        if (date == default) throw new ArgumentOutOfRangeException(nameof(date));
+        return Find(provider, date, null, cancellationToken);
+    }
+
+    private OfficialRateSet? Find(RateProvider provider, DateOnly date, DateOnly? earliest, CancellationToken cancellationToken)
+    {
         return Guard(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -48,10 +60,12 @@ public sealed class SqliteRateCache : IRateCache
             using var connection = Open(FilePath, SqliteOpenMode.ReadOnly);
             using var transaction = connection.BeginTransaction(deferred: true);
             ValidateDatabase(connection, transaction, cancellationToken);
+            var filter = earliest is null ? "requested_date=$date AND effective_date<=$date" : "effective_date BETWEEN $earliest AND $date";
+            var order = earliest is null ? "retrieved_utc DESC,rowid DESC" : "effective_date DESC,retrieved_utc DESC,id ASC";
             using var command = Command(connection, transaction,
-                $"SELECT {Columns} FROM RateSets WHERE provider=$provider AND effective_date BETWEEN $earliest AND $date ORDER BY effective_date DESC,retrieved_utc DESC,id ASC LIMIT 1;");
+                $"SELECT {Columns} FROM RateSets WHERE provider=$provider AND {filter} ORDER BY {order} LIMIT 1;");
             command.Parameters.AddWithValue("$provider", (int)provider);
-            command.Parameters.AddWithValue("$earliest", earliest.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            if (earliest is { } from) command.Parameters.AddWithValue("$earliest", from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             command.Parameters.AddWithValue("$date", date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             var found = ReadValidatedRows(command, cancellationToken).SingleOrDefault();
             cancellationToken.ThrowIfCancellationRequested();

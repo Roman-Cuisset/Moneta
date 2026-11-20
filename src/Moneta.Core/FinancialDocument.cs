@@ -66,6 +66,22 @@ public static class ExactMoney
         return amount / Scale(currency);
     }
 
+    public static decimal FromMinorUnits(System.Numerics.BigInteger amount, Currency currency)
+    {
+        _ = Scale(currency);
+        var coefficient = System.Numerics.BigInteger.Abs(amount);
+        var maximum = (System.Numerics.BigInteger.One << 96) - 1;
+        var places = currency.DecimalPlaces;
+        while (coefficient > maximum && places > 0 && coefficient % 10 == 0)
+        {
+            coefficient /= 10;
+            places--;
+        }
+        if (coefficient > maximum) throw new OverflowException("Le solde natif dépasse la précision du modèle décimal.");
+        return new decimal((int)(uint)(coefficient & uint.MaxValue), (int)(uint)((coefficient >> 32) & uint.MaxValue),
+            (int)(uint)(coefficient >> 64), amount.Sign < 0, (byte)places);
+    }
+
     private static decimal Scale(Currency currency)
     {
         ArgumentNullException.ThrowIfNull(currency);

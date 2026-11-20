@@ -47,4 +47,7 @@ public static class WindowCommands
     public static RoutedUICommand ReleaseLegacyReconciliation { get; } = new("Réexaminer un état rapproché hérité", nameof(ReleaseLegacyReconciliation), typeof(WindowCommands));
     public static RoutedUICommand RefreshRates { get; } = new("Actualiser les cours", nameof(RefreshRates), typeof(WindowCommands));
     public static RoutedUICommand ShowRates { get; } = new("Cours de change", nameof(ShowRates), typeof(WindowCommands));
+    public static RoutedUICommand HistoricalConverter { get; } = new("Convertisseur historique", nameof(HistoricalConverter), typeof(WindowCommands));
+    public static RoutedUICommand HistoricalFlow { get; } = new("Valorisation de l’opération enregistrée", nameof(HistoricalFlow), typeof(WindowCommands));
+    public static RoutedUICommand HistoricalBalance { get; } = new("Valorisation du solde à date", nameof(HistoricalBalance), typeof(WindowCommands));
 }
