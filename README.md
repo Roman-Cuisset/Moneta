@@ -1,5 +1,7 @@
 # Moneta
 
+**Mission 15.** **Outils → Convertisseur historique…** convertit à la date demandée. **Opérations → Valoriser l’opération enregistrée…** utilise la date de l’écriture. **Outils → Valoriser le solde à date…** calcule d’abord le solde natif à la date d’arrêté, jour inclus. Chaque résultat peut être exporté dans une preuve locale et reproduit hors ligne. [Valorisation historique](docs/HISTORICAL_FX_ENGINE.md)
+
 **Mission 14.** **Comptes → Échéancier…** ou **Ctrl+E** affiche les dépenses, recettes et virements programmés. Vous pouvez traiter, reporter ou ignorer une occurrence. La confirmation prépare l’écriture, puis **Ctrl+S** l’enregistre avec sa décision. Les virements entre devises demandent un montant reçu confirmé. [Échéancier et opérations récurrentes](docs/SCHEDULED_TRANSACTIONS.md)
 
 Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.

@@ -25,7 +25,7 @@ Traiter les occurrences ordinaires d’une même programmation dans leur ordre. 
 
 Dans la même devise, le crédit reprend le débit et les frais restent séparés. Entre devises, un montant reçu peut être proposé par la programmation. L’utilisateur confirme le débit et le crédit réels dans leurs devises natives avant de préparer le virement. Sans crédit renseigné, le formulaire l’exige. Le moteur de virements existant enregistre les deux montants, calcule le taux effectif et conserve la provenance déclarée si elle est renseignée. Les montants utilisent les unités mineures entières et les calculs monétaires existants. L’échéancier ne consulte pas de cours à terme et ne présente aucun montant proposé comme un cours officiel.
 
-Pour les rapports à venir, valoriser les flux au cours applicable à la date de l’opération et les soldes au cours applicable à la date d’arrêté. Les prévisions doivent annoncer la méthode utilisée et conserver les références et unités de cotation. [Feuille de route](ROADMAP.md)
+Le moteur historique valorise les écritures comptabilisées à la date de l’opération et les soldes à leur date d’arrêté. Une échéance future relève d’une prévision. La méthode prévisionnelle et les rapports restent prévus dans la feuille de route. [Moteur historique](HISTORICAL_FX_ENGINE.md) · [Feuille de route](ROADMAP.md)
 
 ## Identité, enregistrement et récupération
 

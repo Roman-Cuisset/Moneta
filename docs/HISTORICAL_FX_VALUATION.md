@@ -1,5 +1,7 @@
 # Valorisation historique multidevise
 
+Ce document conserve l’étude de mission 10D. Le contrat livré en mission 15 exige une réponse qui atteste la date demandée, arrondit chaque flux avant agrégation et exporte les preuves de calcul hors du dossier financier. [Contrat et qualification du moteur](HISTORICAL_FX_ENGINE.md)
+
 Dans un rapport, chaque dépense passée utilise le cours applicable à sa date métier. Cette règle vaut pour chaque devise prise en charge, y compris celles ajoutées ultérieurement. La date de consultation est une métadonnée du rapport.
 
 ## Calculs par nature de montant

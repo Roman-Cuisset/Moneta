@@ -14,12 +14,15 @@ La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.mo
 
 Les programmations de recette, dépense et virement, les retards, les reports et le journal de décisions sont intégrés au schéma 7. La confirmation suivie de Ctrl+S utilise la transaction du registre. [Échéancier](SCHEDULED_TRANSACTIONS.md)
 
-### Missions 15 à 18 — exigences restantes pour l’Alpha 0.1.0
+### Valorisation historique — mission 15
 
-- **Mission 15 — Cours historiques.** Valoriser chaque flux au cours officiel applicable à la date de l’opération et les soldes au cours applicable à la date d’arrêté. Conserver la date, la source, les références et les unités de cotation pour reproduire le résultat. Toute valorisation future relève d’une méthode prévisionnelle explicite. Une donnée absente doit rester identifiable.
-- **Mission 16 — Budgets et rapports.** Distinguer le réalisé et le prévisionnel, en devise native ou selon les règles de valorisation validées. Conserver la date de chaque dépense pour sa conversion et éviter le double comptage des virements.
-- **Mission 17 — Installation et mises à jour Windows.** Préserver les dossiers et préférences lors d’une mise à jour. Activer la recherche de mise à jour par défaut, avec désactivation dans les paramètres. Signaler une nouvelle version au démarrage, afficher **Quoi de neuf**, puis proposer **Télécharger et installer** depuis Moneta. Vérifier l’authenticité de la mise à jour avant installation.
-- **Mission 18 — Qualification et publication de l’Alpha.** Tester l’installation, les mises à jour, la récupération et les scénarios financiers. Auditer l’historique Git et les livrables avant d’ouvrir le dépôt, uniquement au moment de publier l’Alpha 0.1.0.
+Moteur en lecture seule pour les flux à leur date et les soldes à la date d’arrêté. Les chemins, dates, valeurs et nominaux restent dans la preuve exportable. Les résultats indisponibles et les dates futures ont des statuts distincts. [Moteur historique](HISTORICAL_FX_ENGINE.md)
+
+### Missions 16 à 18 — exigences restantes pour l’Alpha 0.1.0
+
+- **Mission 16 — Budgets, rapports et graphiques.** Utiliser le moteur historique, distinguer le réalisé et le prévisionnel et signaler la couverture incomplète. Conserver la preuve des résultats validés. Définir la valorisation prévisionnelle explicitement et éviter le double comptage des virements.
+- **Mission 17 — Finitions et qualification Windows.** Exercer l’interface, l’accessibilité, les parcours financiers, la récupération et les limites sur plusieurs configurations.
+- **Mission 18 — Installateur, mises à jour et Alpha.** Préserver les dossiers, les sauvegardes et les réglages. Activer la recherche de mise à jour par défaut avec désactivation possible. Notifier au démarrage et afficher **Quoi de neuf**, **Télécharger et installer** et **Plus tard**. Télécharger, vérifier l’authenticité puis installer depuis Moneta, avec traitement des erreurs et des autorisations Windows. Auditer les livrables et l’historique avant l’ouverture du dépôt, au moment de publier l’Alpha 0.1.0.
 
 ### Sauvegardes versionnées — mission 13
 

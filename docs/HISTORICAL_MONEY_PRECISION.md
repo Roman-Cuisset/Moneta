@@ -33,3 +33,5 @@ L’augmentation d’échelle multiplie le coefficient d’une opération exista
 La mission 10D documente ces choix. Le schéma financier, les échelles courantes et le refus des montants sous l’unité mineure restent ceux de Moneta 10C.
 
 La mission 10E conserve ce contrat et le refus de BP-F03. Avant toute évolution, le prototype devra vérifier la concordance entre soldes actifs et pointés, états de rapprochement, deux jambes du virement, conversions à partir du montant natif, rendu des fractions significatives et restauration d’archives des schémas actuels. Une conversion indicative demeure externe à l’écriture comptable. [Qualification de l’import](BANKPERFECT_QUALIFICATION_10E.md)
+
+La mission 15 calcule les conversions en fractions exactes et arrondit le seul résultat affiché à la précision de la devise cible. Le registre et le format financier conservent leurs unités mineures. BP-F03 reste refusé. [Valorisation historique](HISTORICAL_FX_ENGINE.md)

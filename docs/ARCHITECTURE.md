@@ -2,6 +2,8 @@
 
 ## Statut et limites de cette étude
 
+La mission 15 sépare la consultation historique de l’indication de change de mission 8. `HistoricalRateResolver` qualifie les réponses NBRB/CBR par date demandée. `HistoricalValuation` sélectionne le chemin dans un seul lot et réutilise les fractions exactes de `RateConverter`. Le registre fournit les flux et les soldes à date depuis une connexion SQLite en lecture seule. Une preuve d’une valorisation est exportable et reproductible sans le registre, le cache ni le réseau. [Moteur historique](HISTORICAL_FX_ENGINE.md)
+
 La mission 14 ajoute un calendrier local et un journal de décisions à l’instantané financier. `ScheduleRule` calcule à partir d’une date d’ancrage. `ScheduleCalendar` compte par bornes et fusionne les suites pour produire des pages. `MainViewModel.Scheduling` prépare l’occurrence par les chemins de saisie et de virement existants. `MonetaFile.Scheduling` écrit programmation, décision et liens dans la transaction du registre. Les sauvegardes vérifient aussi les règles et l’historique. [Échéancier](SCHEDULED_TRANSACTIONS.md)
 
 La mission 13 sépare le commit financier de la sauvegarde versionnée. `MainWindow.Backups` coordonne les demandes sur le dernier instantané enregistré. `BackupLibrary` applique la politique locale et publie des générations avec verrou d’accès. `MonetaBackup` fournit à la sauvegarde manuelle et aux générations le même instantané SQLite, le même manifeste et la vérification complète. La restauration ouvre un nouveau fichier. [Sauvegardes automatiques](AUTOMATIC_BACKUPS.md)

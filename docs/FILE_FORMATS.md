@@ -2,6 +2,8 @@
 
 Le format financier courant utilise le **schéma SQLite 7**. Il couvre les comptes, le registre, les rapprochements, les virements liés avec frais, l’échéancier et la provenance des imports BankPerfect. Les cours officiels et leur historique public résident dans un **cache SQLite séparé, schéma 1**. Les préférences locales utilisent le schéma JSON 3. [Architecture](ARCHITECTURE.md)
 
+La mission 15 conserve ces schémas. Une preuve exportée `*.fxproof.json` porte son numéro de règles, les opérandes exacts, les références au lot et le résultat. Le fichier est indépendant du cache public et du `.moneta`. Il contient des données financières privées et reste au chemin choisi par l’utilisateur. Les sauvegardes du dossier financier ne comprennent pas ces preuves externes. [Contrat de preuve](HISTORICAL_FX_ENGINE.md#preuves-cache-et-accès-hors-ligne)
+
 Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostique-moneta--mission-10b) utilise un modèle en mémoire et une CLI indépendante du format financier.
 
 La recherche réutilise les tables de comptes, opérations, référentiels et virements ainsi que leurs index existants. Les critères et pages restent en mémoire. Le texte consultable provient du registre actif et des virements actifs. Le BLOB de provenance BankPerfect conserve son contrat. [Recherche et filtres](SEARCH_AND_FILTERS.md)

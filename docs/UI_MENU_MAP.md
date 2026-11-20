@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 15.** **Outils → Convertisseur historique…**, **Outils → Valoriser le solde à date…** et **Opérations → Valoriser l’opération enregistrée…** ouvrent la consultation à date. La fenêtre peut travailler sur le cache seul et reproduire une preuve exportée. [Valorisation historique](HISTORICAL_FX_ENGINE.md)
+
 **Mission 14.** **Comptes → Échéancier…**, le bouton **Échéancier** et **Ctrl+E** ouvrent les onglets Occurrences, Programmations et Historique. Le bouton affiche le nombre d’échéances à traiter. L’utilisateur peut préparer une occurrence depuis son formulaire de confirmation et enregistrer depuis l’échéancier avec **Ctrl+S**. [Échéancier et raccourcis](SCHEDULED_TRANSACTIONS.md)
 
 **Mission 13.** **Outils → Options → Sauvegardes** règle l’activation, la cadence, la destination locale et la rétention. **Fichier → Sauvegardes → Historique…** ouvre les versions du dossier en cours, avec vérification et restauration vers un nouveau fichier. Ctrl+S confirme le commit financier avant toute demande de sauvegarde. Les commandes de copie manuelle et restauration directe restent dans Fichier. [Sauvegardes automatiques](AUTOMATIC_BACKUPS.md)
