@@ -43,7 +43,7 @@ public sealed class TransferBackupTests
         var backup = MonetaBackup.Create(source, PathFor("backup")).FilePath;
         var manifest = JsonNode.Parse(File.ReadAllText(backup + ".manifest.json"))!;
         Assert.AreEqual(1, manifest["ManifestVersion"]!.GetValue<int>());
-        Assert.AreEqual(7, manifest["SchemaVersion"]!.GetValue<int>());
+        Assert.AreEqual(8, manifest["SchemaVersion"]!.GetValue<int>());
         Assert.IsFalse(File.ReadAllText(backup + ".manifest.json").Contains(fx.Value.Reference, StringComparison.Ordinal));
         var bytes = File.ReadAllBytes(backup);
         using (var restored = MonetaBackup.Restore(backup, PathFor("restored")))

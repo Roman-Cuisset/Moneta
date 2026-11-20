@@ -8,7 +8,7 @@ namespace Moneta.Infrastructure.Storage;
 /// <summary>A local, exclusively opened Moneta document. Financial changes are committed only by Save.</summary>
 public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconciliationSource, ITransferSource, IAccountHistorySource
 {
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
     public const int ApplicationId = 0x4D4E5441;
     private const int TimeoutSeconds = 3;
     private readonly FileStream ownership;
@@ -58,9 +58,10 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
                 ApplyChanges(connection, snapshot, changes, transaction, creating: true);
                 WriteTransferChanges(connection, transfers, transaction);
                 WriteSchedule(connection, transaction, snapshot, null, changes, transfers);
+                WriteAnalysis(connection, transaction, snapshot, null);
                 if (provenance is not null) WriteBankPerfectProvenance(connection, transaction, provenance);
-                InsertHistory(connection, transaction, 7, 0, "create-v7",
-                    provenance is null ? "native-accounts-v7" : "native-accounts-v7+bankperfect-v1");
+                InsertHistory(connection, transaction, 8, 0, "create-v8",
+                    provenance is null ? "native-accounts-v8" : "native-accounts-v8+bankperfect-v1");
                 snapshot = ReadWithinTransaction(connection, false, transaction);
                 transaction.Commit();
                 Checkpoint(connection);
@@ -166,6 +167,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             var persisted = ReadWithinTransaction(Connection, false, transaction);
             if (!SameSnapshot(Snapshot, persisted))
                 throw Error(DocumentError.InvalidData, "Le dossier a été modifié par un autre client SQLite. Fermez et rouvrez-le avant toute sauvegarde.");
+            RemoveObsoleteBudgets(Connection, transaction, snapshot, persisted);
             ValidateAndRemoveAccounts(persisted, accounts, changes, reconciliation, transaction);
             ValidateReconciliationChanges(Connection, snapshot, changes, reconciliation, transaction, creating: false, baseline: persisted);
             ValidateTransferChanges(Connection, snapshot, changes, transfers, transaction, creating: false, baseline: persisted);
@@ -175,6 +177,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             ApplyChanges(Connection, snapshot, changes, transaction, creating: false);
             WriteTransferChanges(Connection, transfers, transaction);
             WriteSchedule(Connection, transaction, snapshot, persisted, changes, transfers);
+            WriteAnalysis(Connection, transaction, snapshot, persisted);
             var saved = ReadWithinTransaction(Connection, false, transaction);
             var savedLookup = new LedgerLookup(saved);
             transaction.Commit();
@@ -217,7 +220,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
         expected.BankPerfectProvenanceHash == actual.BankPerfectProvenanceHash &&
         expected.Schedules.OrderBy(value => value.Id).SequenceEqual(actual.Schedules.OrderBy(value => value.Id)) &&
         expected.ScheduleHistory.OrderBy(value => (value.PlanId, value.Number, value.Step))
-            .SequenceEqual(actual.ScheduleHistory.OrderBy(value => (value.PlanId, value.Number, value.Step)));
+            .SequenceEqual(actual.ScheduleHistory.OrderBy(value => (value.PlanId, value.Number, value.Step))) && SameAnalysis(expected, actual);
 
     private static void VerifySnapshot(FinancialDocument expected, FinancialDocument actual)
     {
@@ -315,6 +318,11 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(snapshot.AccountBalances.ToDictionary(pair => pair.Key, pair => pair.Value)),
         Schedules = Array.AsReadOnly(snapshot.Schedules.ToArray()),
         ScheduleHistory = Array.AsReadOnly(snapshot.ScheduleHistory.ToArray()),
+        Budgets = Array.AsReadOnly(snapshot.Budgets.Select(item => item with
+        {
+            Accounts = Array.AsReadOnly(item.Accounts.Order().ToArray()), Categories = Array.AsReadOnly(item.Categories.Order().ToArray())
+        }).ToArray()),
+        FrozenReports = Array.AsReadOnly(snapshot.FrozenReports.ToArray()),
         AccountPointedBalances = snapshot.AccountPointedBalances is null ? null :
             new System.Collections.ObjectModel.ReadOnlyDictionary<Guid, decimal>(snapshot.AccountPointedBalances.ToDictionary(pair => pair.Key, pair => pair.Value))
     };

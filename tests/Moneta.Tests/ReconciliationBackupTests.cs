@@ -230,7 +230,7 @@ public sealed class ReconciliationBackupTests
                 : MonetaBackup.Migrate(input, PathFor("upgraded.moneta")))
             {
                 AssertComplete(source, migrated, rows, sessions);
-                Assert.AreEqual(7, migrated.Snapshot.SchemaVersion);
+                Assert.AreEqual(8, migrated.Snapshot.SchemaVersion);
                 Assert.AreEqual(0L, migrated.Snapshot.TransferCount);
                 Assert.AreEqual(ReconciliationSessionState.Reopened, migrated.ReadReconciliation(sessions[0]).Session.State);
                 Assert.AreEqual(ReconciliationStatus.Unmarked, migrated.GetTransaction(rows[2].Id)!.Status);

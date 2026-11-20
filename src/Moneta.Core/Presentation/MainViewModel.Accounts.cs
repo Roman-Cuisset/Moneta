@@ -74,6 +74,8 @@ public sealed partial class MainViewModel
         var account = ManagedAccount(id).Account;
         if (ScheduleUsesAccount(id))
             throw new InvalidOperationException("Ce compte est utilisé par l’échéancier. Archivez-le pour conserver ses références.");
+        if (Budgets.Any(item => item.Accounts.Contains(id)))
+            throw new InvalidOperationException("Ce compte est utilisé par un budget. Retirez-le du budget ou archivez le compte.");
         var persisted = _document!.Accounts.Any(item => item.Id == id);
         if (account.OpeningBalance != 0 || HasAccountDrafts(id) ||
             (persisted && (_source is not IAccountHistorySource history || history.HasAccountHistory(id))))

@@ -51,6 +51,15 @@ public static class RateConverter
         return total.Round(target.DecimalPlaces);
     }
 
+    internal static decimal Difference(decimal first, decimal second)
+    {
+        static int Scale(decimal value) => (decimal.GetBits(value)[3] >> 16) & 0xff;
+        return (Fraction.FromDecimal(first) + Fraction.FromDecimal(-second)).Round(Math.Max(Scale(first), Scale(second)));
+    }
+
+    internal static decimal Percentage(decimal amount, decimal planned) =>
+        (Fraction.FromDecimal(amount) * Fraction.FromDecimal(100) / Fraction.FromDecimal(planned)).Round(1);
+
     private static OfficialRateQuote? FindQuote(string code, OfficialRateSet rates)
     {
         if (code == rates.ReferenceCurrency) return null;

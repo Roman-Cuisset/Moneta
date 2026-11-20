@@ -61,12 +61,16 @@ public sealed class HistoricalValuation(HistoricalRateResolver resolver, TimePro
 
     public async Task<IReadOnlyList<HistoricalResult>> ValueBatchAsync(IReadOnlyList<HistoricalInput> inputs, Currency target,
         RateProvider provider, HistoricalRateAccess access = HistoricalRateAccess.FetchMissing,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => await ValueBatchAsync(inputs, target, provider, access,
+            MaximumBatchSize, cancellationToken).ConfigureAwait(false);
+
+    internal async Task<IReadOnlyList<HistoricalResult>> ValueBatchAsync(IReadOnlyList<HistoricalInput> inputs, Currency target,
+        RateProvider provider, HistoricalRateAccess access, int limit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         _ = RateRules.ReferenceCurrency(provider);
-        if (!Enum.IsDefined(access) || inputs.Count > MaximumBatchSize)
-            throw new ArgumentException("Limitez chaque lot à 50 000 valorisations et choisissez un accès aux cours valide.");
+        if (!Enum.IsDefined(access) || inputs.Count > limit)
+            throw new ArgumentException($"Limitez chaque lot à {limit:N0} valorisations et choisissez un accès aux cours valide.");
         var today = DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
         var result = new HistoricalResult[inputs.Count];
         var dates = new Dictionary<DateOnly, List<(int Index, HistoricalInput Input)>>();

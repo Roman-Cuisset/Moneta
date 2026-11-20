@@ -379,7 +379,7 @@ public sealed class MonetaFileTests
     public void SchemaFourCreatesStrictHistoryAndNullablePointingFieldsWithoutInventedRecords()
     {
         using var file = MonetaFile.Create(FileName, Synthetic());
-        Assert.AreEqual(7, file.Snapshot.SchemaVersion);
+        Assert.AreEqual(8, file.Snapshot.SchemaVersion);
         Assert.AreEqual(0L, file.Snapshot.ReconciliationCount);
         Assert.AreEqual(0L, file.Snapshot.ReconciliationEventCount);
         using var raw = Raw(FileName);

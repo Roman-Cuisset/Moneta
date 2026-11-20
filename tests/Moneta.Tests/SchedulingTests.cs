@@ -290,6 +290,7 @@ public sealed class SchedulingTests
             sql.Open();
             using var command = sql.CreateCommand();
             command.CommandText = """
+                DROP TABLE BudgetCategories; DROP TABLE BudgetAccounts; DROP TABLE Budgets; DROP TABLE FrozenReports;
                 DROP TABLE ScheduleDecisions; DROP TABLE SchedulePlans;
                 UPDATE Document SET schema_version=6,min_reader=6,min_writer=6,creator_version='Moneta-6'; PRAGMA user_version=6;
                 UPDATE MigrationHistory SET version=6,migration_id='create-v6',definition='native-accounts-v6';
@@ -303,7 +304,7 @@ public sealed class SchedulingTests
         var archive = MonetaBackup.Inspect(Path.Combine(_directory, "copie.avant-migration.moneta"));
         Assert.AreEqual(6, archive.Snapshot.SchemaVersion);
         var upgraded = MonetaFile.Inspect(destination);
-        Assert.AreEqual(7, upgraded.SchemaVersion);
+        Assert.AreEqual(8, upgraded.SchemaVersion);
         CollectionAssert.AreEqual(archive.Snapshot.Accounts.ToArray(), upgraded.Accounts.ToArray());
         Assert.AreEqual(archive.Snapshot.LedgerDigest, upgraded.LedgerDigest);
         CollectionAssert.AreEqual(before, SHA256.HashData(File.ReadAllBytes(Source)));

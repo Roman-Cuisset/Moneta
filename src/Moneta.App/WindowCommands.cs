@@ -50,4 +50,7 @@ public static class WindowCommands
     public static RoutedUICommand HistoricalConverter { get; } = new("Convertisseur historique", nameof(HistoricalConverter), typeof(WindowCommands));
     public static RoutedUICommand HistoricalFlow { get; } = new("Valorisation de l’opération enregistrée", nameof(HistoricalFlow), typeof(WindowCommands));
     public static RoutedUICommand HistoricalBalance { get; } = new("Valorisation du solde à date", nameof(HistoricalBalance), typeof(WindowCommands));
+    public static RoutedUICommand Reports { get; } = new("Rapports", nameof(Reports), typeof(WindowCommands));
+    public static RoutedUICommand Budgets { get; } = new("Budgets", nameof(Budgets), typeof(WindowCommands), new InputGestureCollection { new KeyGesture(Key.B, ModifierKeys.Control) });
+    public static RoutedUICommand CategoryReports { get; } = new("Totaux par catégories", nameof(CategoryReports), typeof(WindowCommands), new InputGestureCollection { new KeyGesture(Key.T, ModifierKeys.Control) });
 }

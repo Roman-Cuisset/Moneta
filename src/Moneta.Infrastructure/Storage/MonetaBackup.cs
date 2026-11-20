@@ -205,7 +205,8 @@ public static class MonetaBackup
         if (original.SchemaVersion <= 3) MonetaFile.UpgradeV3(connection);
         if (original.SchemaVersion <= 4) MonetaFile.UpgradeV4(connection);
         if (original.SchemaVersion <= 5) MonetaFile.UpgradeV5(connection);
-        MonetaFile.UpgradeV6(connection);
+        if (original.SchemaVersion <= 6) MonetaFile.UpgradeV6(connection);
+        MonetaFile.UpgradeV7(connection);
         var upgraded = MonetaFile.ReadValidated(connection);
         // Compare historical ledgers through their original canonical projection;
         // newer digests additionally certify reconciliation history and transfer links.
@@ -408,6 +409,13 @@ public static class MonetaBackup
                 JsonSerializer.Serialize(writer, snapshot.Schedules.OrderBy(value => value.Id));
                 writer.WritePropertyName("scheduleHistory");
                 JsonSerializer.Serialize(writer, snapshot.ScheduleHistory.OrderBy(value => (value.PlanId, value.Number, value.Step)));
+            }
+            if (snapshot.SchemaVersion >= 8)
+            {
+                writer.WritePropertyName("budgets");
+                JsonSerializer.Serialize(writer, snapshot.Budgets.OrderBy(value => value.Id));
+                writer.WritePropertyName("frozenReports");
+                JsonSerializer.Serialize(writer, snapshot.FrozenReports.OrderBy(value => value.Id));
             }
             writer.WriteEndObject();
         }

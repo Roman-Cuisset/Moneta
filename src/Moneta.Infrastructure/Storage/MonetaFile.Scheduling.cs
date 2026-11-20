@@ -44,7 +44,7 @@ public sealed partial class MonetaFile
         using var transaction = connection.BeginTransaction();
         Execute(connection, SchedulingSql + "UPDATE Document SET schema_version=7,min_reader=7,min_writer=7; PRAGMA user_version=7;", transaction);
         InsertHistory(connection, transaction, 7, 6, "v6-to-v7-schedule", "schedule-and-decisions-v7");
-        VerifySnapshot(original with { SchemaVersion = 7 }, ReadWithinTransaction(connection, false, transaction));
+        VerifySnapshot(original with { SchemaVersion = 7 }, ReadWithinTransaction(connection, true, transaction));
         transaction.Commit();
     }
 

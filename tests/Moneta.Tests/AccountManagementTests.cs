@@ -231,6 +231,7 @@ public sealed class AccountManagementTests
             provenance = initial.ReadBankPerfectProvenance()!;
         }
         Execute(FileName, """
+            DROP TABLE BudgetCategories; DROP TABLE BudgetAccounts; DROP TABLE Budgets; DROP TABLE FrozenReports;
             DROP TABLE ScheduleDecisions; DROP TABLE SchedulePlans;
             ALTER TABLE Accounts DROP COLUMN holder;
             ALTER TABLE Accounts DROP COLUMN bank_reference;

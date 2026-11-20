@@ -98,7 +98,7 @@ public sealed class RateDisplayTests
             Assert.AreEqual(140m, original.Credit.Amount);
             Assert.IsTrue(original.HasReconciledLeg);
             Assert.AreEqual(ReconciliationStatus.Marked, original.Debit.Status);
-            Assert.AreEqual(7, model.CaptureDocument().SchemaVersion);
+            Assert.AreEqual(8, model.CaptureDocument().SchemaVersion);
             Assert.IsFalse(workspace.HasUnsavedChanges);
             CollectionAssert.AreEqual(database, SharedBytes(file));
             if (wal is not null) CollectionAssert.AreEqual(wal, SharedBytes(file + "-wal"));

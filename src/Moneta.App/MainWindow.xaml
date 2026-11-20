@@ -41,6 +41,9 @@
         <CommandBinding Command="{x:Static local:WindowCommands.HistoricalConverter}" Executed="HistoricalFx_Executed" CanExecute="Available_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.HistoricalFlow}" Executed="HistoricalFx_Executed" CanExecute="HistoricalFx_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.HistoricalBalance}" Executed="HistoricalFx_Executed" CanExecute="HistoricalFx_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Reports}" Executed="Reports_Executed" CanExecute="Reports_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.Budgets}" Executed="Reports_Executed" CanExecute="Reports_CanExecute" />
+        <CommandBinding Command="{x:Static local:WindowCommands.CategoryReports}" Executed="Reports_Executed" CanExecute="Reports_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.TogglePointing}" Executed="TogglePointing_Executed" CanExecute="Pointing_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.MarkTransactions}" Executed="Mark_Executed" CanExecute="Pointing_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.UnmarkTransactions}" Executed="Unmark_Executed" CanExecute="Pointing_CanExecute" />
@@ -196,16 +199,26 @@
                         <MenuItem Header="Champs supplémentaires…" InputGestureText="F3" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Ajouter à l'échéancier…" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
+                    <MenuItem Header="_Rapports">
+                        <MenuItem Header="_Vue d’ensemble…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="0" />
+                        <MenuItem Header="Recettes et dépenses…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="1" />
+                        <MenuItem Header="Par _catégorie…" Command="{x:Static local:WindowCommands.CategoryReports}" />
+                        <MenuItem Header="Graphiques…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="3" />
+                        <MenuItem Header="Soldes à date…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="4" />
+                        <MenuItem Header="Prévisions…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="5" />
+                        <MenuItem Header="_Budgets…" Command="{x:Static local:WindowCommands.Budgets}" />
+                        <MenuItem Header="Rapports figés…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="7" />
+                    </MenuItem>
                     <MenuItem Header="O_utils">
                         <MenuItem Header="_Options…" Command="{x:Static local:WindowCommands.Settings}" /><Separator />
                         <MenuItem Header="_Cours de change…" Command="{x:Static local:WindowCommands.ShowRates}" AutomationProperties.AutomationId="ShowRatesCommand" />
                         <MenuItem Header="Actualiser les cours officiels" Command="{x:Static local:WindowCommands.RefreshRates}" AutomationProperties.AutomationId="RefreshRatesCommand" />
                         <MenuItem Header="Convertisseur historique…" Command="{x:Static local:WindowCommands.HistoricalConverter}" />
                         <MenuItem Header="Valoriser le solde à date…" Command="{x:Static local:WindowCommands.HistoricalBalance}" />
-                        <MenuItem Header="Budget mensuel…" InputGestureText="Ctrl+B" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Budget mensuel…" Command="{x:Static local:WindowCommands.Budgets}" />
                         <MenuItem Header="Budget annuel…" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="Graphiques…" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="Totaux par catégories…" InputGestureText="Ctrl+T" Style="{StaticResource UnavailableMenuItem}" />
+                        <MenuItem Header="Graphiques…" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="3" />
+                        <MenuItem Header="Totaux par catégories…" Command="{x:Static local:WindowCommands.CategoryReports}" />
                         <MenuItem Header="Totaux par tiers…" InputGestureText="Ctrl+Alt+T" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="Calcul automatique des champs…" Style="{StaticResource UnavailableMenuItem}" ToolTip="Ancien Ctrl+F BankPerfect ; conflit documenté avec Rechercher, réservé par la mission 5." />
                         <MenuItem Header="Notes…" InputGestureText="Ctrl+Maj+N" Style="{StaticResource UnavailableMenuItem}" />
@@ -252,9 +265,9 @@
                     <Button Command="{x:Static local:WindowCommands.FinancialRedo}" Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Refaire"><StackPanel><Path Data="{StaticResource RedoIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Refaire" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Verrouillage"><StackPanel><Path Data="{StaticResource LockIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Verrouiller" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Separator />
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Budget"><StackPanel><Path Data="{StaticResource BudgetIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Budget" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Totaux"><StackPanel><Path Data="{StaticResource TotalsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Totaux" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource UnavailableButton}" AutomationProperties.Name="Graphiques"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Graphiques" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.Budgets}" AutomationProperties.Name="Budget"><StackPanel><Path Data="{StaticResource BudgetIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Budget" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.CategoryReports}" AutomationProperties.Name="Totaux par catégories"><StackPanel><Path Data="{StaticResource TotalsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Totaux" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="3" AutomationProperties.Name="Graphiques"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Graphiques" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.SearchFilters}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.Schedule}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Échéancier"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Échéancier" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.NewTransfer}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="Virement" AutomationProperties.AutomationId="NewTransferButton" ToolTip="Virement lié dans le dossier : deux montants natifs exacts, frais séparés."><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Virement" Style="{StaticResource ToolLabel}" /></StackPanel></Button>

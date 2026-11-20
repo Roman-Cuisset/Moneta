@@ -338,6 +338,7 @@ public sealed class TransferStorageTests
         }
         // A real v4 schema: additive v5 tables absent, exact v4 DDL and all 7B data retained.
         using (var raw = Raw(FileName)) Execute(raw, """
+            DROP TABLE BudgetCategories; DROP TABLE BudgetAccounts; DROP TABLE Budgets; DROP TABLE FrozenReports;
             DROP TABLE ScheduleDecisions; DROP TABLE SchedulePlans;
             DROP TABLE TransferLegs; DROP TABLE Transfers;
             ALTER TABLE Accounts DROP COLUMN holder;
@@ -352,7 +353,7 @@ public sealed class TransferStorageTests
         var destination = Path.Combine(directory, "migrated.moneta");
         using (var migrated = MonetaBackup.Migrate(FileName, destination))
         {
-            Assert.AreEqual(7, migrated.Snapshot.SchemaVersion); Assert.AreEqual(0L, migrated.Snapshot.TransferCount);
+            Assert.AreEqual(8, migrated.Snapshot.SchemaVersion); Assert.AreEqual(0L, migrated.Snapshot.TransferCount);
             Assert.AreEqual(2L, migrated.Snapshot.OperationCount); Assert.AreEqual(1L, migrated.Snapshot.ReconciliationCount); Assert.AreEqual(3L, migrated.Snapshot.ReconciliationEventCount);
             Assert.AreEqual(ReconciliationSessionState.Reopened, migrated.ReadReconciliation(sessionId).Session.State);
             Assert.AreEqual(ReconciliationStatus.Unmarked, migrated.GetTransaction(legacy.Id)!.Status);
@@ -362,7 +363,7 @@ public sealed class TransferStorageTests
             Assert.AreEqual(historyJson, Scalar(raw, "SELECT snapshot_json FROM ReconciliationHistory WHERE kind=2;"));
         }
         CollectionAssert.AreEqual(bytes, File.ReadAllBytes(FileName));
-        using (var raw = Raw(destination)) Execute(raw, "PRAGMA user_version=8;");
+        using (var raw = Raw(destination)) Execute(raw, "PRAGMA user_version=9;");
         var future = File.ReadAllBytes(destination);
         Assert.AreEqual(DocumentError.UnsupportedVersion, Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(destination)).Error);
         CollectionAssert.AreEqual(future, File.ReadAllBytes(destination));
