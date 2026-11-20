@@ -1,6 +1,6 @@
 # Formats de fichiers Moneta
 
-Le format financier courant utilise le **schéma SQLite 7**. Il couvre les comptes, le registre, les rapprochements, les virements liés avec frais, l’échéancier et la provenance des imports BankPerfect. Les cours officiels et leur historique public résident dans un **cache SQLite séparé, schéma 1**. Les préférences locales utilisent le schéma JSON 3. [Architecture](ARCHITECTURE.md)
+Le format financier courant utilise le **schéma SQLite 8**. Il couvre les comptes, le registre, les rapprochements, les virements liés avec frais, l’échéancier, les budgets, les rapports figés et la provenance des imports BankPerfect. Les cours officiels et leur historique public résident dans un **cache SQLite séparé, schéma 1**. Les préférences locales utilisent le schéma JSON 3. [Architecture](ARCHITECTURE.md)
 
 La mission 15 conserve ces schémas. Une preuve exportée `*.fxproof.json` porte son numéro de règles, les opérandes exacts, les références au lot et le résultat. Le fichier est indépendant du cache public et du `.moneta`. Il contient des données financières privées et reste au chemin choisi par l’utilisateur. Les sauvegardes du dossier financier ne comprennent pas ces preuves externes. [Contrat de preuve](HISTORICAL_FX_ENGINE.md#preuves-cache-et-accès-hors-ligne)
 
@@ -9,6 +9,8 @@ Le [diagnostic BankPerfect V5](BANKPERFECT_FORMAT_RESEARCH.md#lecteur-diagnostiq
 La recherche réutilise les tables de comptes, opérations, référentiels et virements ainsi que leurs index existants. Les critères et pages restent en mémoire. Le texte consultable provient du registre actif et des virements actifs. Le BLOB de provenance BankPerfect conserve son contrat. [Recherche et filtres](SEARCH_AND_FILTERS.md)
 
 ## Comptes et schéma courant
+
+Le schéma **8** ajoute `Budgets`, `BudgetAccounts`, `BudgetCategories` et `FrozenReports`. Le montant prévu est un entier en unités mineures. Les liens budgétaires utilisent des clés étrangères vers les comptes et catégories. Le rapport contient le périmètre, les résultats par ligne et les preuves dans un JSON versionné, limité à 32 Mio et vérifié par SHA-256 et rejeu. Une nouvelle version peut référencer une copie précédente. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
 
 Le schéma **7** ajoute `SchedulePlans` et `ScheduleDecisions`. Les montants se conservent en unités mineures entières dans les données typées. Les colonnes relationnelles imposent les références et l’unicité d’une décision finale par occurrence. Une comptabilisation référence une opération ou un virement complet écrit dans la même transaction. Le passage de v6 à v7 préserve le registre et la provenance. [Échéancier](SCHEDULED_TRANSACTIONS.md)
 
@@ -39,8 +41,8 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 - Ce n'est **ni une archive ZIP**, ni un conteneur à décompresser, ni un `.bp` renommé, ni une encapsulation de BankPerfect. Aucune installation, API ou exécution BankPerfect n'est nécessaire au format natif Moneta.
 - Le fichier commence par les 16 octets de signature SQLite `SQLite format 3\0` (zéro terminal). Cette signature identifie SQLite, **pas Moneta**. L'extension seule n'identifie aucun format et une base SQLite quelconque renommée `.moneta` doit être refusée comme dossier Moneta.
 - L'identification doit combiner signature, `PRAGMA application_id`, métadonnées Moneta, version et schéma reconnu. `application_id` est le champ applicatif 32 bits de l'en-tête SQLite ; `user_version` est une convention de l'application. Ne pas utiliser `schema_version`, que SQLite gère pour son propre schéma, comme numéro de migration Moneta [S01, S02].
-- Contrat livré avec le marqueur `Moneta`, `application_id=0x4D4E5441` (`MNTA`), `user_version=7` et métadonnées concordantes. Le dossier conserve son UUID stable, son nom, ses versions minimales de lecture et d’écriture, la version de création, les horodatages UTC et la sélection facultative. L’identifiant applicatif n’a pas de réservation officielle revendiquée.
-- Quinze tables `STRICT` hors provenance BankPerfect optionnelle. Les montants financiers utilisent les unités mineures entières.
+- Contrat livré avec le marqueur `Moneta`, `application_id=0x4D4E5441` (`MNTA`), `user_version=8` et métadonnées concordantes. Le dossier conserve son UUID stable, son nom, ses versions minimales de lecture et d’écriture, la version de création, les horodatages UTC et la sélection facultative. L’identifiant applicatif n’a pas de réservation officielle revendiquée.
+- Dix-neuf tables `STRICT` hors provenance BankPerfect optionnelle. Les montants financiers utilisent les unités mineures entières.
 
 | Table | Champs / relations réalisés |
 |---|---|
@@ -59,6 +61,10 @@ Les identifiants `FMT-*` sont stables pour les renvois de la feuille de route. �
 | `TransferLegs` | FK virement/opération sans cascade ; clé `(transfer_id, role)`, rôle 0 débit/1 crédit/2 frais ; `transaction_id` unique ; index d’unicité pour recherche dans les deux sens |
 | `SchedulePlans` | UUID, références aux comptes, règle de récurrence, ancrage, curseur, fin éventuelle, suspension ou retrait |
 | `ScheduleDecisions` | Clé `(plan_id, occurrence, step)`, état, dates et instantané des conditions, FK optionnelle et unique vers une opération ordinaire ou un virement |
+| `Budgets` | UUID, nom, mois ISO, devise de référence et montant prévu en unités mineures |
+| `BudgetAccounts` | Couples uniques budget/compte inscrits dans le périmètre |
+| `BudgetCategories` | Couples uniques budget/catégorie ou sous-catégorie sélectionnée |
+| `FrozenReports` | UUID, version précédente facultative, nom, UTC, SHA-256 et preuve JSON immuable au niveau applicatif |
 
 Les opérations référencent les comptes, tiers, modes et catégories par UUID. La sous-catégorie doit appartenir à la racine choisie ; pas de références orphelines ni de suppression cascade des opérations. Un index compte/date/création/UUID soutient l’ordre stable du registre ; les index et le schéma exact sont contrôlés à l’ouverture. Les virements sont des relations normalisées séparées : `Transactions` et les instantanés canoniques `OperationSnapshotV1` restent inchangés par le passage 4 → 5. Les programmations et les décisions sont ajoutées à part au schéma 7.
 - SQLite ordinaire n'apporte pas de chiffrement implicite. Aucun mot de passe BP, clé, secret ou protection inconnue n'est transféré ou émulé. La protection future d'un dossier est un sujet explicite distinct, pas une propriété déduite de l'extension.
@@ -193,7 +199,7 @@ La bibliothèque de mission 13 utilise le même manifeste de sauvegarde. Le desc
 3. Vérifier le contenu complet contre le digest certifié, puis publier sous un nouveau nom, rouvrir avec `MonetaFile.Open` et comparer à nouveau. Un hash ou `integrity_check=ok` isolé ne suffit pas.
 4. Le dialogue annonce uniquement une **restauration sur nouvelle copie rouverte et comparée**. Le dossier actuellement affiché, ses données et brouillons restent inchangés. Utiliser ensuite Fichier → Ouvrir pour une bascule volontaire.
 
-Restauration exercée historiquement en 7B et 7C avec comptes EUR/BYN/RUB, opérations, frais, virements liés et relevés avec instantanés et événements. Le contrôle applicatif compare les relations et l’ensemble du registre. Les archives 1 à 6 sont vérifiées selon leur schéma d’origine avant migration de la copie de travail.
+Restauration exercée historiquement en 7B et 7C avec comptes EUR/BYN/RUB, opérations, frais, virements liés et relevés avec instantanés et événements. Le contrôle applicatif compare les relations et l’ensemble du registre. Les archives 1 à 7 sont vérifiées selon leur schéma d’origine avant migration de la copie de travail. En v8, l’empreinte du contenu couvre les budgets, les périmètres et les références de preuves figées vérifiées au préalable.
 
 Audit 6.1 : un source bloqué par partage/verrou Windows (codes 32/33) renvoie maintenant `DocumentError.Locked` avec un message explicite, sans essai de contournement. Tests supplémentaires : écriture WAL non committée, lecteur WAL épinglé, sources bloqués et readonly pour restauration/migration. Lecture seule SQLite ne garantit pas l'absence de fichiers de coordination adjacents.
 
@@ -201,7 +207,7 @@ Audit 6.1 : un source bloqué par partage/verrou Windows (codes 32/33) renvoie m
 
 Les transitions connues vont de **1 → 2 → 3 → 4 → 5 → 6**. Elles ajoutent successivement le drapeau archivé, le registre et ses référentiels, le pointage et les rapprochements, les virements, puis les descriptions bancaires. L’ordre stocké des comptes précédents est repris à la migration.
 
-L’ouverture normale d’une version **1 à 6** demande une migration sur une nouvelle copie consentie. Moneta lit la source en lecture seule, écrit une sauvegarde vérifiée séparée, applique les transitions à la copie et la rouvre pour vérification. Le contrôle couvre les UUID, devises, soldes, opérations, états, révisions, virements, rapprochements et la provenance disponibles. Les anciennes R gardent leur statut hérité et les dates inconnues restent nulles. Le certificat d’origine reste valide pour sa version.
+L’ouverture normale d’une version **1 à 7** demande une migration sur une nouvelle copie consentie. Moneta lit la source en lecture seule, écrit une sauvegarde vérifiée séparée, applique les transitions à la copie et la rouvre pour vérification. Le contrôle couvre les UUID, devises, soldes, opérations, états, révisions, virements, rapprochements, l’échéancier et la provenance disponibles. Les anciennes R gardent leur statut hérité et les dates inconnues restent nulles. Le certificat d’origine reste valide pour sa version.
 
 Version future, définition inconnue ou schéma altéré : refus, jamais de downgrade. Pour les futures versions publiées, étendre ce catalogue et les essais d'interruption à chaque frontière, avec sauvegarde cohérente/restauration préalable qualifiée. Aucun mécanisme générique de « réparation » ou migration automatique sur l'unique original.
 

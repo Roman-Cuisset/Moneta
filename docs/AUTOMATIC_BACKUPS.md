@@ -1,5 +1,7 @@
 # Sauvegardes automatiques et récupération
 
+Au schéma 8, une sauvegarde inclut les enveloppes mensuelles, leurs liens et les versions figées. L’ouverture vérifie les empreintes et reproduit les preuves du rapport avant certification. La restauration retrouve le budget, sa portée, le rapport et sa version précédente. Le cache public et les preuves de conversion exportées séparément restent des fichiers distincts. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
+
 La mission 14 étend le contrôle du contenu au schéma 7. La sauvegarde certifie les programmations, les suspensions, les reports, les décisions finales et leurs liens avec le registre. Elle prend l’état enregistré lors du même commit que l’écriture ou le virement. La restauration vérifie l’ensemble dans une nouvelle copie et préserve les identifiants qui empêchent un deuxième traitement. Le manifeste garde sa version 1 et les certificats des anciens schémas gardent leur algorithme d’origine. [Échéancier](SCHEDULED_TRANSACTIONS.md)
 
 ## Choisir la politique

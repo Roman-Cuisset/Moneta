@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 16.** **Rapports** réunit Synthèse, Flux, Répartition, Graphiques, Soldes à date, Prévisions, Budgets et Rapports figés. **Outils → Budget mensuel** et **Ctrl+B**, **Outils → Totaux par catégories** et **Ctrl+T**, ainsi que les boutons de la barre d’outils conservent les accès familiers. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
+
 **Mission 15.** **Outils → Convertisseur historique…**, **Outils → Valoriser le solde à date…** et **Opérations → Valoriser l’opération enregistrée…** ouvrent la consultation à date. La fenêtre peut travailler sur le cache seul et reproduire une preuve exportée. [Valorisation historique](HISTORICAL_FX_ENGINE.md)
 
 **Mission 14.** **Comptes → Échéancier…**, le bouton **Échéancier** et **Ctrl+E** ouvrent les onglets Occurrences, Programmations et Historique. Le bouton affiche le nombre d’échéances à traiter. L’utilisateur peut préparer une occurrence depuis son formulaire de confirmation et enregistrer depuis l’échéancier avec **Ctrl+S**. [Échéancier et raccourcis](SCHEDULED_TRANSACTIONS.md)

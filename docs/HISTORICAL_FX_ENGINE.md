@@ -1,5 +1,7 @@
 # Valorisation historique multidevise
 
+La mission 16 réutilise ce moteur pour les flux, budgets et soldes. Un lot de rapport contient au plus 50 000 flux et peut inclure les arrêtés de 1 000 comptes, avec une résolution commune par date et fournisseur. Les rapports figés conservent les preuves dans le dossier financier. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
+
 ## Consulter une valorisation
 
 | Commande | Montant et date retenus |
@@ -8,7 +10,7 @@
 | **Opérations → Valoriser l’opération enregistrée…** | Écriture enregistrée sélectionnée, montant natif signé et date de l’opération |
 | **Outils → Valoriser le solde à date…** | Solde natif du compte sélectionné, calculé à la date d’arrêté inclusive |
 
-Les commandes sur le registre utilisent l’état enregistré. Les modifications en brouillon attendent Ctrl+S. La date de pointage, la date de valeur importée et le jour de consultation gardent leur propre rôle. `HistoricalUse` distingue conversion, flux, solde à date et prévision. Les prévisions et les dates futures retournent un état dédié. Le schéma financier reste en version 7.
+Les commandes sur le registre utilisent l’état enregistré. Les modifications en brouillon attendent Ctrl+S. La date de pointage, la date de valeur importée et le jour de consultation gardent leur propre rôle. `HistoricalUse` distingue conversion, flux, solde à date et prévision. Les prévisions et les dates futures retournent un état dédié. Le moteur de conversion est extérieur au stockage des opérations. [Format financier](FILE_FORMATS.md)
 
 ## Sources et dates
 

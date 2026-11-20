@@ -2,7 +2,7 @@
 
 ## Portée et règle de lecture
 
-Le format financier courant utilise le **schéma 7** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le total multicomptes dans l’interface, le taux manuel, les budgets et la mise à jour installable restent ouverts.
+Le format financier courant utilise le **schéma 8** et le cache public des cours reste indépendant. La conversion `.bp` est qualifiée sur un périmètre V5 EUR. Le taux manuel et la mise à jour installable restent ouverts.
 
 Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). Le [manuel officiel](https://chelly.net/bankperfect/wiki/manuel.html) fournit des comportements documentés, pas une démonstration de l'interface locale complète. L'audit et la matrice de parité doivent relier chaque besoin à sa preuve, sa limite et sa validation ; la feuille de route donne l'ordre et les portes de sortie, pas un abandon des fonctions placées plus tard.
 
@@ -18,9 +18,11 @@ Les programmations de recette, dépense et virement, les retards, les reports et
 
 Moteur en lecture seule pour les flux à leur date et les soldes à la date d’arrêté. Les chemins, dates, valeurs et nominaux restent dans la preuve exportable. Les résultats indisponibles et les dates futures ont des statuts distincts. [Moteur historique](HISTORICAL_FX_ENGINE.md)
 
-### Missions 16 à 18 — exigences restantes pour l’Alpha 0.1.0
+### Budgets, rapports et graphiques — mission 16
 
-- **Mission 16 — Budgets, rapports et graphiques.** Utiliser le moteur historique, distinguer le réalisé et le prévisionnel et signaler la couverture incomplète. Conserver la preuve des résultats validés. Définir la valorisation prévisionnelle explicitement et éviter le double comptage des virements.
+Budgets mensuels, tableaux, graphiques et rapports figés sont livrés. Les rapports signalent la couverture et séparent le stock, les flux et la prévision. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
+
+### Missions 17 et 18 — exigences restantes pour l’Alpha 0.1.0
 - **Mission 17 — Finitions et qualification Windows.** Exercer l’interface, l’accessibilité, les parcours financiers, la récupération et les limites sur plusieurs configurations.
 - **Mission 18 — Installateur, mises à jour et Alpha.** Préserver les dossiers, les sauvegardes et les réglages. Activer la recherche de mise à jour par défaut avec désactivation possible. Notifier au démarrage et afficher **Quoi de neuf**, **Télécharger et installer** et **Plus tard**. Télécharger, vérifier l’authenticité puis installer depuis Moneta, avec traitement des erreurs et des autorisations Windows. Auditer les livrables et l’historique avant l’ouverture du dépôt, au moment de publier l’Alpha 0.1.0.
 

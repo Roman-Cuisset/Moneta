@@ -2,6 +2,8 @@
 
 ## Statut et limites de cette étude
 
+La mission 16 extrait les flux éligibles et les soldes dans un instantané SQLite en lecture seule. `FinancialReportEngine` valorise les lignes ensemble par fournisseur et date avec le moteur historique. `ReportContent` alimente les totaux, les budgets et les graphiques à partir des mêmes montants arrondis. `ReportForecast` consulte séparément l’échéancier. Le schéma 8 conserve les budgets bornés par UUID et les versions figées avec leurs preuves, contrôlées à l’ouverture et pendant la sauvegarde. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
+
 La mission 15 sépare la consultation historique de l’indication de change de mission 8. `HistoricalRateResolver` qualifie les réponses NBRB/CBR par date demandée. `HistoricalValuation` sélectionne le chemin dans un seul lot et réutilise les fractions exactes de `RateConverter`. Le registre fournit les flux et les soldes à date depuis une connexion SQLite en lecture seule. Une preuve d’une valorisation est exportable et reproductible sans le registre, le cache ni le réseau. [Moteur historique](HISTORICAL_FX_ENGINE.md)
 
 La mission 14 ajoute un calendrier local et un journal de décisions à l’instantané financier. `ScheduleRule` calcule à partir d’une date d’ancrage. `ScheduleCalendar` compte par bornes et fusionne les suites pour produire des pages. `MainViewModel.Scheduling` prépare l’occurrence par les chemins de saisie et de virement existants. `MonetaFile.Scheduling` écrit programmation, décision et liens dans la transaction du registre. Les sauvegardes vérifient aussi les règles et l’historique. [Échéancier](SCHEDULED_TRANSACTIONS.md)
@@ -184,7 +186,7 @@ L'heure locale d'une machine ne doit pas faire glisser une opération d'un jour.
 
 ## 5. Devises officielles, historique et fonctionnement hors ligne
 
-La politique proposée pour les futurs budgets et rapports valorise les flux au jour de l’opération et les positions à la date d’arrêté du rapport. Les deux montants réellement comptabilisés d’un virement restent la référence du transfert. Le calcul d’un rapport reproductible doit conserver ses publications et ses règles de valorisation. [Étude sur les cours historiques](HISTORICAL_FX_VALUATION.md)
+Les budgets et rapports de mission 16 valorisent les flux au jour de l’opération et les positions à la date d’arrêté du rapport. Les deux montants réellement comptabilisés d’un virement restent la référence du transfert. Chaque version figée conserve ses publications et ses règles de valorisation. [Budgets et rapports](BUDGETS_AND_REPORTS.md)
 
 ### 5.1 Preuves historiques et acquisition réelle de mission 8
 
