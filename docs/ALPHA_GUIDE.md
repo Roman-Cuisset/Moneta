@@ -1,0 +1,19 @@
+# Premiers pas avec Moneta Alpha 0.1.0
+
+Moneta s’installe sur Windows 11 x64. Vérifiez la provenance du candidat et comparez son SHA-256 avec celui communiqué avant de l’ouvrir. Votre profil Windows accueille l’application et ses raccourcis. Vous choisissez où stocker chaque dossier financier.
+
+1. Lancez **Moneta-0.1.0-win-x64.exe**, puis ouvrez **Moneta** depuis le menu Démarrer.
+2. **Fichier → Nouveau dossier**, puis **Comptes → Ajouter un compte**. Choisissez la devise native du compte. **Ctrl+S** choisit l’emplacement au premier enregistrement.
+3. **Nouvelle** sous le registre ouvre une recette ou une dépense. **Virement** relie les écritures et conserve les montants natifs de chaque compte. **Ctrl+S** enregistre les brouillons.
+4. **Comptes → Échéancier** programme les opérations. Confirmez une occurrence avant de l’enregistrer. **Rapports → Budgets** compare le prévu et le réalisé et indique les conversions indisponibles.
+5. **Fichier → Sauvegarder le dossier** produit un fichier et son manifeste. Conservez-les ensemble sur un autre support. **Outils → Options → Sauvegardes** règle les sauvegardes versionnées.
+6. **Fichier → Restaurer une sauvegarde** vérifie l’archive et crée une copie contrôlée à un nouvel emplacement. Ouvrez ensuite cette copie pour consulter les comptes et le registre.
+7. **Aide → Rechercher les mises à jour** peut être utilisé hors de la recherche automatique du démarrage. Les notes signées s’affichent dans Moneta. **Télécharger et installer** vérifie le fichier et vous laisse enregistrer ou annuler la fermeture avant l’installation.
+
+## Si Moneta ne démarre plus
+
+Gardez les originaux, les sauvegardes et leurs manifestes. Réinstallez un installateur Moneta vérifié. Ouvrez votre dossier en place ou restaurez une sauvegarde vers un nouveau dossier. Si le fichier actif est encore ouvert dans Moneta, utilisez **Sauvegarder le dossier** pour en faire une copie cohérente.
+
+## Limites connues
+
+L’Alpha couvre Windows 11 x64 et le périmètre qualifié des fichiers BankPerfect V5. Les sauvegardes contiennent des données financières en clair. Les mises à jour nécessitent un catalogue signé disponible, et Windows conserve ses protections d’exécution. [Import BankPerfect](BANKPERFECT_QUALIFICATION_10E.md)

@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 18.** **Aide → Rechercher les mises à jour…** consulte le catalogue signé. **Aide → À propos de Moneta…** indique la version installée. La recherche automatique se règle dans **Outils → Options → Mises à jour**. [Guide Alpha](ALPHA_GUIDE.md)
+
 **Mission 17.** Le solde en carte et son choix de devise restent dans la colonne Comptes. **Nouvelle**, **Modifier** et la pagination restent accessibles sous le registre pendant son défilement horizontal. Le bouton **Prévisions…** ouvre l’onglet éponyme du menu Rapports. **Affichage → Thème** conserve les variantes Clair et Sombre. **? → À propos de Moneta…** présente le nouveau symbole. Les raccourcis existants restent associés aux mêmes commandes. [Interface et accessibilité](VISUAL_IDENTITY.md)
 
 **Mission 16.** **Rapports** réunit Synthèse, Flux, Répartition, Graphiques, Soldes à date, Prévisions, Budgets et Rapports figés. **Outils → Budget mensuel** et **Ctrl+B**, **Outils → Totaux par catégories** et **Ctrl+T**, ainsi que les boutons de la barre d’outils conservent les accès familiers. [Budgets et rapports](BUDGETS_AND_REPORTS.md)

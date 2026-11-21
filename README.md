@@ -1,5 +1,7 @@
 # Moneta
 
+**Mission 18 · Alpha 0.1.0.** Installateur Windows 11 x64, déploiement par utilisateur et recherche des mises à jour depuis **Aide**. [Guide Alpha](docs/ALPHA_GUIDE.md) · [Préparer et vérifier un candidat](docs/ALPHA_RELEASE.md) · [Journal des versions](CHANGELOG.md)
+
 ![Symbole Moneta](assets/branding/moneta-64.png)
 
 **Mission 17.** Nouvelle identité bleu nuit et turquoise, thèmes clair et sombre, solde mieux repéré et commandes du registre accessibles près de la pagination. Le logo vectoriel et l’icône Windows se trouvent dans [les ressources de marque](assets/branding/). [Identité visuelle et validation Windows](docs/VISUAL_IDENTITY.md)
@@ -78,7 +80,7 @@ dotnet test Moneta.slnx -c Release --no-build
 dotnet run --project src/Moneta.App/Moneta.App.csproj -c Release --no-build
 ```
 
-Après compilation : `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe`. Le runtime WindowsDesktop .NET 10 est requis ; aucun installateur autonome fourni. La restauration NuGet des tests et de SQLite peut nécessiter Internet. **Par défaut, aucune requête réseau au démarrage : l’actualisation automatique des cours est désactivée.** Si elle est activée explicitement dans Options, le prochain lancement peut interroger le fournisseur choisi, sans bloquer l’ouverture des comptes. Le fonctionnement financier reste local et sans Internet obligatoire ; aucun service de mise à jour ni service réseau permanent.
+Après compilation directe, `src\Moneta.App\bin\Release\net10.0-windows\Moneta.App.exe` utilise le runtime WindowsDesktop .NET 10. L’installateur Alpha inclut ce runtime. La restauration NuGet peut nécessiter Internet. La recherche du catalogue de mises à jour est activée par défaut et se désactive dans **Outils → Options → Mises à jour**. L’actualisation automatique des cours est désactivée par défaut. Les fonctions financières restent disponibles hors ligne.
 
 ## Parcours réellement disponible
 
