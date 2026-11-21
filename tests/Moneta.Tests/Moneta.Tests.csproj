@@ -11,6 +11,7 @@
     <ProjectReference Include="../../src/Moneta.Core/Moneta.Core.csproj" />
     <ProjectReference Include="../../src/Moneta.BankPerfect/Moneta.BankPerfect.csproj" />
     <ProjectReference Include="../../src/Moneta.Infrastructure/Moneta.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Moneta.Updates/Moneta.Updates.csproj" />
     <Compile Include="../../src/Moneta.App/SettingsStore.cs" Link="SettingsStore.cs" />
     <Compile Include="../../src/Moneta.App/DocumentWorkspace.cs" Link="DocumentWorkspace.cs" />
     <Compile Include="../../src/Moneta.App/ExchangeRateSession.cs" Link="ExchangeRateSession.cs" />

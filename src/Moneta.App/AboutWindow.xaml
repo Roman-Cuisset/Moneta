@@ -15,7 +15,7 @@
             </DockPanel>
             <Border Style="{StaticResource SurfaceCard}" Margin="0,0,0,18">
                 <StackPanel>
-                    <TextBlock Text="Version de développement" Style="{StaticResource SectionHeading}" />
+                    <TextBlock x:Name="VersionText" Style="{StaticResource SectionHeading}" />
                     <TextBlock Text="Comptes multidevises, échéancier, budgets et rapports. Vos dossiers Moneta et leurs sauvegardes sont stockés localement." Style="{StaticResource BodyMuted}" Margin="0,5,0,0" />
                 </StackPanel>
             </Border>

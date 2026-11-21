@@ -4,6 +4,8 @@
     <Project Path="src/Moneta.BankPerfect/Moneta.BankPerfect.csproj" />
     <Project Path="src/Moneta.Core/Moneta.Core.csproj" />
     <Project Path="src/Moneta.Infrastructure/Moneta.Infrastructure.csproj" />
+    <Project Path="src/Moneta.Updates/Moneta.Updates.csproj" />
+    <Project Path="src/Moneta.UpdateHost/Moneta.UpdateHost.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Moneta.Tests/Moneta.Tests.csproj" />

@@ -5,6 +5,7 @@ namespace Moneta.App;
 public static class WindowCommands
 {
     public static RoutedUICommand About { get; } = new("À propos de Moneta", nameof(About), typeof(WindowCommands));
+    public static RoutedUICommand CheckUpdates { get; } = new("Rechercher les mises à jour", nameof(CheckUpdates), typeof(WindowCommands));
     public static RoutedUICommand Settings { get; } = new("Paramètres", nameof(Settings), typeof(WindowCommands));
     public static RoutedUICommand Schedule { get; } = new("Échéancier", nameof(Schedule), typeof(WindowCommands),
         [new KeyGesture(Key.E, ModifierKeys.Control)]);

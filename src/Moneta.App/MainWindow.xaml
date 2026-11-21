@@ -8,6 +8,7 @@
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.Close" Executed="Close_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.About}" Executed="About_Executed" />
+        <CommandBinding Command="{x:Static local:WindowCommands.CheckUpdates}" Executed="CheckUpdates_Executed" CanExecute="CheckUpdates_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.Settings}" Executed="Settings_Executed" />
         <CommandBinding Command="{x:Static local:WindowCommands.AddAccount}" Executed="AddAccount_Executed" CanExecute="AddAccount_CanExecute" />
         <CommandBinding Command="{x:Static local:WindowCommands.AccountProperties}" Executed="AccountProperties_Executed" CanExecute="ManageAccount_CanExecute" />
@@ -235,9 +236,9 @@
                         <MenuItem Header="Sauvegarder par courriel…" InputGestureText="F9" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Sauvegarder en ligne…" InputGestureText="Maj+F9" Style="{StaticResource UnavailableMenuItem}" />
                         <MenuItem Header="Télécharger les cours des titres…" Style="{StaticResource UnavailableMenuItem}" />
-                        <MenuItem Header="Mise à jour…" Style="{StaticResource UnavailableMenuItem}" />
                     </MenuItem>
-                    <MenuItem Header="_?">
+                    <MenuItem Header="_Aide">
+                        <MenuItem Header="_Rechercher les mises à jour…" Command="{x:Static local:WindowCommands.CheckUpdates}" />
                         <MenuItem Header="Télécharger le manuel…" InputGestureText="Ctrl+F1" Style="{StaticResource UnavailableMenuItem}" /><Separator />
                         <MenuItem Header="À _propos de Moneta…" Command="{x:Static local:WindowCommands.About}" />
                     </MenuItem>

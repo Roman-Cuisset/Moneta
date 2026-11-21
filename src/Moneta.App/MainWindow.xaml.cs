@@ -225,6 +225,8 @@ public partial class MainWindow : Window
         base.OnClosing(e);
         if (_busy || _closingPrompt) return;
         _closingPrompt = true;
+        var update = _pendingUpdate;
+        var authorized = false;
         try
         {
             if (!await ConfirmReplacement()) return;
@@ -235,8 +237,9 @@ public partial class MainWindow : Window
             RefreshBackupUi();
             await _backupWork;
             ReportBackupFailuresOnExit();
-            if (await RunIo(_workspace.Dispose, "Fermeture du dossier…"))
+            if ((update is null || StartUpdateHost(update)) && await RunIo(_workspace.Dispose, "Fermeture du dossier…"))
             {
+                authorized = update is not null && AuthorizeUpdate(update);
                 _allowClose = true;
                 Close();
             }
@@ -247,7 +250,12 @@ public partial class MainWindow : Window
                 UpdateDocumentState();
             }
         }
-        finally { _closingPrompt = false; }
+        finally
+        {
+            _pendingUpdate = null;
+            if (!authorized) update?.Clean();
+            _closingPrompt = false;
+        }
     }
 
     private void Close_Executed(object sender, ExecutedRoutedEventArgs e) => Close();

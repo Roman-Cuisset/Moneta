@@ -16,7 +16,7 @@ public sealed class SettingsStoreTests
     {
         var store = new SettingsStore(FilePath); store.Load();
         Assert.AreEqual("Light", store.Current.Theme);
-        Assert.IsFalse(store.Current.CheckUpdatesAtStartup); Assert.IsFalse(store.Current.RefreshRatesAtStartup);
+        Assert.IsTrue(store.Current.CheckUpdatesAtStartup); Assert.IsFalse(store.Current.RefreshRatesAtStartup);
         Assert.IsFalse(File.Exists(FilePath));
     }
     [TestMethod]

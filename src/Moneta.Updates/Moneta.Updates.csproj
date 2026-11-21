@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefineConstants Condition="'$(MonetaLab)' == 'true'">$(DefineConstants);MONETA_LAB</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Moneta.Tests" />
+    <EmbeddedResource Include="release-key.spki" LogicalName="Moneta.UpdateKey" Condition="'$(MonetaLab)' != 'true'" />
+    <EmbeddedResource Include="$(MonetaLabPublicKey)" LogicalName="Moneta.UpdateKey" Condition="'$(MonetaLab)' == 'true'" />
+  </ItemGroup>
+  <Target Name="ValidateLabTrust" BeforeTargets="PrepareForBuild" Condition="'$(MonetaLab)' == 'true'">
+    <Error Condition="'$(MonetaLabPublicKey)' == '' Or !Exists('$(MonetaLabPublicKey)')" Text="A lab build requires its own public key." />
+  </Target>
+</Project>

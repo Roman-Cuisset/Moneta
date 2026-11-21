@@ -8,7 +8,7 @@ namespace Moneta.App;
 public sealed record LocalSettings
 {
     public string Theme { get; init; } = "Light";
-    public bool CheckUpdatesAtStartup { get; init; }
+    public bool CheckUpdatesAtStartup { get; init; } = true;
     public bool RefreshRatesAtStartup { get; init; }
     public string RateSource { get; init; } = "NBRB";
     public BackupPolicy Backups { get; init; } = new();

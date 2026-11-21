@@ -1,0 +1,44 @@
+name: Préparer un candidat Moneta
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version avec une note de publication dans docs/releases/
+        required: true
+        default: '0.1.0'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '10.0.401'
+      - name: Compiler et tester
+        run: |
+          dotnet build Moneta.slnx -c Release -m:1 -nr:false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test Moneta.slnx -c Release --no-build --no-restore
+      - name: Préparer le paquet et le catalogue à signer
+        id: package
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        run: |
+          $compiler = & ./tools/Get-MonetaBuildTools.ps1
+          $directory = & ./tools/Build-MonetaCandidate.ps1 -Version $env:CANDIDATE_VERSION -InnoCompiler $compiler | Select-Object -Last 1
+          if (!(Test-Path -LiteralPath (Join-Path $directory 'SHA256SUMS.txt'))) { throw 'Candidat incomplet.' }
+          "directory=$directory" >> $env:GITHUB_OUTPUT
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Moneta-${{ inputs.version }}-win-x64-candidat
+          path: ${{ steps.package.outputs.directory }}
+          if-no-files-found: error
+          retention-days: 14

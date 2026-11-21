@@ -66,9 +66,9 @@
             <TabItem Header="_Mises à jour">
                 <StackPanel Margin="18">
                     <TextBlock Text="Recherche de mises à jour" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-                    <CheckBox x:Name="CheckUpdates" Content="_Rechercher les mises à jour au démarrage (préférence uniquement)"
+                    <CheckBox x:Name="CheckUpdates" Content="_Rechercher automatiquement les mises à jour au démarrage"
                               Foreground="{DynamicResource TextBrush}" />
-                    <TextBlock Text="Service non développé, aucune requête. Cette option est enregistrée sans contacter de serveur, télécharger de fichier ni installer de mise à jour."
+                    <TextBlock Text="La vérification consulte le catalogue signé Moneta. Vous confirmez chaque installation. La commande reste disponible dans le menu Aide."
                                TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,0" />
                 </StackPanel>
             </TabItem>

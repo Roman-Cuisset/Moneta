@@ -5,11 +5,13 @@ using Moneta.Core.Presentation;
 using Moneta.Infrastructure;
 using Moneta.Core;
 using Moneta.Infrastructure.ExchangeRates;
+using Moneta.Updates;
 
 namespace Moneta.App;
 
 public partial class App : Application
 {
+    private Mutex? _running;
     public static ThemeController ThemeController { get; } = new();
     public static SettingsStore Settings { get; } = new();
     private static readonly OfficialRateClient[] RateClients =
@@ -68,6 +70,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        _running = new Mutex(false, UpdateChannel.RunningMutex);
         string? settingsError = null;
         try
         {
@@ -83,6 +86,7 @@ public partial class App : Application
 
         MainWindow = new MainWindow();
         MainWindow.Show();
+        ((MainWindow)MainWindow).InitializeUpdates(e.Args);
         _ = Rates.InitializeAsync(SelectedRateProvider, Settings.Current.RefreshRatesAtStartup);
         if (settingsError is not null)
         {
@@ -95,6 +99,7 @@ public partial class App : Application
         Rates.Dispose();
         foreach (var client in RateClients) client.Dispose();
         ThemeController.Dispose();
+        _running?.Dispose();
         base.OnExit(e);
     }
 }
