@@ -113,7 +113,7 @@ Le [Fluent natif .NET 9](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/wh
 - `Themes/Light.xaml`, `Dark.xaml`, `HighContrast.xaml` : palettes sémantiques ; aucun code couleur de présentation dispersé dans la fenêtre.
 - `Themes/Controls.xaml` : contrôles WPF natifs avec gabarits Moneta, états survol/focus/sélection/désactivation, menus et débordements, sans pack tiers.
 - `ThemeController` : palettes Light/Dark et priorité du contraste élevé ; depuis mission 5, choix de thème conservé par `SettingsStore`, sans stockage de données financières. Notifications libérées à la fermeture, légendes natives via DWM lorsque disponible.
-- `MainWindow.Resources` : douze `Geometry` originales Accounts/Open/Save/Undo/Redo/Lock/Budget/Totals/Chart/Filter/Schedule/Transfer, dessinées par primitives XAML pour cette mission par l'assistant. Concepts usuels, pas extraction, décalque ou vectorisation d'icônes BP. Traits cohérents, sans bitmap. Affectation demandée par l'utilisateur à Moneta ; aucune licence générale de publication du projet n'est présumée.
+- `MainWindow.Resources` regroupe douze `Geometry` originales Accounts/Open/Save/Undo/Redo/Lock/Budget/Totals/Chart/Filter/Schedule/Transfer, dessinées avec des primitives XAML pour Moneta et distribuées avec le code source sous [licence MIT](../LICENSE).
 - Captures Moneta fictives et capture BP restent uniquement dans `screenshots-private/`, hors Git et hors ressources de compilation. Les captures BP ne sont pas incorporées à ce document.
 
 ## VI-01 — Origine absolument indépendante des ressources

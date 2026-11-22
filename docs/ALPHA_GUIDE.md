@@ -17,3 +17,9 @@ Gardez les originaux, les sauvegardes et leurs manifestes. Réinstallez un insta
 ## Limites connues
 
 L’Alpha couvre Windows 11 x64 et le périmètre qualifié des fichiers BankPerfect V5. Certains montants historiques inférieurs à l’unité minimale de leur devise sont refusés. Une conversion requiert un cours officiel applicable ou une copie valable en cache. Les sauvegardes contiennent des données financières en clair. Les mises à jour nécessitent un catalogue signé disponible, et Windows conserve ses protections d’exécution. [Import BankPerfect](BANKPERFECT_QUALIFICATION_10E.md)
+
+GitHub fournit les préversions sur leur page de release. Le canal intégré `Latest` attend une release stable avec un catalogue signé. Pour connaître les préversions disponibles, consultez la [liste des releases](https://github.com/Roman-Cuisset/Moneta/releases).
+
+Effectuez des sauvegardes régulières et vérifiez une restauration avant d’utiliser l’Alpha avec des données importantes.
+
+Le code source original de Moneta est sous [licence MIT](../LICENSE). Les composants tiers conservent leurs propres notices dans `ThirdPartyNotices`.

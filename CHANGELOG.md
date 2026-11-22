@@ -2,4 +2,4 @@
 
 ## 0.1.0 Alpha
 
-Première distribution Windows de Moneta. Voir les [notes de version](docs/releases/0.1.0.md) et le [guide Alpha](docs/ALPHA_GUIDE.md).
+Première préversion publique de Moneta pour Windows 11 x64. Le code source original est sous [licence MIT](LICENSE). [Release v0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0) · [Notes de version](docs/releases/0.1.0.md) · [Guide Alpha](docs/ALPHA_GUIDE.md)

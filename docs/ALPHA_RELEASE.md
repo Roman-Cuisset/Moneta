@@ -16,7 +16,7 @@ Les trois scripts vérifient l’éditeur du compilateur, le runtime et la versi
 
 ## Mises à jour et contrôle de sécurité
 
-La production pointe vers la dernière release publique du dépôt Moneta en HTTPS. Le client valide le catalogue avec une clé publique ECDSA P‑256 intégrée, limite les redirections aux hôtes GitHub nécessaires et refuse les versions égales ou antérieures. Le catalogue authentifie la taille, le SHA‑256 de l’installateur, le produit, l’architecture, la version et le texte de publication. Le lanceur répète les contrôles avant de lancer le fichier via Windows. Il garde le fichier ouvert en lecture pour empêcher son remplacement entre le contrôle et le lancement. Les téléchargements de production conservent la marque Internet pour les vérifications de Windows.
+La production utilise le point d’accès GitHub `releases/latest/download/moneta-update.json` en HTTPS. Le client valide le catalogue avec une clé publique ECDSA P‑256 intégrée, limite les redirections aux hôtes GitHub nécessaires et refuse les versions égales ou antérieures. Le catalogue authentifie la taille, le SHA‑256 de l’installateur, le produit, l’architecture, la version et le texte de publication. Le lanceur répète les contrôles avant de lancer le fichier via Windows. Il garde le fichier ouvert en lecture pour empêcher son remplacement entre le contrôle et le lancement. Les téléchargements de production conservent la marque Internet pour les vérifications de Windows.
 
 Moneta propose d’enregistrer les brouillons, attend la fin des sauvegardes et ferme le dossier. Le lanceur n’agit qu’après la décision de fermer et la fin du processus. L’installation attend sa propre fin avant de vérifier la version et relancer Moneta. En cas d’annulation ou d’échec, le résultat est affiché au redémarrage si l’application demeure disponible. L’installateur impose le dossier de programme, refuse la rétrogradation et demande la fermeture des autres instances.
 
@@ -28,7 +28,7 @@ Le laboratoire compile une autre clé, un autre identifiant d’installation et 
 
 Le workflow manuel **Préparer un candidat Moneta** produit des artefacts de contrôle sans clé privée. La première livraison utilise les fichiers scellés dans `private/mission18b/candidate/artifacts` sur le poste de qualification. Une reconstruction change potentiellement le SHA-256. Le propriétaire doit autoriser explicitement la visibilité publique du dépôt, la distribution et la publication de la release avant les commandes correspondantes. Un push sur `main` ne déclenche aucune publication.
 
-Pour le canal configuré, publier l’Alpha comme la release GitHub marquée **Latest**, avec « Alpha » dans le titre. Le lien `releases/latest` de GitHub sélectionne une release publique normale. [Comportement de Latest](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) · [Qualification et audit](ALPHA_QUALIFICATION.md)
+Publier `v0.1.0` comme **préversion**. GitHub réserve `releases/latest` aux releases stables. Tant que seules des préversions existent, Moneta 0.1.0 traite la réponse HTTP 404 de ce canal comme une absence de mise à jour. Le catalogue signé est disponible sous l’URL du tag. La détection automatique des futures préversions demanderait un canal dédié. [Comportement de Latest](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) · [Qualification et audit](ALPHA_QUALIFICATION.md)
 
 ### Vérification en PowerShell 7 depuis la racine du dépôt
 
@@ -88,22 +88,29 @@ if ($manifest.format -ne 1 -or $manifest.version -ne '0.1.0' -or $manifest.archi
 
 ### Après autorisation du propriétaire
 
-Dans la même session, contrôler que le commit est celui de l’audit et contrôler les éventuels journaux Actions avant le changement de visibilité. Préparer ensuite une release en brouillon et relire les fichiers depuis GitHub. [Visibilité GitHub](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) · [Créer une release](https://cli.github.com/manual/gh_release_create)
+Dans la même session, contrôler que le commit est celui de l’audit, que GitHub reconnaît la licence MIT et que les surfaces exposées comme les journaux Actions ont été examinées. Préparer et vérifier le brouillon avant de rendre le dépôt public. [Visibilité GitHub](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) · [Créer une release](https://cli.github.com/manual/gh_release_create)
 
 ```powershell
-gh repo edit $repo --visibility public --accept-visibility-change-consequences
+if ((gh repo view $repo --json licenseInfo --jq .licenseInfo.spdxId) -ne 'MIT') {
+    throw 'Licence MIT non reconnue.'
+}
 $publication = Join-Path $env:TEMP ('moneta-release-' + [guid]::NewGuid().ToString('N'))
 $verified = Join-Path $publication 'verified'
 $null = New-Item -ItemType Directory -Path $verified
 $guide = Join-Path $publication 'GUIDE-DE-PREMIERE-UTILISATION.md'
 $guideText = (Get-Content -Raw docs/ALPHA_GUIDE.md).Replace(
     '](BANKPERFECT_QUALIFICATION_10E.md)',
-    "](https://github.com/$repo/blob/$commit/docs/BANKPERFECT_QUALIFICATION_10E.md)")
-[IO.File]::WriteAllText($guide, $guideText)
+    "](https://github.com/$repo/blob/$commit/docs/BANKPERFECT_QUALIFICATION_10E.md)").Replace(
+    '](../LICENSE)', "](https://github.com/$repo/blob/$commit/LICENSE)")
+$license = (Get-Content -Raw LICENSE).Trim()
+$licenseHeading = "`n`n## Texte de la licence MIT`n`n"
+$fence = [string]::new([char]96, 3)
+[IO.File]::WriteAllText($guide, $guideText.TrimEnd() + $licenseHeading + $fence + "`n$license`n" + $fence + "`n")
 $assets = @($installer, $catalog, $sums, $guide)
-gh release create $tag @assets --repo $repo --target $commit --draft --title 'Moneta Alpha 0.1.0' --notes-file $notes
-$draft = gh release view $tag --repo $repo --json isDraft,isPrerelease,tagName | ConvertFrom-Json
-if (!$draft.isDraft -or $draft.isPrerelease -or $draft.tagName -ne $tag) {
+gh release create $tag @assets --repo $repo --target $commit --draft --prerelease --latest=false --title 'Moneta Alpha 0.1.0' --notes-file $notes
+$draft = gh release view $tag --repo $repo --json isDraft,isPrerelease,tagName,targetCommitish,body | ConvertFrom-Json
+if (!$draft.isDraft -or !$draft.isPrerelease -or $draft.tagName -ne $tag -or $draft.targetCommitish -ne $commit -or
+    $draft.body.Trim() -cne $manifest.releaseNotes) {
     throw 'Le brouillon ne correspond pas à la livraison prévue.'
 }
 gh release download $tag --repo $repo --pattern '*' --dir $verified
@@ -113,13 +120,17 @@ foreach ($asset in $assets) {
         throw "Fichier GitHub différent de la copie locale : $roundTrip"
     }
 }
-gh release edit $tag --repo $repo --draft=false --latest
+gh repo edit $repo --visibility public --accept-visibility-change-consequences
+if ((gh repo view $repo --json visibility --jq .visibility) -ne 'PUBLIC') {
+    throw 'Visibilité publique non confirmée.'
+}
+gh release edit $tag --repo $repo --draft=false --prerelease --latest=false
 ```
 
-Depuis un Windows 11 x64 propre, ouvrir les deux URL en navigation sans compte GitHub. Télécharger l’installateur et le catalogue et comparer leurs SHA-256 aux valeurs ci-dessus. Noter la présence de la marque Internet et le texte de tout avertissement Windows. Suivre la protection affichée et interrompre le parcours en cas de blocage. Si Windows permet l’installation, vérifier le raccourci, le lancement et **Aide → Rechercher les mises à jour**. La version 0.1.0 reste courante et aucune installation supplémentaire ne doit être proposée. Transmettre ensuite au premier utilisateur le lien de release et le SHA-256. [Catalogue Latest](https://github.com/Roman-Cuisset/Moneta/releases/latest/download/moneta-update.json) · [Installateur 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe)
+Depuis un Windows 11 x64, ouvrir les deux URL en navigation sans compte GitHub. Télécharger l’installateur et le catalogue et comparer leurs SHA-256 aux valeurs ci-dessus. Noter la présence de la marque Internet et le texte de tout avertissement Windows. Suivre la protection affichée et interrompre le parcours en cas de blocage. Si Windows permet l’installation, vérifier le raccourci, le lancement et **Aide → Rechercher les mises à jour**. Au lancement de l’Alpha, seule la préversion étant publiée, la commande doit indiquer qu’aucune version plus récente n’est disponible. [Catalogue signé 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/moneta-update.json) · [Installateur 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe)
 
 ## Licences et redistribution
 
-Le dépôt Moneta ne comporte pas de licence de projet. Une visibilité publique permet de consulter le dépôt et d’utiliser les fonctions GitHub prévues par ses conditions. Une licence de réutilisation du code pourrait être choisie séparément par le propriétaire. L’identité graphique de Moneta a été créée pour le projet. [Licence d’un dépôt GitHub](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)
+Le code source original de Moneta est sous [licence MIT](../LICENSE). Le guide livré avec l’installateur reprend le texte complet et la mention de copyright. L’identité graphique a été créée pour le projet. Les composants tiers gardent leurs propres licences.
 
 Le dossier `ThirdPartyNotices` livré contient les licences et notices de WindowsDesktop/.NET 10, Microsoft.Data.Sqlite 10.0.12, SQLitePCLRaw 3.0.5 et SQLite 3.53.4, ainsi que la notice MIT du codec BankPerfect V5. Inno Setup sert à construire l’installateur. Les conditions du compilateur sont à vérifier en cas d’usage commercial. [Inno Setup](https://jrsoftware.org/inno-setup/downloads) · [SQLitePCLRaw 3.0.5](https://github.com/ericsink/SQLitePCL.raw/releases/tag/v3.0.5) · [SQLite](https://sqlite.org/copyright.html) · [Notice BankPerfect](../src/Moneta.BankPerfect/THIRD-PARTY-NOTICE.md)

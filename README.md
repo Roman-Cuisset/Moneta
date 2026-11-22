@@ -1,6 +1,16 @@
 # Moneta
 
-**Mission 18 · Alpha 0.1.0.** Installateur Windows 11 x64, déploiement par utilisateur et recherche des mises à jour depuis **Aide**. [Guide Alpha](docs/ALPHA_GUIDE.md) · [Préparer et vérifier un candidat](docs/ALPHA_RELEASE.md) · [Journal des versions](CHANGELOG.md)
+Moneta est une application Windows de gestion locale des finances personnelles, développée indépendamment et inspirée des fonctionnalités de BankPerfect.
+
+**Version Alpha 0.1.0** · Première version publique, encore en développement. L’installateur Windows 11 x64 inclut le runtime .NET et s’installe dans le profil de l’utilisateur. [Télécharger Moneta Alpha 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0) · [Guide Alpha](docs/ALPHA_GUIDE.md) · [Journal des versions](CHANGELOG.md) · [Licence MIT](LICENSE)
+
+- Comptes multiples en EUR, BYN et RUB, recettes, dépenses et virements.
+- Pointage, rapprochement, recherche et échéancier.
+- Budgets, rapports, graphiques et cours historiques.
+- Sauvegardes versionnées et restauration, import BankPerfect V5 dans le périmètre compatible.
+- Thèmes clair et sombre et recherche intégrée de mises à jour depuis **Aide**.
+
+L’installateur ne porte pas de signature Authenticode. Windows peut afficher un avertissement SmartScreen. Faites des sauvegardes régulières et vérifiez une restauration avant de confier des données importantes à l’Alpha. [Limites et premiers pas](docs/ALPHA_GUIDE.md)
 
 ![Symbole Moneta](assets/branding/moneta-64.png)
 
@@ -11,8 +21,6 @@
 **Mission 15.** **Outils → Convertisseur historique…** convertit à la date demandée. **Opérations → Valoriser l’opération enregistrée…** utilise la date de l’écriture. **Outils → Valoriser le solde à date…** calcule d’abord le solde natif à la date d’arrêté, jour inclus. Chaque résultat peut être exporté dans une preuve locale et reproduit hors ligne. [Valorisation historique](docs/HISTORICAL_FX_ENGINE.md)
 
 **Mission 14.** **Comptes → Échéancier…** ou **Ctrl+E** affiche les dépenses, recettes et virements programmés. Vous pouvez traiter, reporter ou ignorer une occurrence. La confirmation prépare l’écriture, puis **Ctrl+S** l’enregistre avec sa décision. Les virements entre devises demandent un montant reçu confirmé. [Échéancier et opérations récurrentes](docs/SCHEDULED_TRANSACTIONS.md)
-
-Successeur Windows de BankPerfect pour la gestion locale de comptes personnels. Priorité : mêmes repères de travail, avec une interface desktop moderne et originale et des garanties financières explicites.
 
 **Mission 13.** **Outils → Options → Sauvegardes** permet d’activer les copies après Ctrl+S ou quotidiennes et de choisir un répertoire local et une rétention. **Fichier → Sauvegardes → Historique…** permet de vérifier une version, de sauvegarder immédiatement le dernier état enregistré ou de restaurer vers un nouveau fichier. [Sauvegardes automatiques et récupération](docs/AUTOMATIC_BACKUPS.md)
 
@@ -437,7 +445,7 @@ La référence statique prouve une présence ou une déclaration ; elle ne prouv
 
 ## Confidentialité et Git
 
-- Dépôt GitHub **privé** créé à la demande de l'utilisateur en mission 5 : <https://github.com/Roman-Cuisset/Moneta>. Identité et visibilité `private` contrôlées par l'API avant tout envoi. Aucune publication publique, Pages, release ou licence de diffusion publique.
+- Le dépôt GitHub accueille le code source et les versions publiques. Les installateurs, les catalogues signés et les guides sont distribués dans les [releases](https://github.com/Roman-Cuisset/Moneta/releases).
 - `reference-bankperfect/` est entièrement ignoré, y compris ses scripts et ressources. Ne jamais forcer son ajout avec `git add -f`.
 - Les dossiers `data/`, `private/`, `imports/`, `exports/`, `backups/` et `screenshots-private/` sont réservés aux fichiers privés et ignorés. Aucun n'est requis pour cette mission.
 - Les fichiers BankPerfect, **`.moneta` et leurs auxiliaires/manifestes**, SQLite, exports bancaires, archives, secrets, journaux et productions `bin/obj` sont exclus. Les règles restent conservatrices : CSV, XML, HTML, TXT, PDF et DAT sont aussi ignorés hors des dossiers privés. Aucun véritable fichier de comptes ne doit être suivi.
@@ -449,10 +457,10 @@ La référence statique prouve une présence ou une déclaration ; elle ne prouv
 
 ## Référence et propriété intellectuelle
 
-BankPerfect reste un logiciel tiers. Son caractère gratuit ne donne pas une autorisation de réutiliser son code, ses scripts, logos ou ressources. La référence locale sert uniquement à l'analyse autorisée. Le futur code Moneta devra être original ; aucune licence de redistribution de BankPerfect n'est présumée, et aucune licence de publication de Moneta n'est décidée ici.
+Le code source original de Moneta est distribué sous [licence MIT](LICENSE), qui autorise la réutilisation commerciale et la redistribution propriétaire sous réserve de conserver les mentions requises. Les composants tiers gardent leurs licences et mentions d’origine. La notice du codec V5 décrit précisément les éléments issus de BankPerfect. [Notice du codec BankPerfect V5](src/Moneta.BankPerfect/THIRD-PARTY-NOTICE.md) · [Licences embarquées](docs/ALPHA_RELEASE.md#licences-et-redistribution)
 
 Manuel officiel : <https://chelly.net/bankperfect/wiki/manuel.html>.
 
-## Prochaine mission proposée
+## Feuille de route
 
-**Mission 10 proposée :** obtenir un corpus `.bp` intégralement fictif et fermé, confronter la description publique V5 à BankPerfect 8.0.0.373, puis valider monnaies/précisions, solde initial, sémantique de date historique, identités et R héritées. Seulement après ces preuves et l'autorisation du lot : lecteur C# passif/borné, modèle intermédiaire de provenance et rapport d'analyse, avant conversion complète vers un nouveau `.moneta`. Aucun fichier personnel ni contournement de protection. Rendu composé, moniteurs physiques, lecteur d'écran, endurance CPU et frontières matérielles de durabilité restent à qualifier. Les autres fonctions absentes restent dans la [ROADMAP](docs/ROADMAP.md), sans commencer budgets ou échéanciers.
+Le [périmètre BankPerfect V5](docs/BANKPERFECT_QUALIFICATION_10E.md) décrit les cas qualifiés et les refus qui protègent l’exactitude des dossiers. La [feuille de route](docs/ROADMAP.md) conserve les fonctions avancées et les environnements Windows restant à qualifier.
