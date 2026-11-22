@@ -1,6 +1,6 @@
 # Premiers pas avec Moneta Alpha 0.1.0
 
-Moneta s’installe sur Windows 11 x64. Vérifiez la provenance du candidat et comparez son SHA-256 avec celui communiqué avant de l’ouvrir. Votre profil Windows accueille l’application et ses raccourcis. Vous choisissez où stocker chaque dossier financier.
+Moneta s’installe sur Windows 11 x64. Téléchargez le candidat depuis la release officielle et comparez son SHA-256 avec celui communiqué avant de l’ouvrir. L’installateur Alpha ne porte pas de signature Authenticode. Selon les paramètres de Windows, SmartScreen peut signaler un éditeur inconnu ou une réputation insuffisante. En cas de blocage, arrêtez l’installation et communiquez le message affiché. Votre profil Windows accueille l’application et ses raccourcis. Vous choisissez où stocker chaque dossier financier.
 
 1. Lancez **Moneta-0.1.0-win-x64.exe**, puis ouvrez **Moneta** depuis le menu Démarrer.
 2. **Fichier → Nouveau dossier**, puis **Comptes → Ajouter un compte**. Choisissez la devise native du compte. **Ctrl+S** choisit l’emplacement au premier enregistrement.
@@ -16,4 +16,4 @@ Gardez les originaux, les sauvegardes et leurs manifestes. Réinstallez un insta
 
 ## Limites connues
 
-L’Alpha couvre Windows 11 x64 et le périmètre qualifié des fichiers BankPerfect V5. Les sauvegardes contiennent des données financières en clair. Les mises à jour nécessitent un catalogue signé disponible, et Windows conserve ses protections d’exécution. [Import BankPerfect](BANKPERFECT_QUALIFICATION_10E.md)
+L’Alpha couvre Windows 11 x64 et le périmètre qualifié des fichiers BankPerfect V5. Certains montants historiques inférieurs à l’unité minimale de leur devise sont refusés. Une conversion requiert un cours officiel applicable ou une copie valable en cache. Les sauvegardes contiennent des données financières en clair. Les mises à jour nécessitent un catalogue signé disponible, et Windows conserve ses protections d’exécution. [Import BankPerfect](BANKPERFECT_QUALIFICATION_10E.md)
