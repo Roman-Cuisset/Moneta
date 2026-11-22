@@ -91,7 +91,7 @@ if ($manifest.format -ne 1 -or $manifest.version -ne '0.1.0' -or $manifest.archi
 Dans la même session, contrôler que le commit est celui de l’audit, que GitHub reconnaît la licence MIT et que les surfaces exposées comme les journaux Actions ont été examinées. Préparer et vérifier le brouillon avant de rendre le dépôt public. [Visibilité GitHub](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) · [Créer une release](https://cli.github.com/manual/gh_release_create)
 
 ```powershell
-if ((gh repo view $repo --json licenseInfo --jq .licenseInfo.spdxId) -ne 'MIT') {
+if ((gh api "repos/$repo/license" --jq .license.spdx_id) -ne 'MIT') {
     throw 'Licence MIT non reconnue.'
 }
 $publication = Join-Path $env:TEMP ('moneta-release-' + [guid]::NewGuid().ToString('N'))
