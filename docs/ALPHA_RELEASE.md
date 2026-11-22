@@ -108,10 +108,14 @@ $fence = [string]::new([char]96, 3)
 [IO.File]::WriteAllText($guide, $guideText.TrimEnd() + $licenseHeading + $fence + "`n$license`n" + $fence + "`n")
 $assets = @($installer, $catalog, $sums, $guide)
 gh release create $tag @assets --repo $repo --target $commit --draft --prerelease --latest=false --title 'Moneta Alpha 0.1.0' --notes-file $notes
-$draft = gh release view $tag --repo $repo --json isDraft,isPrerelease,tagName,targetCommitish,body | ConvertFrom-Json
+$draft = gh release view $tag --repo $repo --json isDraft,isPrerelease,tagName,targetCommitish,body,apiUrl | ConvertFrom-Json
 if (!$draft.isDraft -or !$draft.isPrerelease -or $draft.tagName -ne $tag -or $draft.targetCommitish -ne $commit -or
     $draft.body.Trim() -cne $manifest.releaseNotes) {
     throw 'Le brouillon ne correspond pas à la livraison prévue.'
+}
+$draftEndpoint = ([uri]$draft.apiUrl).AbsolutePath.TrimStart('/')
+if ($draftEndpoint -notmatch "^repos/$repo/releases/[0-9]+$") {
+    throw 'Point d’accès du brouillon inattendu.'
 }
 gh release download $tag --repo $repo --pattern '*' --dir $verified
 foreach ($asset in $assets) {
@@ -124,7 +128,10 @@ gh repo edit $repo --visibility public --accept-visibility-change-consequences
 if ((gh repo view $repo --json visibility --jq .visibility) -ne 'PUBLIC') {
     throw 'Visibilité publique non confirmée.'
 }
-gh release edit $tag --repo $repo --draft=false --prerelease --latest=false
+$release = gh api --method PATCH $draftEndpoint -F draft=false -F prerelease=true -f make_latest=false | ConvertFrom-Json
+if ($release.draft -or !$release.prerelease -or $release.tag_name -ne $tag) {
+    throw 'Préversion publique non confirmée.'
+}
 ```
 
 Depuis un Windows 11 x64, ouvrir les deux URL en navigation sans compte GitHub. Télécharger l’installateur et le catalogue et comparer leurs SHA-256 aux valeurs ci-dessus. Noter la présence de la marque Internet et le texte de tout avertissement Windows. Suivre la protection affichée et interrompre le parcours en cas de blocage. Si Windows permet l’installation, vérifier le raccourci, le lancement et **Aide → Rechercher les mises à jour**. Au lancement de l’Alpha, seule la préversion étant publiée, la commande doit indiquer qu’aucune version plus récente n’est disponible. [Catalogue signé 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/moneta-update.json) · [Installateur 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe)

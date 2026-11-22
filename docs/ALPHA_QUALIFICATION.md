@@ -1,5 +1,13 @@
 # Qualification du candidat Moneta Alpha 0.1.0
 
+## Contrôles de la première publication
+
+Le 22 novembre 2026, GitHub a publié `v0.1.0` comme préversion, sur le commit `47b493d`. Les quatre fichiers de livraison ont répondu en HTTPS sans authentification. L’installateur téléchargé correspond à la taille et au SHA-256 du candidat scellé. Le moteur de mise à jour du candidat a vérifié l’installateur et la signature ECDSA du catalogue public. Les notes GitHub correspondent au texte signé. GitHub reconnaît la licence MIT. [Release Alpha 0.1.0](https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0)
+
+Le point d’accès du catalogue attaché au tag répond en HTTP 200. Le canal `releases/latest` répond en HTTP 404 sur ce dépôt qui ne possède que la préversion. Appelé avec la version 0.1.0, le client de production a confirmé l’absence d’offre. Les prochaines préversions restent à consulter depuis la page des releases. [Politique GitHub Latest](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
+
+Le téléchargement public depuis l’hôte a réussi. Dans la VM Hyper‑V, l’essai réseau via le commutateur NAT existant n’a pas obtenu de route IPv4 fonctionnelle vers GitHub ou de résolution DNS de `github.com`. Le comportement SmartScreen, l’installation avec la marque Internet et le clic dans le menu d’aide restent à observer depuis la VM. L’installation locale de l’exécutable identique et la restauration du dossier fictif avaient réussi en 18B. L’adaptateur a retrouvé son état initial et les deux checkpoints sont présents.
+
 ## Candidat retenu pour la publication
 
 La Mission 18B a ajouté la notice MIT du codec BankPerfect V5 au paquet. Inno Setup 6.7.4 a réassemblé le candidat à partir des binaires déjà qualifiés. Tous les fichiers applicatifs hors `ThirdPartyNotices` ont été comparés octet à octet. Le lot retenu est `private/mission18b/candidate/artifacts`, sur le poste de qualification.
