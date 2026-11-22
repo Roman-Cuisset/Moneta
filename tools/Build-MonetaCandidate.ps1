@@ -46,6 +46,7 @@ Copy-Item -LiteralPath (Join-Path $hostBuild 'Moneta.UpdateHost.exe') -Destinati
 $notices = Join-Path $app 'ThirdPartyNotices'
 $null = New-Item -ItemType Directory -Path $notices
 Get-ChildItem -LiteralPath (Join-Path $repo 'packaging/notices') -File | Copy-Item -Destination $notices
+Copy-Item -LiteralPath (Join-Path $repo 'src/Moneta.BankPerfect/THIRD-PARTY-NOTICE.md') -Destination (Join-Path $notices 'BankPerfect-V5.NOTICE.md')
 $restore = Get-Content -Raw -LiteralPath (Join-Path $run 'intermediates/obj/Moneta.App/project.assets.json') | ConvertFrom-Json -AsHashtable
 $runtime = Get-Content -Raw -LiteralPath (Join-Path $app 'Moneta.App.runtimeconfig.json') | ConvertFrom-Json
 $frameworks = $runtime.runtimeOptions.includedFrameworks

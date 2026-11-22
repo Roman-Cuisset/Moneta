@@ -96,6 +96,29 @@ public sealed class UpdateTests
     }
 
     [TestMethod]
+    public async Task InstallerEndingBeforeItsDeclaredLengthIsRejected()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var completeInstaller = new byte[] { 1, 2, 3, 4 };
+        var manifest = Manifest() with
+        {
+            Size = completeInstaller.Length,
+            Sha256 = Convert.ToHexString(SHA256.HashData(completeInstaller))
+        };
+        var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
+        using var client = new UpdateClient(channel, new Handler(_ =>
+        {
+            var content = new ByteArrayContent(completeInstaller[..^1]);
+            content.Headers.ContentLength = manifest.Size;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+        }));
+        var offer = new UpdateOffer(manifest, Pack(manifest, signer));
+
+        await Assert.ThrowsExceptionAsync<InvalidDataException>(() =>
+            client.DownloadAsync(offer, new Version(0, 1, 0), null, default));
+    }
+
+    [TestMethod]
     public void HashMismatchIsRejectedBeforeTheFileCanBeExecuted()
     {
         var path = Path.Combine(Path.GetTempPath(), "Moneta-test-" + Guid.NewGuid().ToString("N"));
