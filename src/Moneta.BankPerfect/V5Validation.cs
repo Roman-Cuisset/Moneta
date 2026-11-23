@@ -38,11 +38,24 @@ internal static class V5Validation
             diagnostics.Add("duplicate-operation-uid", V5Finding.Uncertain, "UID d’opération répété dans le dossier.",
                 row.Operation.Extra.First(extra => extra.Key == "UId").Source);
 
+        // Audit competing claims only when a row could use the omitted-account rule.
+        Dictionary<ulong, int>? claims = null;
+        if (rows.Any(row => row.TargetAccounts.Length == 0 && row.TargetLines.Length == 1))
+        {
+            claims = new();
+            foreach (var row in rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var reference in row.TargetLines)
+                    if (V5Values.TryUid(reference.RawValue, out var uid))
+                        claims[uid] = claims.GetValueOrDefault(uid) + 1;
+            }
+        }
         return rows.Where(row => row.HasReference)
             .Select(row =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                return Resolve(row, byAccount, byUid, diagnostics);
+                return Resolve(row, byAccount, byUid, claims, diagnostics);
             }).ToList().AsReadOnly();
     }
 
@@ -81,7 +94,7 @@ internal static class V5Validation
     }
 
     private static V5Transfer Resolve(Row row, ILookup<string, V5Account> byAccount,
-        ILookup<ulong, Row> byUid, V5Diagnostics diagnostics)
+        ILookup<ulong, Row> byUid, Dictionary<ulong, int>? claims, V5Diagnostics diagnostics)
     {
         var validTargetUid = V5Values.TryUid(row.TargetLine, out var targetUid);
         var link = new V5Transfer(row.Operation.Source, row.AccountUid, row.Uid, row.TargetAccounts.FirstOrDefault()?.RawValue,
@@ -95,6 +108,14 @@ internal static class V5Validation
 
         if (row.DuplicateReference)
             return WithStatus(V5TransferStatus.Ambiguous, "transfer-ambiguous", "Références sœurs répétées dans Extra.");
+        if (claims is not null && validTargetUid && RecoverMissingAccount(row, targetUid, byAccount, byUid, claims) is { } recovered)
+            return link with
+            {
+                Target = recovered.Operation.Source,
+                Reciprocal = true,
+                Status = V5TransferStatus.Linked,
+                RecoveredAccountReference = row.TargetAccounts.Length == 0
+            };
         if (string.IsNullOrWhiteSpace(row.TargetAccount))
             return WithStatus(V5TransferStatus.Incomplete, "transfer-incomplete", "UID du compte de la ligne sœur absent.");
         if (string.IsNullOrWhiteSpace(row.TargetLine))
@@ -134,4 +155,38 @@ internal static class V5Validation
         }
         return link with { Status = V5TransferStatus.Linked };
     }
+
+    private static Row? RecoverMissingAccount(Row row, ulong targetUid, ILookup<string, V5Account> byAccount,
+        ILookup<ulong, Row> byUid, Dictionary<ulong, int> claims)
+    {
+        if (row.Uid is not { } uid || byUid[uid].Count() != 1 || byUid[targetUid].Count() != 1)
+            return null;
+        var target = byUid[targetUid].Single();
+        if (target.DuplicateReference || row.TargetAccounts.Length + target.TargetAccounts.Length != 1 ||
+            !V5Values.TryUid(target.TargetLine, out var returnedUid) || returnedUid != uid ||
+            claims.GetValueOrDefault(uid) != 1 || claims.GetValueOrDefault(targetUid) != 1)
+            return null;
+        if (row.Account.Index == target.Account.Index ||
+            row.AccountUid is not { Length: > 0 } accountUid || target.AccountUid is not { Length: > 0 } targetAccountUid ||
+            byAccount[accountUid].Count() != 1 || byAccount[targetAccountUid].Count() != 1 ||
+            (row.TargetAccounts.Length == 0 ? target.TargetAccount != accountUid : row.TargetAccount != targetAccountUid))
+            return null;
+
+        // Date, amount and labels corroborate two explicit line identities. Never use them to select a line.
+        var left = row.Operation;
+        var right = target.Operation;
+        if (!left.ValidLayout || !right.ValidLayout || left.Date.Date is null || left.Date.Date != right.Date.Date ||
+            left.Details != right.Details || row.Account.MonetaCurrency is not { } currency || target.Account.MonetaCurrency != currency ||
+            left.Amount.Compatibility != V5AmountCompatibility.Exact || right.Amount.Compatibility != V5AmountCompatibility.Exact ||
+            left.Amount.Value is not { } amount || amount == 0 || right.Amount.Value != -amount ||
+            !HasTransferLabel(row, target, amount) || !HasTransferLabel(target, row, -amount))
+            return null;
+        return target;
+    }
+
+    private static bool HasTransferLabel(Row row, Row target, decimal amount) =>
+        target.Account.Fields.Name is { Length: > 0 } name &&
+        (amount < 0
+            ? row.Operation.Mode == "Virement émis" && row.Operation.Payee == "Transfert vers le compte " + name
+            : row.Operation.Mode == "Virement reçu" && row.Operation.Payee == "Transfert depuis le compte " + name);
 }

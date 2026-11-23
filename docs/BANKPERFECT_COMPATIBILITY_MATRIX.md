@@ -1,5 +1,9 @@
 # Compatibilité BankPerfect
 
+## Référence de compte sœur omise — Mission 19B
+
+Moneta accepte l’absence d’un seul champ `#sisterAccUid` lorsque deux UID de ligne uniques se désignent explicitement et sans concurrent. Le compte sœur encore renseigné doit correspondre au compte réel. Les jambes doivent appartenir à deux comptes distincts, avoir le même jour comptable et le même détail, présenter des montants natifs exactement opposés et porter les modes et libellés historiques concordants. La provenance garde la valeur absente et marque la résolution. Le rapprochement par nom, date et montant reste une piste d’investigation pour les anciens fichiers sans références de ligne. [Description historique des liens V5](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/docs/inventaire/02-format-fichier-bp.md#L601-L643)
+
 ## Variantes historiques qualifiées pour Moneta 0.1.1
 
 - **Ouverture d’un compte à zéro.** La signature `Solde initial` avec le mode source `42` est admissible à zéro. Le candidat doit rester unique, rapproché, sans catégorie, détail ni référence sœur, avec une date supplémentaire absente ou identique à la date comptable. L’ouverture reste qualifiée de probable. Le solde initial technique Moneta vaut zéro et la ligne source est importée une seule fois, avec sa valeur et son état R. [Description du format V5 par l’auteur](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/docs/inventaire/02-format-fichier-bp.md#5-rattachement-des-opérations-aux-comptes)

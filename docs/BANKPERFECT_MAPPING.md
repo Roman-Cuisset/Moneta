@@ -25,6 +25,8 @@ Les conditions de validation d’un pointage Moneta ordinaire restent en vigueur
 | Référentiels | Catégories et sous-catégories conservent ordre et parent physiques. L’ID explicite et la position historique restent distincts. Le tiers de ligne et les modes sont référencés. Les autres champs des modèles de tiers et indications propres aux modes restent dans la provenance. Les collisions de noms entre objets distincts bloquent. |
 | Virement | Références réciproques, comptes distincts, devise EUR, dates et notes compatibles, signes opposés et magnitudes égales. L’entité et ses deux jambes sont enregistrées atomiquement. Les références d’origine sont conservées. |
 
+Pour la variante de la mission 19B, les deux UID de ligne réciproques établissent l’identité des jambes. Une seule référence de compte sœur peut manquer sous les conditions de la matrice. La propriété `recoveredAccountReference` signale la résolution sur la jambe concernée. `sisterAccountId` reste nul dans la provenance. [Matrice de compatibilité](BANKPERFECT_COMPATIBILITY_MATRIX.md#référence-de-compte-sœur-omise--mission-19b)
+
 Un plan repris sur les mêmes octets donne les mêmes constats. Chaque exécution génère des UUID cible distincts et un horodatage technique propre. Ces identifiants n’attestent aucune identité BankPerfect.
 
 ## Spécification historique de la mission 10A

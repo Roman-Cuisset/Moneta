@@ -358,6 +358,69 @@ public sealed class BankPerfectImportTests
         Assert.IsFalse(File.Exists(Target));
     }
 
+    [DataTestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public void ReciprocalOperationIdsCanProveOneOmittedSisterAccount(bool omitDebitAccount)
+    {
+        var before = PreparePartialSisterAccount(omitDebitAccount);
+        var hash = Hash(Source);
+        Assert.IsTrue(before.Report.CanImport, Describe(before));
+        Assert.AreEqual(1, before.Report.Reader.LinkedTransfers);
+        Assert.IsTrue(BankPerfectImporter.Import(before, Target).BackupRestoreVerified);
+
+        using var file = MonetaFile.Open(Target);
+        var debitAccount = file.Snapshot.Accounts[0];
+        var creditAccount = file.Snapshot.Accounts[1];
+        var debit = Operations(file, debitAccount).Single(row => row.Direction == TransactionDirection.Debit);
+        var transfer = file.ReadTransfer(file.FindTransferId(debit.Id)!.Value);
+        Assert.AreEqual(4L, file.Snapshot.OperationCount);
+        Assert.AreEqual(1L, file.Snapshot.TransferCount);
+        Assert.AreEqual((debitAccount.Id, creditAccount.Id), (transfer.Debit.AccountId, transfer.Credit.AccountId));
+        Assert.AreEqual((-15m, 15m), (FinancialRules.SignedAmount(transfer.Debit), FinancialRules.SignedAmount(transfer.Credit)));
+        Assert.AreEqual((ReconciliationStatus.Marked, ReconciliationStatus.Unmarked), (transfer.Debit.Status, transfer.Credit.Status));
+        Assert.AreEqual((985m, 215m), (file.Snapshot.AccountBalances![debitAccount.Id], file.Snapshot.AccountBalances[creditAccount.Id]));
+        Assert.AreEqual((985m, 200m), (file.Snapshot.AccountPointedBalances![debitAccount.Id], file.Snapshot.AccountPointedBalances[creditAccount.Id]));
+        using var audit = JsonDocument.Parse(file.ReadBankPerfectProvenance()!);
+        var mapping = audit.RootElement.GetProperty("objects").EnumerateArray()
+            .Single(item => item.GetProperty("type").GetString() == "transfer").GetProperty("transfer");
+        var incomplete = mapping.GetProperty(omitDebitAccount ? "debit" : "credit");
+        Assert.AreEqual(JsonValueKind.Null, incomplete.GetProperty("sisterAccountId").ValueKind);
+        Assert.IsTrue(incomplete.GetProperty("recoveredAccountReference").GetBoolean());
+        Assert.AreEqual(hash, Hash(Source));
+    }
+
+    [DataTestMethod]
+    [DataRow("both-omitted")]
+    [DataRow("wrong-account")]
+    [DataRow("competing-reference")]
+    [DataRow("different-date")]
+    [DataRow("different-amount")]
+    [DataRow("different-label")]
+    public void PartialSisterAccountWithoutCorroborationRemainsBlocked(string variant)
+    {
+        var preview = PreparePartialSisterAccount(omitDebitAccount: true, variant);
+        Assert.IsFalse(preview.Report.CanImport, Describe(preview));
+        Assert.AreEqual(0, preview.Report.Reader.LinkedTransfers);
+        Assert.ThrowsException<DocumentException>(() => BankPerfectImporter.Import(preview, Target));
+        Assert.IsFalse(File.Exists(Target));
+    }
+
+    private BankPerfectImportPreview PreparePartialSisterAccount(bool omitDebitAccount, string variant = "")
+    {
+        var debit = "46338;P;24;Transfert vers le compte Épargne;;-1;-15;46338;UId=3<||>#sisterLineUid=4";
+        var credit = "46338;;42;Transfert depuis le compte Courant;;-1;15;46338;UId=4<||>#sisterLineUid=3";
+        if (!omitDebitAccount) debit += "<||>#sisterAccUid=B";
+        else if (variant != "both-omitted") credit += variant == "wrong-account" ? "<||>#sisterAccUid=B" : "<||>#sisterAccUid=A";
+        if (variant == "different-date") credit = "46339" + credit[5..];
+        if (variant == "different-amount") credit = credit.Replace(";15;", ";16;", StringComparison.Ordinal);
+        if (variant == "different-label") credit = credit.Replace("compte Courant", "compte Inconnu", StringComparison.Ordinal);
+        var competitor = variant == "competing-reference"
+            ? "\n46338;;24;Transfert vers le compte Épargne;;-1;-15;46338;UId=5<||>#sisterLineUid=4" : "";
+        return Prepare(Header + "\n" + SecondAccount, Opening + "\n" + debit + competitor +
+            Separator + "46337;R;42;Solde initial;;-1;200;46337;UId=2\n" + credit);
+    }
+
     [TestMethod]
     public void NegativeOpeningAndOrdinarySameAmountRemainTwoSeparateMovements()
     {

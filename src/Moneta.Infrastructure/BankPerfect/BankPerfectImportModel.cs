@@ -54,4 +54,8 @@ internal sealed record BankPerfectObjectMapping(string Type, Guid TargetId, V5Lo
 internal sealed record BankPerfectTransferMapping(BankPerfectTransferLeg Debit, BankPerfectTransferLeg Credit);
 
 internal sealed record BankPerfectTransferLeg(Guid TargetAccountId, Guid TargetOperationId, V5Location Source,
-    string? SourceAccountId, string? SourceOperationId, string? SisterAccountId, string? SisterOperationId);
+    string? SourceAccountId, string? SourceOperationId, string? SisterAccountId, string? SisterOperationId)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool RecoveredAccountReference { get; init; }
+}

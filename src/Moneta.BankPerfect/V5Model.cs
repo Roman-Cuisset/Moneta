@@ -79,7 +79,10 @@ public sealed record V5Account(int Index, V5Location Source, V5AccountFields Fie
     V5OpeningConfidence Opening, IReadOnlyList<V5Location> OpeningCandidates);
 public sealed record V5Transfer(V5Location Source, string? SourceAccountUid, ulong? SourceOperationUid,
     string? RawTargetAccountUid, string? RawTargetOperationUid, ulong? TargetOperationUid,
-    V5Location? Target, bool Reciprocal, V5TransferStatus Status);
+    V5Location? Target, bool Reciprocal, V5TransferStatus Status)
+{
+    public bool RecoveredAccountReference { get; init; }
+}
 public sealed record V5Unparsed(string Raw, V5Location Source);
 
 public sealed record V5Document(IReadOnlyList<V5Header> Header, IReadOnlyList<V5Account> Accounts,

@@ -271,7 +271,7 @@ internal static class BankPerfectPlan
 
     private static BankPerfectTransferLeg Leg(Transaction target, V5Operation source, V5Transfer link) =>
         new(target.AccountId, target.Id, source.Source, link.SourceAccountUid, RawUid(source),
-            link.RawTargetAccountUid, link.RawTargetOperationUid);
+            link.RawTargetAccountUid, link.RawTargetOperationUid) { RecoveredAccountReference = link.RecoveredAccountReference };
 
     private static string? Header(V5Document source, string key) => source.Header
         .FirstOrDefault(entry => entry.Key.Equals(key, StringComparison.OrdinalIgnoreCase))?.Value;
