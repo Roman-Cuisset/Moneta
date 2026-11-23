@@ -18,6 +18,36 @@
   <data name="AboutWindow.PersonalFinancialManagement" xml:space="preserve">
     <value>Personal financial management</value>
   </data>
+  <data name="AboutWindow.VersionFormat" xml:space="preserve">
+    <value>Alpha {0}</value>
+  </data>
+  <data name="AboutWindow.ProjectBy" xml:space="preserve">
+    <value>Independent project — Roman Cuisset</value>
+  </data>
+  <data name="AboutWindow.LicenseSummary" xml:space="preserve">
+    <value>Moneta is released under the MIT License.</value>
+  </data>
+  <data name="AboutWindow.ViewLicense" xml:space="preserve">
+    <value>View license</value>
+  </data>
+  <data name="AboutWindow.ThirdPartyNotices" xml:space="preserve">
+    <value>Third-party notices</value>
+  </data>
+  <data name="AboutWindow.SourceCode" xml:space="preserve">
+    <value>GitHub repository</value>
+  </data>
+  <data name="AboutWindow.IndependentNotice" xml:space="preserve">
+    <value>Moneta is an independent personal finance application inspired by certain BankPerfect features. Moneta is not affiliated with BankPerfect or its author.</value>
+  </data>
+  <data name="AboutWindow.LicenseFileNotFound" xml:space="preserve">
+    <value>The license file was not found in this installation.</value>
+  </data>
+  <data name="AboutWindow.NoticesFolderNotFound" xml:space="preserve">
+    <value>The third-party notices folder was not found in this installation.</value>
+  </data>
+  <data name="AboutWindow.OpenLinkError" xml:space="preserve">
+    <value>Could not open the link or file.</value>
+  </data>
   <data name="AccountWindow.AccountHolderOptionalAccessKey" xml:space="preserve">
     <value>Account _holder (optional)</value>
   </data>
@@ -791,6 +821,9 @@ Source SHA-256 {1}
   </data>
   <data name="Common.Cancel" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="Common.Close" xml:space="preserve">
+    <value>Close</value>
   </data>
   <data name="Common.CancelBackup" xml:space="preserve">
     <value>Cancel Backup</value>

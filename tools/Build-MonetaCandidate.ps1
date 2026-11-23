@@ -44,7 +44,7 @@ Publish-App 'src/Moneta.UpdateHost/Moneta.UpdateHost.csproj' $hostBuild @(
 )
 Copy-Item -LiteralPath (Join-Path $hostBuild 'Moneta.UpdateHost.exe') -Destination $app
 $notices = Join-Path $app 'ThirdPartyNotices'
-$null = New-Item -ItemType Directory -Path $notices
+$null = New-Item -ItemType Directory -Force -Path $notices
 Get-ChildItem -LiteralPath (Join-Path $repo 'packaging/notices') -File | Copy-Item -Destination $notices
 Copy-Item -LiteralPath (Join-Path $repo 'src/Moneta.BankPerfect/THIRD-PARTY-NOTICE.md') -Destination (Join-Path $notices 'BankPerfect-V5.NOTICE.md')
 $restore = Get-Content -Raw -LiteralPath (Join-Path $run 'intermediates/obj/Moneta.App/project.assets.json') | ConvertFrom-Json -AsHashtable
@@ -62,6 +62,26 @@ foreach ($notice in @(
     $sources = @($restore.packageFolders.Keys | ForEach-Object { Join-Path $_ $notice.Path } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
     if (!$sources.Count) { throw "Notice de redistribution manquante ($($notice.Name))." }
     Copy-Item -LiteralPath $sources[0] -Destination (Join-Path $notices $notice.Name)
+}
+$requiredLicenseFiles = @(
+    'LICENSE',
+    'ThirdPartyNotices\Microsoft.Data.Sqlite.LICENSE',
+    'ThirdPartyNotices\Microsoft.Data.Sqlite.NOTICE',
+    'ThirdPartyNotices\SQLitePCLRaw.LICENSE',
+    'ThirdPartyNotices\SQLitePCLRaw.NOTICE',
+    'ThirdPartyNotices\SQLite.LICENSE',
+    'ThirdPartyNotices\DotNet.LICENSE',
+    'ThirdPartyNotices\DotNet.NOTICES',
+    'ThirdPartyNotices\WindowsDesktop.LICENSE',
+    'ThirdPartyNotices\BankPerfect-V5.NOTICE.md',
+    'ThirdPartyNotices\InnoSetup.LICENSE',
+    'ThirdPartyNotices\InnoSetup.NOTICE'
+)
+foreach ($relative in $requiredLicenseFiles) {
+    $required = Join-Path $app $relative
+    if (!(Test-Path -LiteralPath $required -PathType Leaf)) {
+        throw "Fichier de licence ou de notice manquant dans la publication : $relative"
+    }
 }
 $appExe = Get-Item -LiteralPath (Join-Path $app 'Moneta.App.exe')
 if ($appExe.VersionInfo.FileVersion -ne "$Version.0") { throw 'Version inattendue du programme publié.' }

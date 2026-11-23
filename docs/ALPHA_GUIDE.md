@@ -22,4 +22,4 @@ GitHub fournit les préversions sur leur page de release. Le canal intégré `La
 
 Effectuez des sauvegardes régulières et vérifiez une restauration avant d’utiliser l’Alpha avec des données importantes.
 
-Le code source original de Moneta est sous [licence MIT](../LICENSE). Les composants tiers conservent leurs propres notices dans `ThirdPartyNotices`.
+Le code source original de Moneta est sous [licence MIT](../LICENSE). Le fichier `LICENSE` est installé à la racine de l’application et reste accessible depuis **À propos**. Les composants tiers conservent leurs propres notices dans `ThirdPartyNotices`.

@@ -1,0 +1,10 @@
+Microsoft.Data.Sqlite 10.0.12
+Microsoft.Data.Sqlite.Core 10.0.12
+
+The MIT license text in Microsoft.Data.Sqlite.LICENSE is the repository license
+from the .NET Foundation / dotnet/efcore project, under which
+Microsoft.Data.Sqlite is developed. The NuGet package metadata identifies
+Microsoft Corporation as the copyright holder and declares the MIT license.
+
+Source: https://github.com/dotnet/efcore
+Package: https://www.nuget.org/packages/Microsoft.Data.Sqlite/10.0.12

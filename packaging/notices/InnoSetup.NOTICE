@@ -1,0 +1,8 @@
+Inno Setup 6.7.4
+https://jrsoftware.org/isinfo.php
+
+Copyright (C) 1997-2026 Jordan Russell.
+Portions Copyright (C) 2000-2026 Martijn Laan.
+
+Inno Setup is used only to build the Moneta installer. See
+InnoSetup.LICENSE for the applicable terms.

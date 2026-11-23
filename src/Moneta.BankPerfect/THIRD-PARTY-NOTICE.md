@@ -1,7 +1,15 @@
 # BankPerfect V5 codec
 
-The alphabet and substitution constants in `V5Codec.cs` come from
+The alphabet, substitution tables and decoding logic in `V5Codec.cs` are
+derived from
 [`codec_v5.rs` at revision 990f5c7f712dab07c7fefc2921cbf60beee7f6b1](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/crates/bp-core/src/codec_v5.rs).
+The V5 file separator and the `bp_script_data_` prefix used by
+`V5Parser.cs` are taken from
+[`v5_text.rs` at the same revision](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/crates/bp-core/src/v5_text.rs).
+
+No proprietary BankPerfect 8 source code, script or graphical asset is
+included in Moneta. The rest of the V5 reader is the independent Moneta C#
+implementation and validation pipeline.
 
 MIT License
 

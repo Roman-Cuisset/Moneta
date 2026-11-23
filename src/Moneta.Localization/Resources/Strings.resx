@@ -18,6 +18,36 @@
   <data name="AboutWindow.PersonalFinancialManagement" xml:space="preserve">
     <value>Gestion financière personnelle</value>
   </data>
+  <data name="AboutWindow.VersionFormat" xml:space="preserve">
+    <value>Alpha {0}</value>
+  </data>
+  <data name="AboutWindow.ProjectBy" xml:space="preserve">
+    <value>Projet indépendant — Roman Cuisset</value>
+  </data>
+  <data name="AboutWindow.LicenseSummary" xml:space="preserve">
+    <value>Moneta est distribué sous licence MIT.</value>
+  </data>
+  <data name="AboutWindow.ViewLicense" xml:space="preserve">
+    <value>Voir la licence</value>
+  </data>
+  <data name="AboutWindow.ThirdPartyNotices" xml:space="preserve">
+    <value>Notices des composants tiers</value>
+  </data>
+  <data name="AboutWindow.SourceCode" xml:space="preserve">
+    <value>Dépôt GitHub</value>
+  </data>
+  <data name="AboutWindow.IndependentNotice" xml:space="preserve">
+    <value>Moneta est un logiciel indépendant de gestion de comptes personnels, inspiré de certaines fonctionnalités de BankPerfect. Moneta n’est pas affilié à BankPerfect ni à son auteur.</value>
+  </data>
+  <data name="AboutWindow.LicenseFileNotFound" xml:space="preserve">
+    <value>Le fichier de licence est introuvable dans cette installation.</value>
+  </data>
+  <data name="AboutWindow.NoticesFolderNotFound" xml:space="preserve">
+    <value>Le dossier des notices tierces est introuvable dans cette installation.</value>
+  </data>
+  <data name="AboutWindow.OpenLinkError" xml:space="preserve">
+    <value>Impossible d’ouvrir le lien ou le fichier.</value>
+  </data>
   <data name="AccountWindow.AccountHolderOptionalAccessKey" xml:space="preserve">
     <value>T_itulaire (facultatif)</value>
   </data>
@@ -791,6 +821,9 @@ Provenance SHA-256 {1}
   </data>
   <data name="Common.Cancel" xml:space="preserve">
     <value>Annuler</value>
+  </data>
+  <data name="Common.Close" xml:space="preserve">
+    <value>Fermer</value>
   </data>
   <data name="Common.CancelBackup" xml:space="preserve">
     <value>Annuler la sauvegarde</value>

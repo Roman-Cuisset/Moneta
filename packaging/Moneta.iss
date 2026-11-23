@@ -58,7 +58,8 @@ AllowCancelDuringInstall=no
 Name: "fr"; MessagesFile: "compiler:Languages\French.isl"
 
 [Files]
-Source: "{#AppSource}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "{#AppSource}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion; Excludes: "LICENSE"
+Source: "{#AppSource}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{userprograms}\{#InstallName}"; Filename: "{app}\Moneta.App.exe"; WorkingDir: "{app}"

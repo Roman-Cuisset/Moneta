@@ -14,6 +14,9 @@
     <Using Include="Moneta.Localization" />
     <Resource Include="../../assets/branding/moneta.ico" Link="Branding/moneta.ico" />
     <Resource Include="../../assets/branding/moneta-256.png" Link="Branding/moneta-256.png" />
+    <None Include="../../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../../packaging/notices/*" Link="ThirdPartyNotices/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../Moneta.BankPerfect/THIRD-PARTY-NOTICE.md" Link="ThirdPartyNotices/BankPerfect-V5.NOTICE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="../Moneta.Core/Moneta.Core.csproj" />
     <ProjectReference Include="../Moneta.Infrastructure/Moneta.Infrastructure.csproj" />
     <ProjectReference Include="../Moneta.Updates/Moneta.Updates.csproj" />

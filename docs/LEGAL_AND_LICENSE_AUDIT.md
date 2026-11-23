@@ -9,11 +9,11 @@ Aucun code source propriétaire de BankPerfect 8, aucun script, logo ou autre re
 
 Une reprise de code existe toutefois : le codec V5 C# reprend les tables et la logique de décodage du projet public BankPerfect 9 sous licence MIT. La notice MIT correspondante est présente dans le dépôt et dans le dossier `ThirdPartyNotices` du candidat. Les documents qui affirmaient qu’« aucun code tiers n’est incorporé » ont été corrigés pendant cet audit.
 
-Le principal manquement documentaire **avant la prochaine distribution** est l’absence du texte de la licence MIT de Moneta dans le dossier applicatif installé par l’installateur Windows. Le guide de première utilisation, distribué séparément dans la release, contient bien ce texte, mais un utilisateur qui télécharge uniquement l’installateur n’obtient pas la notice MIT de Moneta. Il faut l’ajouter au paquet et, de préférence, la rendre accessible depuis **À propos**.
+Le principal manquement documentaire identifié était l’absence du texte de la licence MIT de Moneta dans le dossier applicatif installé par l’installateur Windows. **Il a été corrigé pendant la Mission 20B** : `LICENSE` est désormais copié dans l’application publiée, inclus explicitement par le script Inno Setup et accessible depuis **À propos**, avec les notices tierces. Le candidat Alpha 0.1.0 déjà publié reste inchangé ; la vérification porte sur le futur paquet 0.2.0.
 
 Deux autres sujets demandent une validation humaine : le contrat de licence de la copie BankPerfect 8 utilisée pour l’analyse, et la portée exacte de l’extraction statique de l’installateur au regard de ce contrat. Aucun binaire BankPerfect, fichier `.bp` privé ni rapport d’analyse privé n’est suivi par Git ou inclus dans la distribution.
 
-**Niveau global proposé : B/C, avec aucune violation de code propriétaire constatée dans le périmètre examiné.** Cette appréciation n’est pas une certification de conformité.
+**Niveau global proposé après corrections : B, avec aucune violation de code propriétaire constatée dans le périmètre examiné et les corrections C appliquées au futur paquet.** Cette appréciation n’est pas une certification de conformité.
 
 ## 2. Périmètre, sources et limites
 
@@ -78,7 +78,7 @@ Les documents Moneta citent le manuel public, les inventaires publiés et les so
 - `docs/BANKPERFECT_IMPORT_STRATEGY.md` ;
 - `docs/ROADMAP.md`.
 
-**Niveau : A pour l’absence de code propriétaire dans le périmètre examiné ; B pour la notice du codec à préciser.**
+**Niveau : A pour l’absence de code propriétaire dans le périmètre examiné ; notice du codec étendue et corrigée en 20B.**
 
 ## 6. Licences de BankPerfect
 
@@ -174,11 +174,11 @@ Le README et le README français contiennent la mention appropriée :
 
 > Moneta est un projet indépendant inspiré de BankPerfect. Il ne s’agit pas d’une version officielle et le projet n’est ni affilié ni approuvé par BankPerfect ou son auteur.
 
-Cette formulation est suffisante pour la page GitHub. Elle devrait aussi apparaître dans **À propos** et dans les notes de la prochaine release. L’usage de « BankPerfect » dans l’importateur est descriptif et ne doit pas être accompagné d’un logo ou d’une présentation suggérant une affiliation.
+Cette formulation est suffisante pour la page GitHub et apparaît désormais dans **À propos**, en français et en anglais. Elle devra aussi être reprise dans les notes de la prochaine release. L’usage de « BankPerfect » dans l’importateur est descriptif et ne doit pas être accompagné d’un logo ou d’une présentation suggérant une affiliation.
 
 La disponibilité du nom « Moneta » n’a pas été vérifiée de manière exhaustive. Une recherche de marque avant une communication commerciale importante est recommandée.
 
-**Niveau : B — recherche de marque et ajout de la mention d’indépendance dans À propos/release.**
+**Niveau : B — recherche de marque restante ; mention d’indépendance ajoutée dans À propos.**
 
 ## 11. Inventaire des dépendances
 
@@ -187,17 +187,17 @@ Versions constatées dans `Moneta.App.deps.json`, les fichiers projet et les mé
 | Composant | Version | Licence | Notice / constat |
 |---|---:|---|---|
 | .NET Runtime / WindowsDesktop / WPF | 10.0.12 | MIT | `DotNet.LICENSE`, `DotNet.NOTICES`, `WindowsDesktop.LICENSE` inclus |
-| Microsoft.Data.Sqlite | 10.0.12 | MIT | Licence MIT du package ; la notice `EFCore.LICENSE` est mal nommée et ne cite pas Microsoft |
-| Microsoft.Data.Sqlite.Core | 10.0.12 | MIT | Même remarque |
+| Microsoft.Data.Sqlite | 10.0.12 | MIT | `Microsoft.Data.Sqlite.LICENSE` + NOTICE de provenance ; copyright Microsoft déclaré par le package |
+| Microsoft.Data.Sqlite.Core | 10.0.12 | MIT | Même licence et provenance |
 | SQLitePCLRaw.bundle_e_sqlite3 | 3.0.5 | Apache-2.0 | Licence Apache et NOTICE inclus |
 | SQLitePCLRaw.core / provider / config | 3.0.5 | Apache-2.0 | Couverts par la notice du bundle |
 | SQLite | 3.53.4 | Domaine public / bénédiction SQLite | `SQLite.LICENSE` inclus |
-| Codec BankPerfect V5 | révision MIT épinglée | MIT | `BankPerfect-V5.NOTICE.md` inclus ; description à préciser |
-| Inno Setup | 6.7.4 | Licence Inno Setup | Compilateur utilisé ; aucune notice Inno dans `ThirdPartyNotices` |
+| Codec BankPerfect V5 | révision MIT épinglée | MIT | `BankPerfect-V5.NOTICE.md` inclut tables, logique, séparateur et préfixe |
+| Inno Setup | 6.7.4 | Licence Inno Setup | `InnoSetup.LICENSE` et `InnoSetup.NOTICE` ajoutés |
 | Microsoft.NET.Test.Sdk | 17.14.1 | MIT | Tests uniquement, non distribués |
 | MSTest.TestAdapter / TestFramework | 3.6.4 | MIT | Tests uniquement, non distribués |
 
-**EF Core n’est pas une dépendance du produit** : aucun assembly EF Core n’a été identifié dans le dossier publié. `EFCore.LICENSE` est donc une notice supplémentaire mal nommée, pas une preuve d’utilisation d’EF Core.
+**EF Core n’est pas une dépendance du produit** : aucun assembly EF Core n’a été identifié dans le dossier publié. L’ancien `EFCore.LICENSE` a été vérifié puis renommé en `Microsoft.Data.Sqlite.LICENSE` ; son texte MIT .NET Foundation correspond au dépôt source de Microsoft.Data.Sqlite, et un NOTICE séparé conserve la provenance et le copyright Microsoft du package.
 
 ### Compatibilité avec la distribution MIT
 
@@ -206,7 +206,7 @@ Versions constatées dans `Moneta.App.deps.json`, les fichiers projet et les mé
 - Inno Setup autorise l’usage et la redistribution binaire sous conditions, notamment de conserver les mentions de copyright et les adresses du projet dans les redistributions binaires. Le compilateur n’est pas intégré comme bibliothèque de Moneta, mais l’installateur généré contient son amorce. Une notice explicite est recommandée.
 - Les packages de test ne sont pas distribués avec Moneta ; leurs licences restent dans le dépôt et les outils de développement.
 
-**Niveau : A/B — licences permissives compatibles ; notices Microsoft.Data.Sqlite et Inno Setup à corriger/préciser.**
+**Niveau : A — licences permissives compatibles et notices Microsoft.Data.Sqlite / Inno Setup ajoutées ou corrigées dans le paquet 0.2.0.**
 
 ## 12. Licence MIT de Moneta
 
@@ -218,92 +218,105 @@ Versions constatées dans `Moneta.App.deps.json`, les fichiers projet et les mé
 - Les fichiers source n’ont pas besoin d’un en-tête individuel : la licence du dépôt couvre l’œuvre, et la notice doit accompagner les copies.
 - La licence MIT autorise la redistribution et la commercialisation ; les dépendances permissives sont compatibles.
 
-### Lacune identifiée
+### Correction effectuée — Mission 20B
 
-Le dossier applicatif publié et l’installateur ne contiennent pas `LICENSE`. Le script de construction copie le dossier `app` et ajoute `ThirdPartyNotices`, mais ne copie pas la licence Moneta. Le guide de première utilisation, distribué séparément dans la release, reprend le texte complet de la licence ; ce n’est pas équivalent pour un utilisateur qui télécharge uniquement l’installateur.
+`LICENSE` est désormais copié dans la sortie de publication par `Moneta.App.csproj`, puis installé explicitement à la racine de l’application par `packaging/Moneta.iss` (le wildcard l’exclut pour éviter un doublon). Le bouton **Voir la licence** de **À propos** ouvre ce fichier local installé.
 
-L’article MIT exige que la notice de copyright et le texte de permission accompagnent les copies ou parties substantielles du logiciel. **Correction recommandée avant la prochaine publication :** copier `LICENSE` dans le dossier applicatif, l’ajouter à `ThirdPartyNotices` ou à la racine installée, et afficher un lien depuis **À propos**.
+Le script `tools/Build-MonetaCandidate.ps1` refuse désormais de produire un candidat si `LICENSE` ou l’une des notices obligatoires manque. Le paquet de test 0.1.99 a été construit localement ; une installation isolée a reçu `LICENSE`, dont le SHA-256 correspond à celui du dépôt, ainsi que les 11 notices tierces. Aucune nouvelle release n’a été publiée.
 
-**Niveau : C — correction recommandée avant 0.2.0 ; pas de suppression de la licence ni de changement du texte MIT.**
+**Niveau : C corrigé pour le futur paquet.** Le candidat 0.1.0 déjà publié reste inchangé.
 
 ## 13. Notices et attribution
 
-### Présentes dans le candidat
+### Présentes dans le paquet corrigé
 
-`ThirdPartyNotices` contient :
+À la racine de l’application :
+
+- `LICENSE` — licence MIT de Moneta.
+
+Dans `ThirdPartyNotices` :
 
 - `DotNet.LICENSE` et `DotNet.NOTICES` ;
 - `WindowsDesktop.LICENSE` ;
+- `Microsoft.Data.Sqlite.LICENSE` et `Microsoft.Data.Sqlite.NOTICE` ;
 - `SQLitePCLRaw.LICENSE` et `SQLitePCLRaw.NOTICE` ;
 - `SQLite.LICENSE` ;
 - `BankPerfect-V5.NOTICE.md` ;
-- `EFCore.LICENSE`.
+- `InnoSetup.LICENSE` et `InnoSetup.NOTICE`.
 
-### Points à corriger
+`EFCore.LICENSE` a été renommé en `Microsoft.Data.Sqlite.LICENSE` : son texte MIT .NET Foundation correspond au dépôt `dotnet/efcore`, d’où provient Microsoft.Data.Sqlite. Un NOTICE distinct conserve la provenance et le copyright Microsoft déclaré par le package. Aucun assembly EF Core n’est distribué.
 
-1. **Licence Moneta absente** de l’installateur (niveau C).
-2. **Microsoft.Data.Sqlite** : ajouter une notice MIT avec le copyright Microsoft, ou renommer/corriger la notice existante ; `EFCore.LICENSE` ne correspond pas au composant effectivement livré (niveau B).
-3. **Inno Setup** : vérifier si l’installateur généré doit inclure la notice de copyright/URL d’Inno Setup ; ajouter une notice dans `ThirdPartyNotices` par prudence (niveau B).
-4. **Codec BankPerfect** : préciser que la notice couvre les tables et la logique de décodage, pas seulement les constantes (niveau B).
-5. **À propos** : aucun lien vers la licence ou les notices, ni mention d’indépendance. Ce n’est pas nécessairement une obligation légale si les fichiers sont installés, mais c’est une amélioration de transparence (niveau B).
+### Points corrigés
+
+1. **Licence Moneta** : ajoutée au paquet et accessible depuis **À propos**.
+2. **Microsoft.Data.Sqlite** : notice renommée et provenance ajoutée.
+3. **Inno Setup** : licence et notice ajoutées.
+4. **Codec BankPerfect** : attribution étendue aux tables, à la logique de décodage, au séparateur et au préfixe de script.
+5. **À propos** : licence, notices, dépôt GitHub et mention d’indépendance accessibles en français et en anglais.
 
 ## 14. Risques et classifications
 
 | Niveau | Élément | Preuve / source | Conséquence possible | Correction |
 |---|---|---|---|---|
 | **A** | Absence de code source propriétaire BankPerfect 8 | Dépôt public, rapports 19B, code C# distinct | Aucune contrefaçon de code constatée dans ce périmètre | Maintenir la séparation et la traçabilité |
-| **A** | Codec V5 MIT et notice | `V5Codec.cs`, `THIRD-PARTY-NOTICE.md`, dossier `ThirdPartyNotices` | Réutilisation autorisée si notice conservée | Conserver la notice ; préciser son périmètre |
-| **B** | Périmètre de la notice du codec V5 | La notice cite les tables ; `V5Parser` reprend aussi séparateur et préfixe | Attribution perfectible, sans omission du texte MIT | Étendre la notice aux constantes et à la logique dérivée |
+| **A** | Codec V5 MIT et notice | `V5Codec.cs`, `THIRD-PARTY-NOTICE.md`, dossier `ThirdPartyNotices` | Réutilisation autorisée si notice conservée | Notice étendue ; **corrigé en 20B** |
+| **B** | Périmètre de la notice du codec V5 | La notice cite tables, logique, séparateur et préfixe | Attribution désormais exacte | **Corrigé en 20B** |
 | **A** | Logo, icônes, polices, captures | `assets/`, `VISUAL_IDENTITY.md`, arbre Git | Aucun asset BankPerfect identifié | Aucune modification du logo nécessaire |
 | **A** | Binaires et données privés | `.gitignore`, `git check-ignore`, absence de fichiers suivis | Pas de distribution de BP8/.bp privé constatée | Maintenir `private/` hors Git |
 | **B** | Contrat BankPerfect 8 et droit d’utilisation de la copie | Historique local, absence d’EULA complet | Analyse/usage contractuellement incertain | Faire vérifier le contrat et conserver la preuve de licence |
 | **B** | Extraction statique REA | Rapports 19B : PE/NSIS, pas de décompilation | Qualification incertaine au regard de l’article 5(3) | Ne pas publier les artefacts ; avis juridique si distribution dérivée |
 | **B** | Interface et « look and feel » | Menus et parcours proches, assets propres | Protection possible de l’interface originale (C-393/09) | Revue visuelle et de marque avant 0.2.0 |
 | **B** | Marque BankPerfect / Moneta | Recherche publique non concluante | Risque de confusion si usage suggestif | Recherche INPI/EUIPO ; conserver la mention d’indépendance |
-| **B** | Microsoft.Data.Sqlite notice | `EFCore.LICENSE` mal nommée, package MIT Microsoft | Attribution imprécise | Ajouter la notice MIT Microsoft exacte |
-| **B** | Inno Setup notice | Licence Inno, absence de notice dans `ThirdPartyNotices` | Condition de redistribution binaire à vérifier | Ajouter la notice/URL ou confirmer l’exemption |
-| **B** | **À propos** sans licence, notices ni mention d’indépendance | `AboutWindow.xaml` | Transparence insuffisante ; pas d’obligation autonome si les fichiers sont installés | Ajouter les liens et la mention |
-| **C** | Licence MIT Moneta absente de l’installateur | Dossier `app`, script de build, `Moneta.iss` | Copie binaire sans notice MIT complète | Ajouter `LICENSE` au paquet et à **À propos** |
-| **C** | Documents affirmant l’absence de code tiers | Anciens textes | Attribution inexacte | **Corrigé pendant cet audit** |
+| **B** | Microsoft.Data.Sqlite notice | `Microsoft.Data.Sqlite.LICENSE` + NOTICE ajoutés | Attribution corrigée | **Corrigé en 20B** |
+| **B** | Inno Setup notice | `InnoSetup.LICENSE` + NOTICE ajoutés | Condition de redistribution documentée | **Corrigé en 20B** |
+| **B** | **À propos** sans licence, notices ni mention d’indépendance | `AboutWindow.xaml` | Transparence insuffisante | **Corrigé en 20B** |
+| **C** | Licence MIT Moneta absente de l’installateur | Dossier `app`, script de build, `Moneta.iss` | Copie binaire sans notice MIT complète | **Corrigé en 20B** |
+| **C** | Documents affirmant l’absence de code tiers | Anciens textes | Attribution inexacte | **Corrigé pendant l’audit** |
 | **D** | Aucun risque significatif établi | — | — | Aucun |
 
 Les niveaux A à D sont des outils de priorisation, pas une qualification juridique définitive. Un niveau A signifie « aucun problème identifié dans le périmètre examiné », pas « conformité certifiée ».
 
-## 15. Corrections documentaires effectuées
+## 15. Corrections effectuées — Mission 20B
 
-Sans modifier le code, le moteur financier, les installateurs, les binaires, les logos ou la licence MIT :
+Sans modifier le moteur financier, le schéma SQLite, le format `.moneta`, les mécanismes de mise à jour, les logos ou le texte de la licence MIT :
 
-- `docs/BANKPERFECT_FORMAT_RESEARCH.md` : la phrase « aucun code tiers n’est incorporé » est remplacée par la description exacte du codec V5 MIT et de l’absence de code propriétaire BankPerfect 8.
-- `docs/BANKPERFECT_IMPORT_STRATEGY.md` : « aucune réutilisation de code » est remplacé par la mention de la seule reprise identifiée, le codec MIT attribué.
-- `docs/ROADMAP.md` : « aucun code tiers intégré » est remplacé par « codec V5 MIT attribué, aucun code propriétaire BankPerfect 8 intégré ».
-- Création du présent rapport.
+- `LICENSE` copié dans la sortie de publication et installé explicitement à la racine de l’application ;
+- **À propos** enrichi avec version, auteur/projet, licence, notices tierces, dépôt GitHub et mention d’indépendance, en FR/EN ;
+- `Microsoft.Data.Sqlite.LICENSE` et `Microsoft.Data.Sqlite.NOTICE` ajoutés, avec provenance et copyright du package ;
+- `InnoSetup.LICENSE` et `InnoSetup.NOTICE` ajoutés ;
+- notice BankPerfect V5 étendue aux tables, à la logique, au séparateur et au préfixe ;
+- contrôle de présence de `LICENSE` et des notices obligatoires ajouté à `Build-MonetaCandidate.ps1` ;
+- `docs/BANKPERFECT_FORMAT_RESEARCH.md`, `docs/BANKPERFECT_IMPORT_STRATEGY.md` et `docs/ROADMAP.md` corrigés sur la reprise du codec MIT.
 
-Aucune release, aucun installateur, aucun code source, aucune ressource graphique et aucun historique Git n’a été modifié.
+### Validation locale 20B
 
-## 16. Points nécessitant une validation humaine ou juridique
+- Build Debug et Release : **0 erreur, 0 avertissement**.
+- Tests : **692 réussis en Debug et 692 en Release**, aucun échec.
+- Installateur de test 0.1.99 construit localement ; aucune release ni tag.
+- Installation isolée dans un répertoire temporaire : `LICENSE` présent, SHA-256 identique au fichier du dépôt ; 11 notices tierces présentes.
+- Fenêtre **À propos** inspectée par UI Automation en français et en anglais : version, auteur, licence, boutons de licence/notices/GitHub et mention d’indépendance présents.
 
-1. **Contrat de licence BankPerfect 8** : le droit d’utiliser la copie analysée, les restrictions de rétro-ingénierie et les droits sur les fichiers `.bp`.
+Aucune release, aucun tag et aucun binaire publié n’a été modifié. Le paquet de test local est décrit au rapport de mission.
+
+## 16. Points nécessitant encore une validation humaine ou juridique
+
+1. **Contrat de licence BankPerfect 8** : droit d’utiliser la copie analysée, restrictions de rétro-ingénierie et droits sur les fichiers `.bp`.
 2. **Portée de l’extraction statique REA** : qualification au regard de l’article 5(3) et du contrat, même en l’absence de décompilation.
-3. **Notice Inno Setup** : conditions exactes applicables à l’installateur généré.
-4. **Notice Microsoft.Data.Sqlite** : texte et copyright exacts à inclure.
-5. **Interface et marque** : recherche INPI/EUIPO et comparaison visuelle si Moneta commercialise sa compatibilité.
-6. **Licence Moneta dans l’installateur** : ajout et vérification du paquet 0.2.0.
-7. **Juridiction et distribution** : le présent audit vise principalement le droit français/européen ; une distribution hors UE peut soulever d’autres règles.
+3. **Interface et marque** : recherche INPI/EUIPO et comparaison visuelle si Moneta commercialise sa compatibilité.
+4. **Juridiction et distribution** : l’audit vise principalement le droit français/européen ; une distribution hors UE peut soulever d’autres règles.
+5. **Revue finale du paquet 0.2.0** : confirmer que les notices ajoutées correspondent aux composants effectivement livrés.
 
-## 17. Recommandations avant Moneta 0.2.0
+## 17. Recommandations restantes avant Moneta 0.2.0
 
-1. **Ajouter `LICENSE`** au dossier applicatif et à `ThirdPartyNotices`, avec un lien dans **À propos**.
-2. **Corriger les notices** : Microsoft.Data.Sqlite avec le copyright Microsoft ; Inno Setup ; BankPerfect V5 avec la logique du codec et les constantes de format.
-3. **Supprimer ou renommer** `EFCore.LICENSE` puisqu’aucun EF Core n’est distribué.
-4. **Ajouter la mention d’indépendance** dans **À propos** et dans les notes de release : « Moneta est un logiciel indépendant, non affilié à BankPerfect ni à son auteur. »
-5. **Conserver les binaires et rapports BankPerfect 8** dans le dossier privé ignoré ; ne jamais les joindre à une release, un ticket ou un document public.
-6. **Ne pas publier** de fichier `.bp`, `.moneta`, sauvegarde, capture privée ou rapport 19B.
-7. **Documenter la méthode REA** et limiter les analyses futures à ce qui est nécessaire à l’interopérabilité ; ne pas décompiler sans validation.
-8. **Vérifier le contrat BankPerfect 8** et, si nécessaire, consulter un juriste avant toute nouvelle analyse ou distribution dérivée.
-9. **Rechercher les marques** BankPerfect et Moneta dans les bases INPI/EUIPO/OMPI avant une communication commerciale.
-10. **Ajouter un contrôle de licences/SBOM** au pipeline de release : vérifier la présence de `LICENSE`, `ThirdPartyNotices`, des versions NuGet et des notices Apache/MIT.
-11. **Ne pas réutiliser** les logos, icônes, captures, scripts ou manuels BankPerfect ; les ressources Moneta restent originales.
-12. **Ne pas modifier** la licence MIT de Moneta ni les licences tierces sans revue.
+1. **Conserver les binaires et rapports BankPerfect 8** dans le dossier privé ignoré ; ne jamais les joindre à une release, un ticket ou un document public.
+2. **Ne pas publier** de fichier `.bp`, `.moneta`, sauvegarde, capture privée ou rapport 19B.
+3. **Documenter la méthode REA** et limiter les analyses futures à ce qui est nécessaire à l’interopérabilité ; ne pas décompiler sans validation.
+4. **Vérifier le contrat BankPerfect 8** et, si nécessaire, consulter un juriste avant toute nouvelle analyse ou distribution dérivée.
+5. **Rechercher les marques** BankPerfect et Moneta dans les bases INPI/EUIPO/OMPI avant une communication commerciale.
+6. **Conserver le contrôle de licences** au pipeline de release ; évaluer un SBOM léger lors d’une mission dédiée.
+7. **Ne pas réutiliser** les logos, icônes, captures, scripts ou manuels BankPerfect ; les ressources Moneta restent originales.
+8. **Ne pas modifier** la licence MIT de Moneta ni les licences tierces sans revue.
+9. **Vérifier dans l’installateur 0.2.0** la présence de `LICENSE`, des notices tierces et des liens **À propos**.
 
 ## 18. Avertissement final
 
