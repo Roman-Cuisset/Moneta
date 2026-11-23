@@ -68,7 +68,7 @@ B04–B06 restent à traiter lors d’une mission ultérieure. Approuver les rè
 
 | Résultat | Validation / réserve |
 |---|---|
-| Source amont figée | BankPerfect **9.13.0**, MIT, commit `990f5c7f712dab07c7fefc2921cbf60beee7f6b1`, copie séparée ; aucun code tiers intégré |
+| Source amont figée | BankPerfect **9.13.0**, MIT, commit `990f5c7f712dab07c7fefc2921cbf60beee7f6b1`, copie séparée ; codec V5 MIT attribué, aucun code propriétaire BankPerfect 8 intégré |
 | Spécification V5 | Codec/substitution, encodage, en-tête, comptes, opérations, Extra et identités documentés avec symboles/lignes et niveaux de preuve ; V6/UCL/Shuffle distingués |
 | Épreuves amont | **11 tests ciblés réussis**, séparés de la confrontation native ; sonde fictive montrant replis/renumérotation et panics Unicode/UID maximal |
 | Référence BP8 | **8.0.0.373**, EXE public identique ; installation interactive propre dans l'invité après échecs initiaux, identité privée non lue ; aucune modification de la référence |

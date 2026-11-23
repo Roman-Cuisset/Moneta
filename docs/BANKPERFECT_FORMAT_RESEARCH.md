@@ -45,7 +45,7 @@ JSON local sur stdout, `reportVersion: 1`. Codes de sortie 0 pour une lecture sa
 
 La mission 9 avait identifié la révision `ea0624c408797acea6cdd58d59a0bb19560908fa` par lecture statique. La mission 10A étudie son successeur **`990f5c7f712dab07c7fefc2921cbf60beee7f6b1`**, daté du **10 novembre 2026**, dans une copie séparée du dépôt Moneta. La version déclarée du workspace est **9.13.0**, édition Rust 2024 ; outils réellement employés : rustc/cargo **1.98.1**.
 
-Le [site de l'auteur](https://chelly.net/bankperfect9/) renvoie au [dépôt public](https://github.com/fabiochelly/bankperfect). Sa [licence à la révision étudiée](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/LICENSE) est **MIT**, copyright 2026 Fabio Chelly : maintien de la notice pour une future reprise substantielle, absence de garantie. Cela ne requalifie pas les anciens binaires, scripts, logos ou dépendances en composants librement redistribuables. Aucun code tiers n'est incorporé à Moneta.
+Le [site de l'auteur](https://chelly.net/bankperfect9/) renvoie au [dépôt public](https://github.com/fabiochelly/bankperfect). Sa [licence à la révision étudiée](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/LICENSE) est **MIT**, copyright 2026 Fabio Chelly : maintien de la notice pour une future reprise substantielle, absence de garantie. Cela ne requalifie pas les anciens binaires, scripts, logos ou dépendances en composants librement redistribuables. Le codec V5 C# reprend les tables et la logique de décodage de cette source MIT, avec la notice correspondante ; aucun code propriétaire de BankPerfect 8 n'est incorporé.
 
 ### Niveaux de preuve
 
