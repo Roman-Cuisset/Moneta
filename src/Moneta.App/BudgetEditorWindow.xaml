@@ -1,30 +1,30 @@
-<Window x:Class="Moneta.App.BudgetEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Budget mensuel — Moneta"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.BudgetEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="{loc:LocalizedText BudgetEditorWindow.MonthlyBudgetMoneta}"
         Width="650" Height="590" MinWidth="500" MinHeight="420" ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
-        Style="{StaticResource {x:Type Window}}" AutomationProperties.AutomationId="BudgetEditor">
+        Style="{StaticResource {x:Type Window}}" AutomationProperties.AutomationId="BudgetEditor" Language="{loc:LocalizedLanguage}">
     <Grid Margin="18">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel>
             <TextBlock x:Name="Heading" Style="{StaticResource WindowHeading}" />
-            <Label Content="_Nom" Target="{Binding ElementName=NameInput}" />
-            <TextBox x:Name="NameInput" MaxLength="120" AutomationProperties.Name="Nom du budget" />
+            <Label Content="{loc:LocalizedText Common.NameAccessKey}" Target="{Binding ElementName=NameInput}" />
+            <TextBox x:Name="NameInput" MaxLength="120" AutomationProperties.Name="{loc:LocalizedText BudgetEditorWindow.NameOfBudget}" />
             <WrapPanel Margin="0,4,0,12">
-                <StackPanel Margin="0,0,12,0"><Label Content="_Mois (mm/aaaa)" Target="{Binding ElementName=MonthInput}" /><TextBox x:Name="MonthInput" Width="116" MaxLength="7" AutomationProperties.Name="Mois du budget" /></StackPanel>
-                <StackPanel Margin="0,0,12,0"><Label Content="_Devise" Target="{Binding ElementName=CurrencyInput}" /><ComboBox x:Name="CurrencyInput" Width="84" DisplayMemberPath="Code" AutomationProperties.Name="Devise du budget" /></StackPanel>
-                <StackPanel><Label Content="_Montant prévu" Target="{Binding ElementName=AmountInput}" /><TextBox x:Name="AmountInput" Width="145" MaxLength="60" AutomationProperties.Name="Montant prévu" /></StackPanel>
+                <StackPanel Margin="0,0,12,0"><Label Content="{loc:LocalizedText BudgetEditorWindow.MonthMmYyyyAccessKey}" Target="{Binding ElementName=MonthInput}" /><TextBox x:Name="MonthInput" Width="116" MaxLength="7" AutomationProperties.Name="{loc:LocalizedText BudgetEditorWindow.BudgetMonths}" /></StackPanel>
+                <StackPanel Margin="0,0,12,0"><Label Content="{loc:LocalizedText BudgetEditorWindow.CurrencyAccessKey}" Target="{Binding ElementName=CurrencyInput}" /><ComboBox x:Name="CurrencyInput" Width="84" DisplayMemberPath="Code" AutomationProperties.Name="{loc:LocalizedText BudgetEditorWindow.BudgetCurrency}" /></StackPanel>
+                <StackPanel><Label Content="{loc:LocalizedText BudgetEditorWindow.BudgetedAmountAccessKey}" Target="{Binding ElementName=AmountInput}" /><TextBox x:Name="AmountInput" Width="145" MaxLength="60" AutomationProperties.Name="{loc:LocalizedText BudgetEditorWindow.BudgetedAmount}" /></StackPanel>
             </WrapPanel>
         </StackPanel>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-            <Label Content="_Comptes" Target="{Binding ElementName=AccountsInput}" />
-            <Label Grid.Column="1" Content="Ca_tégories et sous-catégories" Target="{Binding ElementName=CategoriesInput}" />
-            <ListBox x:Name="AccountsInput" Grid.Row="1" Margin="0,0,8,0" SelectionMode="Multiple" DisplayMemberPath="Label" Style="{StaticResource FinancialScopeList}" AutomationProperties.Name="Comptes du budget" />
-            <ListBox x:Name="CategoriesInput" Grid.Row="1" Grid.Column="1" SelectionMode="Multiple" DisplayMemberPath="Label" Style="{StaticResource FinancialScopeList}" AutomationProperties.Name="Catégories du budget" />
+            <Label Content="{loc:LocalizedText Common.AccountsAccessKey}" Target="{Binding ElementName=AccountsInput}" />
+            <Label Grid.Column="1" Content="{loc:LocalizedText BudgetEditorWindow.CategoriesAndSubCategoriesAccessKey}" Target="{Binding ElementName=CategoriesInput}" />
+            <ListBox x:Name="AccountsInput" Grid.Row="1" Margin="0,0,8,0" SelectionMode="Multiple" DisplayMemberPath="Label" Style="{StaticResource FinancialScopeList}" AutomationProperties.Name="{loc:LocalizedText BudgetEditorWindow.BudgetAccounts}" />
+            <ListBox x:Name="CategoriesInput" Grid.Row="1" Grid.Column="1" SelectionMode="Multiple" DisplayMemberPath="Label" Style="{StaticResource FinancialScopeList}" AutomationProperties.Name="{loc:LocalizedText BudgetEditorWindow.BudgetCategories}" />
         </Grid>
         <StackPanel Grid.Row="2" Margin="0,10,0,0">
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite" />
-            <WrapPanel HorizontalAlignment="Right"><Button Content="Annuler" IsCancel="True" Margin="0,0,8,0" /><Button Content="_Appliquer" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Apply_Click" /></WrapPanel>
+            <WrapPanel HorizontalAlignment="Right"><Button Content="{loc:LocalizedText Common.Cancel}" IsCancel="True" Margin="0,0,8,0" /><Button Content="{loc:LocalizedText BudgetEditorWindow.ApplyAccessKey}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Apply_Click" /></WrapPanel>
         </StackPanel>
     </Grid>
 </Window>

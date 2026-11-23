@@ -25,7 +25,7 @@ public sealed partial class MonetaFile
 
     private static string EncodeOperationSnapshot(Transaction value)
     {
-        if (value.Valuation is not null) throw new ArgumentException("Une valorisation ne fait pas partie d’un instantané réel.");
+        if (value.Valuation is not null) throw new ArgumentException(L.Get("MonetaFile.AValuationIsNotPartOfAReal"));
         var dto = new OperationSnapshotV1(1, value.Id.ToString("D"), value.AccountId.ToString("D"), DateText(value.Date), value.Label,
             ExactMoney.ToMinorUnits(value.Amount, value.Currency), value.Currency.Code, value.Currency.DecimalPlaces,
             value.Currency.Name, value.Currency.Symbol, value.Currency.DisplayRules.CultureName,
@@ -43,9 +43,9 @@ public sealed partial class MonetaFile
         try
         {
             var dto = JsonSerializer.Deserialize<OperationSnapshotV1>(json, SnapshotJsonOptions)
-                ?? throw new ArgumentException("Instantané absent.");
+                ?? throw new ArgumentException(L.Get("MonetaFile.InstantlyAbsent"));
             if (dto.Version != 1 || JsonSerializer.Serialize(dto, SnapshotJsonOptions) != json)
-                throw new ArgumentException("Instantané V1 non canonique ou incomplet.");
+                throw new ArgumentException(L.Get("MonetaFile.InstantV1NonCanonicalOrIncomplete"));
             Guid? OptionalId(string? text) => text is null ? null : ReadGuid(text);
             var currency = new Currency(dto.CurrencyCode, dto.CurrencyName, dto.CurrencyPrecision)
             {
@@ -63,12 +63,12 @@ public sealed partial class MonetaFile
                 MarkedOn = dto.MarkedOn is null ? null : ReadDate(dto.MarkedOn), ReconciliationId = OptionalId(dto.ReconciliationId)
             };
             ValidateHistoricalOperation(value, metadata, lookup);
-            if (ExactMoney.ToMinorUnits(value.Amount, currency) != dto.AmountMinor) throw new ArgumentException("Perte de précision dans l’instantané.");
+            if (ExactMoney.ToMinorUnits(value.Amount, currency) != dto.AmountMinor) throw new ArgumentException(L.Get("MonetaFile.LossOfPrecisionInTheInstant"));
             return value;
         }
         catch (Exception exception) when (exception is ArgumentException or JsonException or OverflowException or NullReferenceException or KeyNotFoundException)
         {
-            throw new DocumentException(DocumentError.Corrupt, "Instantané historique invalide.", exception);
+            throw new DocumentException(DocumentError.Corrupt, L.Get("MonetaFile.InvalidHistoricalInstant"), exception);
         }
     }
 
@@ -76,12 +76,12 @@ public sealed partial class MonetaFile
     {
         var account = lookup.Accounts[value.AccountId];
         if (value.Currency.Code != account.Currency.Code || value.Currency.DecimalPlaces != account.Currency.DecimalPlaces)
-            throw new ArgumentException("Devise historique incohérente.");
+            throw new ArgumentException(L.Get("MonetaFile.IncoherentHistoricalCurrency"));
         ValidateText(value.Currency.Name, true); ValidateText(value.Currency.Symbol, true); ValidateText(value.Currency.DisplayRules.CultureName, false);
         void HistoricalName(Guid? id, string? name, int maximum)
         {
             if (id is null ? !string.IsNullOrEmpty(name) : string.IsNullOrWhiteSpace(name) || name.Length > maximum)
-                throw new ArgumentException("Nom historique incohérent.");
+                throw new ArgumentException(L.Get("MonetaFile.IncoherentHistoricalName"));
         }
         HistoricalName(value.PayeeId, value.Payee.Name, 120); HistoricalName(value.CategoryId, value.Category.Name, 120);
         HistoricalName(value.SubcategoryId, value.Category.Subcategory, 120); HistoricalName(value.PaymentMethodId, value.PaymentMode, 80);
@@ -109,14 +109,14 @@ public sealed partial class MonetaFile
         }
         catch (Exception exception) when (exception is ArgumentException or NullReferenceException)
         {
-            throw new DocumentException(DocumentError.InvalidData, "Lot de rapprochement incomplet.", exception);
+            throw new DocumentException(DocumentError.InvalidData, L.Get("MonetaFile.IncompleteReconciliationPackage"), exception);
         }
     }
 
     private static DateOnly ReadDate(string text)
     {
         if (!DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ||
-            date == default || DateText(date) != text) throw Error(DocumentError.Corrupt, "Date non canonique.");
+            date == default || DateText(date) != text) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.NonCanonicalDate"));
         return date;
     }
     private static string DateText(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

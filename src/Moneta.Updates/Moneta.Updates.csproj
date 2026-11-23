@@ -4,6 +4,8 @@
     <DefineConstants Condition="'$(MonetaLab)' == 'true'">$(DefineConstants);MONETA_LAB</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Moneta.Localization/Moneta.Localization.csproj" />
+    <Using Include="Moneta.Localization" />
     <InternalsVisibleTo Include="Moneta.Tests" />
     <EmbeddedResource Include="release-key.spki" LogicalName="Moneta.UpdateKey" Condition="'$(MonetaLab)' != 'true'" />
     <EmbeddedResource Include="$(MonetaLabPublicKey)" LogicalName="Moneta.UpdateKey" Condition="'$(MonetaLab)' == 'true'" />

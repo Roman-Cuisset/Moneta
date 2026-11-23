@@ -11,7 +11,7 @@ namespace Moneta.App;
 
 public partial class ReportsWindow : Window
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly DocumentWorkspace _workspace;
     private readonly MainViewModel _model;
     private readonly FinancialReportEngine _engine;
@@ -35,7 +35,7 @@ public partial class ReportsWindow : Window
         var snapshot = Saved;
         Target.ItemsSource = snapshot.Currencies;
         Target.SelectedItem = snapshot.Currencies.FirstOrDefault(item => item.Code == _model.DisplayCurrency?.Code) ?? snapshot.Currencies[0];
-        Category.ItemsSource = new[] { new BudgetEditorWindow.Choice(Guid.Empty, "Toutes les catégories") }
+        Category.ItemsSource = new[] { new BudgetEditorWindow.Choice(Guid.Empty, L.Get("ReportsWindow.AllCategories")) }
             .Concat(BudgetEditorWindow.CategoryChoices(snapshot)).ToArray();
         Category.SelectedIndex = 0;
         Provider.SelectedIndex = provider == RateProvider.Cbr ? 1 : 0;
@@ -43,11 +43,11 @@ public partial class ReportsWindow : Window
         SetPeriod(Today);
         Grouping.SelectedIndex = PlotMode.SelectedIndex = 0;
         PopulateAccounts(selectAll: true);
-        BudgetMonth.Text = Today.ToString("MM/yyyy", French);
+        BudgetMonth.Text = Today.ToString("MM/yyyy", DisplayCulture);
         UpdateBudgetRows([]);
         UpdateArchives();
         Views.SelectedIndex = Math.Clamp(tab, 0, Views.Items.Count - 1);
-        Status.Text = "Choisissez le périmètre, puis générez le rapport. Les écritures enregistrées sont utilisées.";
+        Status.Text = L.Get("ReportsWindow.ChooseThePerimeterThenGenerateTheReportSaved");
         Loaded += (_, _) => Generate.Focus();
         Closed += (_, _) => { _closed = true; _operation?.Cancel(); };
         UpdateActions();
@@ -73,7 +73,7 @@ public partial class ReportsWindow : Window
     private void Period_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (StartDate is null || EndDate is null) return;
-        var date = DateOnly.TryParseExact(StartDate.Text, "dd/MM/yyyy", French, DateTimeStyles.None, out var choice) ? choice : Today;
+        var date = DateOnly.TryParseExact(StartDate.Text, L.DatePattern, DisplayCulture, DateTimeStyles.None, out var choice) ? choice : Today;
         if (Period.SelectedIndex < 3) SetPeriod(date);
     }
     private void PreviousPeriod_Click(object sender, RoutedEventArgs e) => ShiftPeriod(-1);
@@ -88,7 +88,7 @@ public partial class ReportsWindow : Window
             {
                 var end = ScheduleEditorWindow.ReadDate(EndDate.Text);
                 var length = end.DayNumber - start.DayNumber + 1;
-                if (length < 1) throw new ArgumentException("Vérifiez l’ordre des dates de la période.");
+                if (length < 1) throw new ArgumentException(L.Get("ReportsWindow.CheckTheOrderOfTheDatesOfThe"));
                 ShowPeriod(start.AddDays(step * length), end.AddDays(step * length));
             }
             else SetPeriod(start.AddMonths(step * (Period.SelectedIndex == 2 ? 12 : Period.SelectedIndex == 1 ? 3 : 1)));
@@ -106,8 +106,8 @@ public partial class ReportsWindow : Window
 
     private void ShowPeriod(DateOnly start, DateOnly end)
     {
-        StartDate.Text = start.ToString("dd/MM/yyyy", French);
-        EndDate.Text = end.ToString("dd/MM/yyyy", French);
+        StartDate.Text = start.ToString(L.DatePattern, DisplayCulture);
+        EndDate.Text = end.ToString(L.DatePattern, DisplayCulture);
     }
 
     private ReportCriteria ReadCriteria()
@@ -118,7 +118,7 @@ public partial class ReportsWindow : Window
             Archived.IsChecked == true, chosen.Id == Guid.Empty ? null : chosen.Id, (Currency)Target.SelectedItem, SelectedProvider);
     }
 
-    private async void Generate_Click(object sender, RoutedEventArgs e) => await Run("Génération du rapport…", async token =>
+    private async void Generate_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.ReportGeneration"), async token =>
         await GenerateReport(ReadCriteria(), Access, null, token));
 
     private async Task GenerateReport(ReportCriteria criteria, HistoricalRateAccess access, Guid? predecessor, CancellationToken token)
@@ -136,13 +136,13 @@ public partial class ReportsWindow : Window
         token.ThrowIfCancellationRequested();
         ShowReport(data, predecessor, false);
         var month = new DateOnly(criteria.From.Year, criteria.From.Month, 1);
-        BudgetMonth.Text = month.ToString("MM/yyyy", French);
+        BudgetMonth.Text = month.ToString("MM/yyyy", DisplayCulture);
         var budgets = await CalculateBudgets(month, access == HistoricalRateAccess.Refresh ? HistoricalRateAccess.FetchMissing : access, token, data.Content);
         var forecast = await ProjectForecast(snapshot, criteria, false, HistoricalRateAccess.CacheOnly, drafts, token);
         token.ThrowIfCancellationRequested();
         UpdateBudgetRows(budgets);
         ShowForecast(forecast);
-        Status.Text = predecessor is null ? "Rapport généré à partir du dossier enregistré." : "Recalcul prêt. Figez les résultats pour conserver cette nouvelle version.";
+        Status.Text = predecessor is null ? L.Get("ReportsWindow.ReportGeneratedFromTheSavedDocument") : L.Get("ReportsWindow.RecalculationReadyFigTheResultsToKeepThis");
     }
 
     private void ShowReport(RenderedReport value, Guid? predecessor, bool frozen)
@@ -154,25 +154,25 @@ public partial class ReportsWindow : Window
         var target = criteria.Target;
         var total = value.Total;
         var missingStock = value.Content.Balances.Count(row => !row.Converted.HasValue);
-        ScopeText.Text = $"{criteria.From:dd/MM/yyyy} au {criteria.Through:dd/MM/yyyy} · {criteria.Accounts.Count} compte(s) · {target.Code} · {RateRules.ProviderName(criteria.Provider)}";
-        var coverage = total.Eligible == 0 ? "Aucun flux éligible." :
-            $"{total.Valued:N0}/{total.Eligible:N0} flux valorisés ({(decimal)total.Valued * 100 / total.Eligible:N1} %)." +
-            (total.Missing == 0 ? "" : $" {total.Missing:N0} sans valeur, voir Flux et cours.");
+        ScopeText.Text = L.Format("ReportsWindow.0MmDdYyyyTo1MmDd", (criteria.From), (criteria.Through), (criteria.Accounts.Count), (target.Code), (RateRules.ProviderName(criteria.Provider)));
+        var coverage = total.Eligible == 0 ? L.Get("ReportsWindow.NoEligibleFlows") :
+            L.Format("ReportsWindow.0N01N0ValuedFlow2N1", (total.Valued), (total.Eligible), ((decimal)total.Valued * 100 / total.Eligible)) +
+            (total.Missing == 0 ? "" : L.Format("ReportsWindow.0N0NoValueSeeFlowAndPrice", (total.Missing)));
         var complete = total.Complete && missingStock == 0;
         CoverageCard.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, complete ? "AccentSoftBrush" : "WarningSurfaceBrush");
         Coverage.SetResourceReference(ForegroundProperty, complete ? "TextBrush" : "WarningBrush");
         CoverageCard.Visibility = Visibility.Visible;
-        Coverage.Text = (complete ? "Rapport complet. " : "Rapport incomplet · montants connus seulement. ") +
-            coverage + (missingStock == 0 ? "" : $" {missingStock:N0} solde(s) sans conversion, voir Soldes à date.");
+        Coverage.Text = (complete ? L.Get("ReportsWindow.FullReport") : L.Get("ReportsWindow.IncompleteReportKnownAmountsOnly")) +
+            coverage + (missingStock == 0 ? "" : L.Format("ReportsWindow.0N0BalanceSWithoutConversionSeeBalances", (missingStock)));
         IncomeText.Text = Money(total.Income, target);
         ExpenseText.Text = Money(total.Expense, target);
-        NetText.Text = total.Complete ? Money(total.Net, target) : "Indisponible";
+        NetText.Text = total.Complete ? Money(total.Net, target) : L.Get("ReportsWindow.NotAvailable");
         TopCategories.Text = string.Join(Environment.NewLine, value.Groups[ReportGrouping.Category].Where(row => row.Total.Expense > 0)
             .OrderByDescending(row => row.Total.Expense).Take(4).Select(row => $"{row.Label} · {Money(row.Total.Expense, target)}"));
-        if (TopCategories.Text.Length == 0) TopCategories.Text = "Aucune dépense valorisée sur la période.";
-        BalanceSummary.Text = value.Consolidated is { } stock ? $"Solde consolidé au {criteria.Through:dd/MM/yyyy} · {Money(stock, target)}"
-            : $"Solde consolidé indisponible au {criteria.Through:dd/MM/yyyy} · {missingStock} compte(s) sans valorisation.";
-        BalanceSummary.Text += " Le filtre de catégorie porte uniquement sur les flux.";
+        if (TopCategories.Text.Length == 0) TopCategories.Text = L.Get("ReportsWindow.NoExpenditureValuedOverThePeriod");
+        BalanceSummary.Text = value.Consolidated is { } stock ? L.Format("ReportsWindow.ConsolidatedBalanceAt0MmDdYyyy1", (criteria.Through), (Money(stock, target)))
+            : L.Format("ReportsWindow.ConsolidatedBalanceNotAvailableOn0MmDd", (criteria.Through), (missingStock));
+        BalanceSummary.Text += L.Get("ReportsWindow.TheCategoryFilterCoversOnlyFlows");
         Balances.ItemsSource = value.Content.Balances.Select(line => new LineView(value.Content, line)).ToArray();
         ShowFlows();
         ShowGroups();
@@ -181,9 +181,9 @@ public partial class ReportsWindow : Window
         {
             Forecasts.ItemsSource = null;
             ForecastMonths.ItemsSource = null;
-            ForecastSummary.Text = "La preuve fige les flux et les soldes. Les prévisions se calculent depuis le dossier enregistré.";
-            UpcomingText.Text = "Rapport figé · les prévisions sont séparées.";
-            BudgetAlert.Text = "Rapport figé · les budgets mensuels restent consultables séparément.";
+            ForecastSummary.Text = L.Get("ReportsWindow.TheProofFreezesTheFlowsAndBalancesThe");
+            UpcomingText.Text = L.Get("ReportsWindow.FixedReportForecastsAreSeparated");
+            BudgetAlert.Text = L.Get("ReportsWindow.FixedReportMonthlyBudgetsRemainSearchableSeparately");
         }
         UpdateActions();
     }
@@ -208,18 +208,18 @@ public partial class ReportsWindow : Window
         var groups = mode == 0 ? view.Donut : view.Groups[ReportGrouping.Month];
         Plots.SetData(groups, view.Content.Criteria.Target, mode);
         ChartNotice.Text = !view.Total.Complete
-            ? "Rapport incomplet. Graphiques des montants connus uniquement. * Mois avec des flux non valorisés."
-            : "Les graphiques reprennent les lignes arrondies des tableaux du rapport.";
+            ? L.Get("ReportsWindow.IncompleteReportGraphsOfKnownAmountsOnlyMonth")
+            : L.Get("ReportsWindow.TheGraphsShowTheRoundedLinesOfThe");
     }
 
     private void Detail_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (sender is not DataGrid grid) return;
         var label = ReferenceEquals(grid, Flows) ? FlowEvidence : BalanceEvidence;
-        if (label is not null) label.Text = (grid.SelectedItem as LineView)?.Evidence ?? "Sélectionnez une ligne pour voir sa provenance.";
+        if (label is not null) label.Text = (grid.SelectedItem as LineView)?.Evidence ?? L.Get("ReportsWindow.SelectALineToSeeItsOrigin");
     }
 
-    private async void Project_Click(object sender, RoutedEventArgs e) => await Run("Calcul de la prévision…", async token =>
+    private async void Project_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.CalculationOfTheForecast"), async token =>
     {
         var criteria = ReadCriteria();
         var snapshot = Saved;
@@ -229,7 +229,7 @@ public partial class ReportsWindow : Window
         var rows = await ProjectForecast(snapshot, criteria, estimate, access, drafts, token);
         token.ThrowIfCancellationRequested();
         ShowForecast(rows);
-        Status.Text = "Prévision recalculée. Les échéances et les écritures enregistrées sont distinctes.";
+        Status.Text = L.Get("ReportsWindow.RecalculatedForecastTheDatesAndRecordsRecordedAre");
     });
 
     private ScheduleDecision[] DraftPostings() => _model.ScheduleHistory.Where(item => item.Outcome == ScheduleOutcome.Posted &&
@@ -248,10 +248,10 @@ public partial class ReportsWindow : Window
     {
         Forecasts.ItemsSource = value.Lines;
         ForecastMonths.ItemsSource = value.Months;
-        ForecastSummary.Text = value.Lines.Length == 0 ? "Aucune échéance à venir dans le périmètre." :
-            $"{value.Lines.Length:N0} ligne(s) à venir sur un horizon maximum de 365 jours · cible {value.Target.Code}. " +
-            "Les estimations utilisent la date de calcul et restent hors réalisé.";
-        UpcomingText.Text = $"Échéances à venir dans la période · {value.Lines.Length:N0} ligne(s), voir Prévisions.";
+        ForecastSummary.Text = value.Lines.Length == 0 ? L.Get("ReportsWindow.NoFutureScheduledTransactionInThePerimeter") :
+            L.Format("ReportsWindow.0N0FutureLineSOnAMaximum", (value.Lines.Length), (value.Target.Code)) +
+            L.Get("ReportsWindow.TheEstimatesUseTheCalculationDateAndRemain");
+        UpcomingText.Text = L.Format("ReportsWindow.DueDatesInThePeriod0N0Line", (value.Lines.Length));
     }
 
     private void PreviousBudget_Click(object sender, RoutedEventArgs e) => ShiftBudget(-1);
@@ -262,18 +262,18 @@ public partial class ReportsWindow : Window
         try
         {
             var month = BudgetEditorWindow.ReadMonth(BudgetMonth.Text).AddMonths(step);
-            BudgetMonth.Text = month.ToString("MM/yyyy", French);
+            BudgetMonth.Text = month.ToString("MM/yyyy", DisplayCulture);
             UpdateBudgetRows([]);
         }
         catch (ArgumentException error) { Status.Text = error.Message; }
     }
 
-    private async void Budgets_Click(object sender, RoutedEventArgs e) => await Run("Calcul du réalisé budgétaire…", async token =>
+    private async void Budgets_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.CalculationOfTheBudgetaryAchievement"), async token =>
     {
         var values = await CalculateBudgets(BudgetEditorWindow.ReadMonth(BudgetMonth.Text), Access, token);
         token.ThrowIfCancellationRequested();
         UpdateBudgetRows(values);
-        Status.Text = "Budgets calculés d’après les dépenses enregistrées jusqu’à aujourd’hui.";
+        Status.Text = L.Get("ReportsWindow.BudgetsCalculatedBasedOnExpendituresRecordedToDate");
     });
 
     private Task<IReadOnlyList<BudgetUsage>> CalculateBudgets(DateOnly month, HistoricalRateAccess access, CancellationToken token,
@@ -323,10 +323,10 @@ public partial class ReportsWindow : Window
             .Select(plan => new BudgetView(plan, _model.CurrencyRegistry.Get(plan.CurrencyCode), usages.GetValueOrDefault(plan.Id))).ToArray();
         BudgetGrid.ItemsSource = rows;
         BudgetGrid.SelectedItem = rows.FirstOrDefault(row => row.Plan.Id == selected);
-        BudgetSummary.Text = rows.Length == 0 ? "Aucun budget pour ce mois." :
-            $"{month:MMMM yyyy} · {rows.Length} budget(s). Les montants d’enveloppes de devises différentes restent séparés.";
-        BudgetAlert.Text = values.Count == 0 ? "Budgets du mois · voir l’onglet Budgets." :
-            $"Budgets de {month:MMMM yyyy} · {values.Count(item => item.Overrun)} dépassement(s) confirmé(s), {values.Count(item => item.Missing > 0)} budget(s) incomplet(s).";
+        BudgetSummary.Text = rows.Length == 0 ? L.Get("ReportsWindow.NoBudgetForThisMonth") :
+            L.Format("ReportsWindow.0MmmmYyyy1BudgetSAmountsOf", (month), (rows.Length));
+        BudgetAlert.Text = values.Count == 0 ? L.Get("ReportsWindow.BudgetsOfTheMonthSeeBudgetsTab") :
+            L.Format("ReportsWindow.BudgetsOf0MmmmYyyy1ConfirmedOverrun", (month), (values.Count(item => item.Overrun)), (values.Count(item => item.Missing > 0)));
         UpdateActions();
     }
 
@@ -341,37 +341,37 @@ public partial class ReportsWindow : Window
             var editor = new BudgetEditorWindow(_model.CaptureDocument(), month, original, duplicate) { Owner = this };
             if (editor.ShowDialog() != true || editor.Result is not { } value) return;
             _model.PutBudget(value);
-            BudgetMonth.Text = value.Month.ToString("MM/yyyy", French);
+            BudgetMonth.Text = value.Month.ToString("MM/yyyy", DisplayCulture);
             UpdateBudgetRows([]);
-            Status.Text = "Budget en brouillon. Ctrl+S enregistre le dossier.";
+            Status.Text = L.Get("ReportsWindow.BudgetInDraftCtrlSSavesTheDocument");
         }
         catch (ArgumentException error) { Status.Text = error.Message; }
     }
 
     private void DeleteBudget_Click(object sender, RoutedEventArgs e)
     {
-        if (BudgetGrid.SelectedItem is not BudgetView row || MessageBox.Show(this, $"Supprimer le budget « {row.Plan.Name} » ?",
+        if (BudgetGrid.SelectedItem is not BudgetView row || MessageBox.Show(this, L.Format("ReportsWindow.DeleteBudget0", (row.Plan.Name)),
             "Budget mensuel", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         _model.RemoveBudget(row.Plan.Id);
         UpdateBudgetRows([]);
-        Status.Text = "Suppression en brouillon. Ctrl+S enregistre le dossier.";
+        Status.Text = L.Get("ReportsWindow.DraftRemovalCtrlSSavesTheDocument");
     }
 
-    private async void Freeze_Click(object sender, RoutedEventArgs e) => await Run("Vérification de la preuve du rapport…", async token =>
+    private async void Freeze_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.VerificationOfTheEvidenceOfTheReport"), async token =>
     {
         if (_report is not { } view || _fromArchive) return;
-        var label = string.IsNullOrWhiteSpace(ReportName.Text) ? $"Rapport du {view.Content.Criteria.From:dd/MM/yyyy} au {view.Content.Criteria.Through:dd/MM/yyyy}" : ReportName.Text;
+        var label = string.IsNullOrWhiteSpace(ReportName.Text) ? L.Format("ReportsWindow.ReportFrom0MmDdYyyyTo1", (view.Content.Criteria.From), (view.Content.Criteria.Through)) : ReportName.Text;
         var version = await Task.Run(() => FrozenReport.Create(label, view.Content, _predecessor), token);
         token.ThrowIfCancellationRequested();
         _model.AddFrozenReport(version);
         _fromArchive = true;
         UpdateArchives(version.Id);
         ArchiveSummary.Text = view.Total.Complete && view.Content.Balances.All(row => row.Converted.HasValue)
-            ? "Preuve figée en brouillon." : "Rapport incomplet figé avec les raisons d’absence, en brouillon.";
-        Status.Text = "Ctrl+S enregistre le rapport et son empreinte dans le dossier.";
+            ? L.Get("ReportsWindow.ProofFrozenInDraft") : L.Get("ReportsWindow.IncompleteRatioFrozenWithReasonsForAbsenceIn");
+        Status.Text = L.Get("ReportsWindow.CtrlSRecordsTheReportAndItsFootprint");
     });
 
-    private async void Replay_Click(object sender, RoutedEventArgs e) => await Run("Rejeu du rapport figé…", async token =>
+    private async void Replay_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.ReplayOfTheFrozenReport"), async token =>
     {
         if (ArchiveGrid.SelectedItem is not ArchiveView archive) return;
         var stored = await LoadArchive(archive.Value, token);
@@ -379,10 +379,10 @@ public partial class ReportsWindow : Window
         token.ThrowIfCancellationRequested();
         ShowReport(view, archive.Value.Id, true);
         Views.SelectedIndex = 0;
-        Status.Text = "Rapport reproduit hors ligne depuis sa preuve.";
+        Status.Text = L.Get("ReportsWindow.ReportReproducedOfflineSinceItsEvidence");
     });
 
-    private async void Recalculate_Click(object sender, RoutedEventArgs e) => await Run("Recalcul depuis le dossier enregistré…", async token =>
+    private async void Recalculate_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.RecalculationFromTheSavedDocument"), async token =>
     {
         if (ArchiveGrid.SelectedItem is not ArchiveView archive) return;
         var stored = await LoadArchive(archive.Value, token);
@@ -406,18 +406,18 @@ public partial class ReportsWindow : Window
             new ArchiveView(item, item.PredecessorId is { } parent ? labels[parent] : "—")).ToArray();
         ArchiveGrid.ItemsSource = rows;
         if (select is not null) ArchiveGrid.SelectedItem = rows.FirstOrDefault(row => row.Value.Id == select);
-        if (rows.Length == 0) ArchiveSummary.Text = "Aucun rapport figé.";
+        if (rows.Length == 0) ArchiveSummary.Text = L.Get("ReportsWindow.NoReportSnapshots");
         UpdateActions();
     }
 
-    private async void Save_Click(object sender, RoutedEventArgs e) => await Run("Enregistrement du dossier…", async token =>
+    private async void Save_Click(object sender, RoutedEventArgs e) => await Run(L.Get("ReportsWindow.RecordDocument"), async token =>
     {
         if (await _save())
         {
             UpdateArchives((ArchiveGrid.SelectedItem as ArchiveView)?.Value.Id);
-            Status.Text = "Dossier enregistré.";
+            Status.Text = L.Get("ReportsWindow.SavedDocument");
         }
-        else Status.Text = "Enregistrement non confirmé.";
+        else Status.Text = L.Get("ReportsWindow.RecordUnconfirmed");
     }, cancellable: false);
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -439,7 +439,7 @@ public partial class ReportsWindow : Window
         CancelRun.IsEnabled = cancellable;
         Status.Text = message;
         try { await work(operation.Token); }
-        catch (OperationCanceledException) { if (!_closed) Status.Text = "Calcul annulé."; }
+        catch (OperationCanceledException) { if (!_closed) Status.Text = L.Get("Common.CalculationCanceled"); }
         catch (Exception error) when (error is ArgumentException or InvalidOperationException or DocumentException or RateException or OverflowException or JsonException)
         { if (!_closed) Status.Text = error.Message; }
         finally
@@ -460,35 +460,36 @@ public partial class ReportsWindow : Window
         SaveDraft.IsEnabled = ready && _workspace.HasUnsavedChanges;
     }
 
-    private static string Money(decimal amount, Currency currency) => $"{amount.ToString($"N{currency.DecimalPlaces}", French)} {currency.Code}";
+    private static string Money(decimal amount, Currency currency) => $"{amount.ToString($"N{currency.DecimalPlaces}", DisplayCulture)} {currency.Code}";
 
     private sealed record LineView(ReportContent Content, ReportLine Line)
     {
         private HistoricalQuotation? Quote => Content.QuoteFor(Line);
         public DateOnly Date => Line.Input.Date;
         public string Account => Line.Subject.Account;
-        public string Category => Line.Subject.Subcategory is { } sub ? $"{Line.Subject.Category} › {sub}" : Line.Subject.Category ?? "Sans catégorie";
-        public string Kind => Line.Input.FlowKind switch { HistoricalFlowKind.Income => "Recette", HistoricalFlowKind.Fee => "Frais", _ => "Dépense" };
+        public string Category => Line.Subject.Subcategory is { } sub ? $"{Line.Subject.Category} › {sub}" : Line.Subject.Category ?? L.Get("ReportsWindow.WithoutCategory");
+        public string Kind => Line.Input.FlowKind switch { HistoricalFlowKind.Income => L.Get("Common.Income2"), HistoricalFlowKind.Fee => L.Get("ReportsWindow.Fees"), _ => L.Get("Common.Expense") };
         public decimal NativeAmount => Line.Input.NativeAmount;
         public decimal? Value => Line.Converted;
-        public string Native => $"{NativeAmount.ToString("G29", French)} {Line.Input.SourceCode}";
-        public string Display => Value is { } value ? Money(value, Content.Criteria.Target) : "Indisponible";
-        public string Status => Quote is { } quote ? $"{RateRules.ProviderName(quote.Provider)} · {quote.EffectiveDate:dd/MM/yyyy}"
-            : Value.HasValue ? "Même devise" : $"{RateRules.ProviderName(Content.Criteria.Provider)} · {Line.Detail}";
+        public string Native => $"{NativeAmount.ToString("G29", DisplayCulture)} {Line.Input.SourceCode}";
+        public string Display => Value is { } value ? Money(value, Content.Criteria.Target) : L.Get("ReportsWindow.NotAvailable");
+        public string Status => Quote is { } quote ? $"{RateRules.ProviderName(quote.Provider)} · {quote.EffectiveDate.ToString(L.DatePattern, DisplayCulture)}"
+            : Value.HasValue ? L.Get("Common.SameCurrency") : $"{RateRules.ProviderName(Content.Criteria.Provider)} · {L.Diagnostic(Line.Detail ?? "")}";
         public string Evidence => Quote is { } quote
-            ? $"{Status} · demande {Date:dd/MM/yyyy} · " + string.Join(" · ", new[] { quote.Source, quote.Target }.OfType<OfficialRateQuote>()
-                .Select(item => $"{item.Nominal} {item.CurrencyCode} = {item.OfficialValue.ToString(French)} {quote.ReferenceCurrency}")) +
-                $" · {Line.Input.SourceCode}{(quote.Source is not null && quote.Target is not null ? " → " + quote.ReferenceCurrency : "")} → {Content.Criteria.Target.Code} · arrondi au pair"
+            ? L.Format("Reports.RequestedRateDate", Status, Date.ToString(L.DatePattern, DisplayCulture))
+                + string.Join(" · ", new[] { quote.Source, quote.Target }.OfType<OfficialRateQuote>()
+                .Select(item => $"{item.Nominal} {item.CurrencyCode} = {item.OfficialValue.ToString(DisplayCulture)} {quote.ReferenceCurrency}")) +
+                L.Format("ReportsWindow.012RoundedAuPair", (Line.Input.SourceCode), ((quote.Source is not null && quote.Target is not null ? " → " + quote.ReferenceCurrency : "")), (Content.Criteria.Target.Code))
             : Status;
     }
 
     private sealed record GroupView(ReportGroup Row, Currency Target)
     {
-        public string Label => Row.Label;
+        public string Label => ReportPlots.GroupLabel(Row);
         public ReportTotal Total => Row.Total;
         public string Income => Money(Total.Income, Target);
         public string Expense => Money(Total.Expense, Target);
-        public string Net => Total.Complete ? Money(Total.Net, Target) : "Indisponible";
+        public string Net => Total.Complete ? Money(Total.Net, Target) : L.Get("ReportsWindow.NotAvailable");
         public string Coverage => $"{Total.Valued:N0}/{Total.Eligible:N0}";
     }
 
@@ -499,14 +500,15 @@ public partial class ReportsWindow : Window
         public string Account => Row.Account;
         public decimal NativeAmount => Row.Native;
         public string Native => Row.Status == ForecastValuation.Transfer
-            ? $"{Row.Native.ToString("G29", French)} {Row.Currency} → {Row.TransferCredit?.ToString("G29", French) ?? "à confirmer"} {Row.TransferCurrency}"
-            : $"{(Row.IsIncome ? "" : "−")}{Row.Native.ToString("G29", French)} {Row.Currency}";
+            ? $"{Row.Native.ToString("G29", DisplayCulture)} {Row.Currency} → {Row.TransferCredit?.ToString("G29", DisplayCulture) ?? L.Get("Reports.AmountToConfirm")} {Row.TransferCurrency}"
+            : $"{(Row.IsIncome ? "" : "−")}{Row.Native.ToString("G29", DisplayCulture)} {Row.Currency}";
         public string Value => Row.Value is { } amount ? Money(Row.IsIncome ? amount : -amount, Target) : "—";
         public string Status => Row.Status switch
         {
-            ForecastValuation.Native => "Prévu · même devise",
-            ForecastValuation.Estimated => $"Estimation · {RateRules.ProviderName(Row.Provider!.Value)} · effet {Row.Effective:dd/MM/yyyy}",
-            _ => Row.Detail ?? "Conversion indisponible"
+            ForecastValuation.Native => L.Get("ReportsWindow.ScheduledSameCurrency"),
+            ForecastValuation.Estimated => L.Format("Reports.ForecastRateDate", RateRules.ProviderName(Row.Provider!.Value),
+                Row.Effective?.ToString(L.DatePattern, DisplayCulture)),
+            _ => Row.Detail is { } detail ? L.Diagnostic(detail) : L.Get("Rates.ConversionUnavailable")
         };
     }
 
@@ -516,8 +518,8 @@ public partial class ReportsWindow : Window
         public string Income => Money(Row.Income, Row.Currency);
         public string Expense => Money(Row.Expense, Row.Currency);
         public string Coverage => Row.IncludesEstimates
-            ? Row.Missing == 0 ? "Estimation consolidée" : $"Estimation partielle · {Row.Missing} sans conversion"
-            : "Montants dans la devise native";
+            ? Row.Missing == 0 ? L.Get("ReportsWindow.ConsolidatedEstimate") : L.Format("ReportsWindow.PartialEstimate0WithoutConversion", (Row.Missing))
+            : L.Get("ReportsWindow.AmountsInTheNativeCurrency");
     }
 
     private sealed record ForecastDisplay(Currency Target, ForecastView[] Lines, ForecastMonthView[] Months);
@@ -532,19 +534,19 @@ public partial class ReportsWindow : Window
         public Visibility ProgressVisibility => Usage?.Percent is null ? Visibility.Collapsed : Visibility.Visible;
         public string Status => Usage switch
         {
-            null => "Réalisé à calculer",
-            { HasPastDates: false } => "Mois futur",
-            { Missing: > 0, Overrun: true } => $"Dépassé · {Usage.Missing} sans valeur",
-            { Missing: > 0 } => $"Incomplet · {Usage.Missing} sans valeur",
-            { Overrun: true } => "Dépassé",
-            _ => "Dans le budget"
+            null => L.Get("ReportsWindow.AchievedToCalculate"),
+            { HasPastDates: false } => L.Get("ReportsWindow.FutureMonth"),
+            { Missing: > 0, Overrun: true } => L.Format("ReportsWindow.Exceeded0WithoutValue", (Usage.Missing)),
+            { Missing: > 0 } => L.Format("ReportsWindow.Incomplete0WithoutValue", (Usage.Missing)),
+            { Overrun: true } => L.Get("ReportsWindow.Overtaken"),
+            _ => L.Get("ReportsWindow.InTheBudget")
         };
     }
 
     private sealed record ArchiveView(FrozenReport Value, string Parent)
     {
         public DateTime Captured => Value.CapturedUtc.LocalDateTime;
-        public string Status => Value.DraftPayload is null ? "Enregistré" : "Brouillon";
+        public string Status => Value.DraftPayload is null ? L.Get("ReportsWindow.Registered") : L.Get("ReportsWindow.Draft");
     }
 
     private sealed record RenderedReport(ReportContent Content, ReportTotal Total, decimal? Consolidated,

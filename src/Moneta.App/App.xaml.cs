@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Windows;
-using System.Windows.Markup;
 using Moneta.Core.Presentation;
 using Moneta.Infrastructure;
 using Moneta.Core;
@@ -38,6 +37,7 @@ public partial class App : Application
         }
 
         ThemeController.Apply(settings.Theme);
+        ApplyLanguage(settings.Language);
         if (previousSource != settings.RateSource)
             _ = Rates.SelectAsync(SelectedRateProvider, Rates.State.Date);
         return true;
@@ -48,24 +48,20 @@ public partial class App : Application
         owner ??= Current?.MainWindow;
         if (owner is null)
         {
-            MessageBox.Show(message, "Préférences locales — Moneta", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(message, L.Get("App.LocalPreferencesMoneta"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         else
         {
-            MessageBox.Show(owner, message, "Préférences locales — Moneta", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(owner, message, L.Get("App.LocalPreferencesMoneta"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
-    public App()
+    internal static void ApplyLanguage(string language)
     {
-        var culture = CultureInfo.GetCultureInfo("fr-FR");
+        var culture = CultureInfo.GetCultureInfo(L.ResolveLanguage(language));
         CultureInfo.DefaultThreadCurrentCulture = culture;
         CultureInfo.DefaultThreadCurrentUICulture = culture;
-        CultureInfo.CurrentCulture = culture;
-        CultureInfo.CurrentUICulture = culture;
-        FrameworkElement.LanguageProperty.OverrideMetadata(
-            typeof(FrameworkElement),
-            new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(culture.IetfLanguageTag)));
+        L.SetLanguage(culture.Name);
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -81,6 +77,7 @@ public partial class App : Application
             settingsError = ex.Message;
         }
 
+        ApplyLanguage(Settings.Current.Language);
         ThemeController.Apply(Settings.Current.Theme);
         base.OnStartup(e);
 

@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 
 namespace Moneta.Core.Presentation;
 
@@ -9,7 +8,6 @@ public sealed class AccountSummary : INotifyPropertyChanged
     {
         Account = account;
         Balance = balance;
-        BalanceText = MoneyFormatter.Format(balance, account.Currency);
         _ordinal = ordinal;
     }
 
@@ -17,9 +15,9 @@ public sealed class AccountSummary : INotifyPropertyChanged
     public Account Account { get; private set; }
     public string Name => Account.Name;
     public string CurrencyCode => Account.Currency.Code;
-    public string DisplayName => $"{_ordinal + 1}. {Name} · {CurrencyCode}" + (Account.IsArchived ? " · Archivé" : "");
+    public string DisplayName => $"{_ordinal + 1}. {Name} · {CurrencyCode}" + (Account.IsArchived ? L.Get("LedgerRow.Archived") : "");
     public decimal Balance { get; private set; }
-    public string BalanceText { get; private set; }
+    public string BalanceText => MoneyFormatter.Format(Balance, Account.Currency);
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -42,54 +40,58 @@ public sealed class AccountSummary : INotifyPropertyChanged
     {
         if (Balance == balance) return;
         Balance = balance;
-        BalanceText = MoneyFormatter.Format(balance, Account.Currency);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Balance)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BalanceText)));
+    }
+
+    internal void RefreshDisplayLanguage()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BalanceText)));
     }
 }
 
-public sealed class LedgerRow
+public sealed class LedgerRow : INotifyPropertyChanged
 {
+    private readonly bool _showMarkingDates;
+
     internal LedgerRow(Transaction transaction, decimal balance, bool showMarkingDates = false, Guid? transferId = null)
     {
         Transaction = transaction;
         TransferId = transferId;
         Balance = balance;
-        DateText = transaction.Date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
-        MarkedOnText = transaction.MarkedOn?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
-        DisplayDateText = showMarkingDates ? MarkedOnText : DateText;
+        _showMarkingDates = showMarkingDates;
         Debit = transaction.Direction == TransactionDirection.Debit ? transaction.Amount : null;
         Credit = transaction.Direction == TransactionDirection.Credit ? transaction.Amount : null;
-        DebitText = Debit is decimal debit ? MoneyFormatter.Format(debit, transaction.Currency) : string.Empty;
-        CreditText = Credit is decimal credit ? MoneyFormatter.Format(credit, transaction.Currency) : string.Empty;
-        BalanceText = MoneyFormatter.Format(balance, transaction.Currency);
-        MarkText = transaction.Status switch
-        {
-            ReconciliationStatus.Unmarked => "non pointé",
-            ReconciliationStatus.Marked => "pointé",
-            ReconciliationStatus.Reconciled => transaction.ReconciliationId is null
-                ? "rapproché hérité – relevé inconnu" : "rapproché",
-            _ => throw new ArgumentOutOfRangeException(nameof(transaction), "État de rapprochement inconnu.")
-        };
+        if (transaction.Status is not (ReconciliationStatus.Unmarked or ReconciliationStatus.Marked or ReconciliationStatus.Reconciled))
+            throw new ArgumentOutOfRangeException(nameof(transaction), L.Get("LedgerRow.StateOfReconciliationUnknown"));
     }
 
     public Transaction Transaction { get; }
     public Guid? TransferId { get; }
     public bool IsTransfer => TransferId is not null;
-    public string TransferText => IsTransfer ? "Virement lié" : string.Empty;
-    public string DateText { get; }
-    public string MarkedOnText { get; }
-    public string DisplayDateText { get; }
+    public string TransferText => IsTransfer ? L.Get("LedgerRow.LinkedTransfer") : string.Empty;
+    public string DateText => Transaction.Date.ToString(L.DatePattern, L.Culture);
+    public string MarkedOnText => Transaction.MarkedOn?.ToString(L.DatePattern, L.Culture) ?? string.Empty;
+    public string DisplayDateText => _showMarkingDates ? MarkedOnText : DateText;
     public string Label => Transaction.Label;
     public string PayeeName => Transaction.Payee.Name;
     public string CategoryName => Transaction.Category.Name;
     public string SubcategoryName => Transaction.Category.Subcategory ?? string.Empty;
-    public string PaymentModeName => string.IsNullOrWhiteSpace(Transaction.PaymentMode) ? "Non renseigné" : Transaction.PaymentMode;
-    public string DebitText { get; }
-    public string CreditText { get; }
-    public string BalanceText { get; }
-    public string MarkText { get; }
+    public string PaymentModeName => string.IsNullOrWhiteSpace(Transaction.PaymentMode) ? L.Get("LedgerRow.NotSpecified") : Transaction.PaymentMode;
+    public string DebitText => Debit is decimal amount ? MoneyFormatter.Format(amount, Transaction.Currency) : string.Empty;
+    public string CreditText => Credit is decimal amount ? MoneyFormatter.Format(amount, Transaction.Currency) : string.Empty;
+    public string BalanceText => MoneyFormatter.Format(Balance, Transaction.Currency);
+    public string MarkText => Transaction.Status switch
+    {
+        ReconciliationStatus.Unmarked => L.Get("LedgerRow.Uncleared"),
+        ReconciliationStatus.Marked => L.Get("LedgerRow.Cleared"),
+        _ => Transaction.ReconciliationId is null ? L.Get("LedgerRow.ReconciledInSourceStatementUnknown") : L.Get("LedgerRow.Reconciled")
+    };
     public decimal Balance { get; }
     public decimal? Debit { get; }
     public decimal? Credit { get; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    internal void RefreshDisplayLanguage() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
 }

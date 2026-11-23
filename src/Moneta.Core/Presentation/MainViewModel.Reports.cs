@@ -32,7 +32,7 @@ public sealed partial class MainViewModel
         value.Validate();
         if (value.DraftPayload is null || FrozenReports.Any(item => item.Id == value.Id) ||
             value.PredecessorId is { } parent && !FrozenReports.Any(item => item.Id == parent))
-            throw new ArgumentException("Preuve du nouveau rapport ou version précédente introuvable.");
+            throw new ArgumentException(L.Get("MainViewModel.ProofOfNewReportOrPreviousVersionNot"));
         _document = document with { FrozenReports = [.. FrozenReports, value] };
         MarkDirty();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FrozenReports)));

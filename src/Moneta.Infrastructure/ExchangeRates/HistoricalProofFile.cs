@@ -20,7 +20,7 @@ public static class HistoricalProofFile
         var destination = Path.GetFullPath(path);
         var temporary = Path.Combine(Path.GetDirectoryName(destination)!, $".fxproof-{Guid.NewGuid():N}.tmp");
         var bytes = JsonSerializer.SerializeToUtf8Bytes(proof, Json);
-        if (bytes.Length > MaximumProofBytes) throw new IOException("La preuve est trop volumineuse.");
+        if (bytes.Length > MaximumProofBytes) throw new IOException(L.Get("HistoricalProofFile.TheEvidenceIsTooBig"));
         var created = false;
         try
         {
@@ -39,10 +39,10 @@ public static class HistoricalProofFile
     public static HistoricalProof ReadVerified(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        if (stream.Length > MaximumProofBytes) throw new IOException("Le fichier de preuve est trop volumineux.");
+        if (stream.Length > MaximumProofBytes) throw new IOException(L.Get("HistoricalProofFile.TheEvidenceFileIsTooLarge"));
         var bytes = new byte[checked((int)stream.Length)];
         stream.ReadExactly(bytes);
-        var proof = JsonSerializer.Deserialize<HistoricalProof>(bytes, Json) ?? throw new JsonException("Fichier de preuve vide.");
+        var proof = JsonSerializer.Deserialize<HistoricalProof>(bytes, Json) ?? throw new JsonException(L.Get("HistoricalProofFile.EmptyEvidenceFile"));
         _ = proof.Reproduce();
         return proof;
     }

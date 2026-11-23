@@ -40,7 +40,7 @@ public sealed partial class MonetaFile
     internal static void UpgradeV6(SqliteConnection connection)
     {
         var original = ReadValidated(connection, true);
-        if (original.SchemaVersion != 6) throw Error(DocumentError.UnsupportedVersion, "Le dossier source doit être en version 6.");
+        if (original.SchemaVersion != 6) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.TheSourceDocumentMustBeVersion6"));
         using var transaction = connection.BeginTransaction();
         Execute(connection, SchedulingSql + "UPDATE Document SET schema_version=7,min_reader=7,min_writer=7; PRAGMA user_version=7;", transaction);
         InsertHistory(connection, transaction, 7, 6, "v6-to-v7-schedule", "schedule-and-decisions-v7");
@@ -105,7 +105,7 @@ public sealed partial class MonetaFile
         NullableId(reader, start + 1) == terms.DestinationId && NullableId(reader, start + 2) == terms.FeeAccountId;
 
     private static DocumentException ScheduleMismatch() =>
-        Error(DocumentError.Corrupt, "Les données de l’échéancier et leurs liens sont incohérents.");
+        Error(DocumentError.Corrupt, L.Get("MonetaFile.TimelineDataAndTheirLinksAreInconsistent"));
 
     private static void ValidateSchedule(FinancialDocument snapshot)
     {
@@ -165,11 +165,11 @@ public sealed partial class MonetaFile
         var targets = desired.Schedules.ToDictionary(plan => plan.Id);
         var priorPlans = (previous?.Schedules ?? []).ToDictionary(plan => plan.Id);
         if (priorPlans.Values.Any(plan => !targets.TryGetValue(plan.Id, out var target) || (plan.Retired && target != plan)))
-            throw Error(DocumentError.InvalidData, "Une programmation historique ne peut pas être effacée ou réactivée.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.HistoricalProgrammingCannotBeErasedOrReactivated"));
         var priorEvents = (previous?.ScheduleHistory ?? []).ToDictionary(item => (item.PlanId, item.Number, item.Step));
         var targetEvents = desired.ScheduleHistory.ToDictionary(item => (item.PlanId, item.Number, item.Step));
         if (priorEvents.Any(entry => !targetEvents.TryGetValue(entry.Key, out var target) || target != entry.Value))
-            throw Error(DocumentError.InvalidData, "Une décision historique de l’échéancier ne peut pas être modifiée.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.AHistoricalDecisionOnTheTimelineCannotBe"));
 
         using var write = connection.CreateCommand();
         write.Transaction = transaction;
@@ -225,7 +225,7 @@ public sealed partial class MonetaFile
                 Matches(transfer.CreditTransactionId, terms.DestinationId, terms.DestinationMinor ?? terms.AmountMinor, TransactionDirection.Credit) &&
                 (terms.FeeAccountId is null ? transfer.FeeTransactionId is null
                     : transfer.FeeTransactionId is { } fee && Matches(fee, terms.FeeAccountId, terms.FeeMinor, TransactionDirection.Debit));
-        if (!valid) throw Error(DocumentError.InvalidData, "L’occurrence exige une nouvelle écriture ou un nouveau virement complet dans la même transaction.");
+        if (!valid) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.OccurrenceRequiresANewOrFullTransferIn"));
     }
 
     private static void SetScheduleParameters<T>(SqliteCommand command, Guid plan, ScheduleTerms terms, T payload)

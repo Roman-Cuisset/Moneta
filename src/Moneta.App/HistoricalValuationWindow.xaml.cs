@@ -10,7 +10,7 @@ namespace Moneta.App;
 
 public partial class HistoricalValuationWindow : Window
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly HistoricalValuation _engine;
     private readonly Func<CancellationToken, HistoricalInput>? _flow;
     private readonly Func<DateOnly, CancellationToken, HistoricalInput>? _balance;
@@ -30,11 +30,11 @@ public partial class HistoricalValuationWindow : Window
         SourceChoice.SelectedItem = choices.FirstOrDefault(item => item.Code == "BYN") ?? choices.FirstOrDefault();
         TargetChoice.SelectedItem = choices.FirstOrDefault(item => item.Code == "EUR") ?? choices.FirstOrDefault();
         ProviderChoice.SelectedIndex = provider == RateProvider.Cbr ? 1 : 0;
-        DateInput.Text = DateOnly.FromDateTime(DateTime.Today).ToString("dd/MM/yyyy", French);
-        Heading.Text = flow is not null ? "Valorisation de l’opération" : balance is not null ? "Valorisation du solde à date" : "Convertisseur historique";
-        Scope.Text = flow is not null ? "La date et le montant proviennent de l’opération enregistrée."
-            : balance is not null ? "Le solde inclut les opérations enregistrées jusqu’à la date d’arrêté, jour inclus."
-            : "Le fournisseur et la date déterminent le cours utilisé.";
+        DateInput.Text = DateOnly.FromDateTime(DateTime.Today).ToString(L.DatePattern, DisplayCulture);
+        Heading.Text = flow is not null ? L.Get("HistoricalValuationWindow.TransactionValuation") : balance is not null ? L.Get("Common.ValorizationOfBalanceToDate") : "Convertisseur historique";
+        Scope.Text = flow is not null ? L.Get("HistoricalValuationWindow.TheDateAndAmountAreDerivedFromThe")
+            : balance is not null ? L.Get("HistoricalValuationWindow.TheBalanceIncludesTransactionsRecordedUpToAnd")
+            : L.Get("HistoricalValuationWindow.TheSupplierAndTheDateDetermineTheRate");
         if (flow is not null || balance is not null) SourceFields.Visibility = AmountFields.Visibility = Visibility.Collapsed;
         if (flow is not null) DateFields.Visibility = Visibility.Collapsed;
         Loaded += (_, _) =>
@@ -53,7 +53,7 @@ public partial class HistoricalValuationWindow : Window
         _operation = operation;
         SetBusy(true);
         ClearResult();
-        Status.Text = "Recherche de la cotation applicable…";
+        Status.Text = L.Get("HistoricalValuationWindow.SearchForApplicableRating");
         try
         {
             var target = (Currency)TargetChoice.SelectedItem;
@@ -63,12 +63,12 @@ public partial class HistoricalValuationWindow : Window
             var input = await ReadInput(operation.Token);
             var result = await _engine.ValueAsync(input, target, provider, access, operation.Token);
             if (_closed) return;
-            if (result.Proof is { } proof) ShowProof(proof, result.Detail ?? "Valorisation calculée.");
-            else Status.Text = result.Detail ?? "Valorisation indisponible.";
+            if (result.Proof is { } proof) ShowProof(proof, result.Detail is { } detail ? L.Diagnostic(detail) : L.Get("HistoricalValuationWindow.CalculatedValue"));
+            else Status.Text = result.Detail is { } detail ? L.Diagnostic(detail) : L.Get("Rates.ValuationUnavailable");
         }
-        catch (OperationCanceledException) { if (!_closed) Status.Text = "Calcul annulé."; }
+        catch (OperationCanceledException) { if (!_closed) Status.Text = L.Get("Common.CalculationCanceled"); }
         catch (Exception error) when (error is ArgumentException or DocumentException or RateException or OverflowException)
-        { if (!_closed) Status.Text = error.Message; }
+        { if (!_closed) Status.Text = L.Diagnostic(error.Message); }
         finally
         {
             _operation = null;
@@ -82,7 +82,7 @@ public partial class HistoricalValuationWindow : Window
         var date = ScheduleEditorWindow.ReadDate(DateInput.Text);
         if (_balance is not null) return Task.Run(() => _balance(date, token), token);
         var currency = (Currency)SourceChoice.SelectedItem;
-        var amount = MoneyInput.ParseFrench(AmountInput.Text, currency, allowNegative: true);
+        var amount = MoneyInput.ParseLocalized(AmountInput.Text, currency, allowNegative: true);
         return Task.FromResult(new HistoricalInput(HistoricalUse.Conversion, date, amount, currency.Code));
     }
 
@@ -97,23 +97,25 @@ public partial class HistoricalValuationWindow : Window
     {
         _proof = proof;
         var input = proof.Input;
-        ValueText.Text = $"{proof.Value.ToString($"N{proof.TargetDecimals}", French)} {proof.TargetCode}";
-        var lines = new List<string> { $"{input.NativeAmount.ToString(French)} {input.SourceCode} · date demandée {input.Date:dd/MM/yyyy}" };
-        if (input.BalanceOperationCount is { } count) lines.Add($"Solde initial et {count} opération(s) enregistrée(s)");
+        ValueText.Text = $"{proof.Value.ToString($"N{proof.TargetDecimals}", DisplayCulture)} {proof.TargetCode}";
+        var lines = new List<string> { L.Format("HistoricalValuationWindow.01DateRequested2MmDdYyyy", (input.NativeAmount.ToString(DisplayCulture)), (input.SourceCode), (input.Date)) };
+        if (input.BalanceOperationCount is { } count) lines.Add(L.Format("HistoricalValuationWindow.OpeningBalanceAnd0SavedTransactions", (count)));
         if (input.FlowKind is HistoricalFlowKind.TransferDebit or HistoricalFlowKind.TransferCredit)
-            lines.Add("Jambe d’un virement interne, exclue des totaux de recettes et dépenses.");
-        if (input.FlowKind == HistoricalFlowKind.Fee) lines.Add("Frais du virement, comptés comme charge.");
+            lines.Add(L.Get("HistoricalValuationWindow.LegOfAnInternalTransferExcludingTotalRevenue"));
+        if (input.FlowKind == HistoricalFlowKind.Fee) lines.Add(L.Get("HistoricalValuationWindow.TransferChargesCountedAsACharge"));
         if (proof.Quotation is { } quote)
         {
             var path = proof.Method == HistoricalMethod.Cross
                 ? $"{input.SourceCode} → {quote.ReferenceCurrency} → {proof.TargetCode}"
                 : $"{input.SourceCode} → {proof.TargetCode}";
-            lines.Add($"{RateRules.ProviderName(quote.Provider)} · date effective {quote.EffectiveDate:dd/MM/yyyy} · {(quote.FromCache ? "cache local" : "réponse téléchargée")}");
-            lines.Add($"Chemin {path} · récupéré le {quote.RetrievedUtc:dd/MM/yyyy HH:mm} UTC");
+            lines.Add(L.Format("Rates.ValuationPublication", RateRules.ProviderName(quote.Provider),
+                quote.EffectiveDate.ToString(L.DatePattern, L.Culture),
+                L.Get(quote.FromCache ? "Rates.FromLocalCache" : "Rates.FromDownload")));
+            lines.Add(L.Format("HistoricalValuationWindow.Path0RecoveredOn1MmDdYyyy", (path), (quote.RetrievedUtc)));
             foreach (var leg in new[] { quote.Source, quote.Target }.OfType<OfficialRateQuote>())
-                lines.Add($"{leg.Nominal} {leg.CurrencyCode} = {leg.OfficialValue.ToString(French)} {quote.ReferenceCurrency} · référence {leg.SourceId}");
+                lines.Add(L.Format("HistoricalValuationWindow.0123Reference4", (leg.Nominal), (leg.CurrencyCode), (leg.OfficialValue.ToString(DisplayCulture)), (quote.ReferenceCurrency), (leg.SourceId)));
         }
-        else lines.Add("Même devise");
+        else lines.Add(L.Get("Common.SameCurrency"));
         Evidence.Text = string.Join(Environment.NewLine, lines);
         Status.Text = status;
         Export.IsEnabled = _operation is null;
@@ -133,13 +135,13 @@ public partial class HistoricalValuationWindow : Window
     private void Export_Click(object sender, RoutedEventArgs e)
     {
         if (_proof is not { } proof) return;
-        var dialog = new SaveFileDialog { Filter = "Preuve de valorisation (*.fxproof.json)|*.fxproof.json", DefaultExt = ".fxproof.json",
-            FileName = "valorisation.fxproof.json", OverwritePrompt = false, AddExtension = true, Title = "Enregistrer une preuve de valorisation" };
+        var dialog = new SaveFileDialog { Filter = L.Get("HistoricalValuationWindow.ProofOfRecoveryFxproofJsonFxproofJson"), DefaultExt = ".fxproof.json",
+            FileName = "valorisation.fxproof.json", OverwritePrompt = false, AddExtension = true, Title = L.Get("HistoricalValuationWindow.RecordProofOfValorization") };
         if (dialog.ShowDialog(this) != true) return;
         try
         {
             HistoricalProofFile.WriteNew(dialog.FileName, proof);
-            Status.Text = "Preuve enregistrée dans un nouveau fichier.";
+            Status.Text = L.Get("HistoricalValuationWindow.EvidenceSavedInANewFile");
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or RateException or OverflowException)
         { Status.Text = error.Message; }
@@ -147,11 +149,11 @@ public partial class HistoricalValuationWindow : Window
 
     private void Replay_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Filter = "Preuve de valorisation (*.fxproof.json)|*.fxproof.json", CheckFileExists = true };
+        var dialog = new OpenFileDialog { Filter = L.Get("HistoricalValuationWindow.ProofOfRecoveryFxproofJsonFxproofJson"), CheckFileExists = true };
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            ShowProof(HistoricalProofFile.ReadVerified(dialog.FileName), "Résultat reproduit depuis la preuve locale.");
+            ShowProof(HistoricalProofFile.ReadVerified(dialog.FileName), L.Get("HistoricalValuationWindow.ResultReproducedFromTheLocalEvidence"));
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or RateException or OverflowException)
         { ClearResult(); Status.Text = error.Message; }

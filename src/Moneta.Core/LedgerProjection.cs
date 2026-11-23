@@ -18,7 +18,7 @@ internal sealed class DraftCatalog(FinancialDocument document)
         var payee = ResolvePayee(draft.PayeeName);
         var category = ResolveCategory(draft.CategoryName, null);
         if (!string.IsNullOrWhiteSpace(draft.SubcategoryName) && category is null)
-            throw new ArgumentException("Choisissez une catégorie pour la sous-catégorie.", nameof(draft));
+            throw new ArgumentException(L.Get("LedgerProjection.ChooseACategoryForTheSubcategory"), nameof(draft));
         var subcategory = ResolveCategory(draft.SubcategoryName, category?.Id);
         var method = ResolveMethod(draft.PaymentMode);
         var now = DateTimeOffset.UtcNow;

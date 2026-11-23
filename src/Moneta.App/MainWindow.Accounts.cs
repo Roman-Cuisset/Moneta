@@ -32,9 +32,9 @@ public partial class MainWindow
         var archive = e.Command == WindowCommands.ArchiveAccount;
         ManageAccount((model, summary) =>
         {
-            var action = archive ? "Archiver" : "Réactiver";
-            var effect = archive ? "Le registre et ses liens restent consultables." : "Ce compte redevient disponible pour la saisie.";
-            if (ConfirmAccountChange($"{action} « {summary.DisplayName} » ?\n\n{effect}\nCtrl+S enregistre ce changement.", action))
+            var action = archive ? L.Get("Accounts.Archiver") : L.Get("Accounts.Reactivating");
+            var effect = archive ? L.Get("Accounts.TheRegisterAndItsLinksRemainSearchable") : L.Get("Accounts.ThisAccountBecomesAvailableAgainForEntry");
+            if (ConfirmAccountChange(L.Format("Accounts.ConfirmAccountChange", action, summary.DisplayName, effect), action))
                 model.SetAccountArchived(summary.Account.Id, archive);
         });
     }
@@ -46,7 +46,7 @@ public partial class MainWindow
         ManageAccount((model, summary) =>
         {
             model.ValidateAccountDeletion(summary.Account.Id);
-            if (ConfirmAccountChange($"Supprimer « {summary.DisplayName} » ?\n\nLa suppression du compte vierge devient définitive après Ctrl+S.", "Supprimer le compte vierge"))
+            if (ConfirmAccountChange(L.Format("Accounts.Delete0TheRemovalOfTheBlankAccount", (summary.DisplayName)), L.Get("Accounts.RemoveTheBlankAccount")))
                 model.DeleteEmptyAccount(summary.Account.Id);
         });
 
@@ -57,7 +57,7 @@ public partial class MainWindow
     {
         if (_busy || _workspace.Model is not { IsDemo: false, SelectedAccount: { } summary } model) return;
         try { action(model, summary); }
-        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "gestion du compte"); }
+        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, L.Get("Accounts.AccountManagement")); }
         CommandManager.InvalidateRequerySuggested();
     }
 }

@@ -94,7 +94,7 @@ public partial class MainWindow
     {
         if (!CanSearchLedger || _workspace.Model is not { } model) return false;
         LedgerPage? page = null;
-        if (!await RunIo(() => page = model.LocateOperation(row.AccountId, row.Id), "Localisation dans le registre…") ||
+        if (!await RunIo(() => page = model.LocateOperation(row.AccountId, row.Id), L.Get("Search.LocationInTheRegister")) ||
             _workspace.Model != model || page is null || !model.ShowLocatedOperation(row.AccountId, row.Id, page))
             return false;
         if (model.SelectedRow is { } selected) TransactionsGrid.ScrollIntoView(selected);

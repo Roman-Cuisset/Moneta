@@ -10,7 +10,7 @@ public sealed class HistoricalRateResolver(IHistoricalRateCache cache, IEnumerab
         CancellationToken cancellationToken = default)
     {
         _ = RateRules.ReferenceCurrency(provider);
-        if (date == default || !Enum.IsDefined(access)) throw new ArgumentException("Demande de cours invalide.");
+        if (date == default || !Enum.IsDefined(access)) throw new ArgumentException(L.GetCanonical("HistoricalRateResolver.ApplicationForInvalidRates"));
         cancellationToken.ThrowIfCancellationRequested();
         string? notice = null;
         if (access != HistoricalRateAccess.Refresh)
@@ -27,11 +27,11 @@ public sealed class HistoricalRateResolver(IHistoricalRateCache cache, IEnumerab
             }
             catch (RateException error) when (access == HistoricalRateAccess.FetchMissing) { notice = error.Message; }
             if (access == HistoricalRateAccess.CacheOnly)
-                throw new RateException(RateFailure.Unavailable, "Aucune réponse vérifiée en cache pour cette source et cette date.");
+                throw new RateException(RateFailure.Unavailable, L.GetCanonical("HistoricalRateResolver.NoVerifiedCachedResponseForThisSourceAnd"));
         }
 
         if (!_sources.TryGetValue(provider, out var source))
-            throw new RateException(RateFailure.Unavailable, "Cette source officielle n’est pas disponible.");
+            throw new RateException(RateFailure.Unavailable, L.GetCanonical("HistoricalRateResolver.ThisOfficialSourceIsNotAvailable"));
         var download = await source.FetchAsync(date, cancellationToken).ConfigureAwait(false);
         Check(download.Rates, provider, date);
         try { await Task.Run(() => cache.Store(download, cancellationToken), cancellationToken).ConfigureAwait(false); }
@@ -42,7 +42,7 @@ public sealed class HistoricalRateResolver(IHistoricalRateCache cache, IEnumerab
     private static void Check(OfficialRateSet rates, RateProvider provider, DateOnly date)
     {
         RateRules.Validate(rates);
-        if (rates.Provider != provider) throw new RateException(RateFailure.InvalidResponse, "La provenance diffère de la source demandée.");
+        if (rates.Provider != provider) throw new RateException(RateFailure.InvalidResponse, L.GetCanonical("HistoricalRateResolver.TheSourceIsDifferentFromTheSourceRequested"));
         HistoricalValuation.ValidateDate(provider, date, rates.RequestedDate, rates.EffectiveDate, rates.RetrievedUtc);
     }
 }
@@ -70,7 +70,7 @@ public sealed class HistoricalValuation(HistoricalRateResolver resolver, TimePro
         ArgumentNullException.ThrowIfNull(inputs);
         _ = RateRules.ReferenceCurrency(provider);
         if (!Enum.IsDefined(access) || inputs.Count > limit)
-            throw new ArgumentException($"Limitez chaque lot à {limit:N0} valorisations et choisissez un accès aux cours valide.");
+            throw new ArgumentException(L.FormatCanonical("HistoricalRateResolver.LimitEachLotTo0N0EnhancementsAnd", (limit)));
         var today = DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
         var result = new HistoricalResult[inputs.Count];
         var dates = new Dictionary<DateOnly, List<(int Index, HistoricalInput Input)>>();
@@ -153,15 +153,15 @@ public sealed class HistoricalValuation(HistoricalRateResolver resolver, TimePro
         ArgumentNullException.ThrowIfNull(target);
         if (!Enum.IsDefined(input.Use) || input.Date == default || !RateRules.IsCurrencyCode(input.SourceCode) ||
             !RateRules.IsCurrencyCode(target.Code) || target.DecimalPlaces is < 0 or > 28)
-            throw new ArgumentException("Date, devise ou usage de valorisation invalide.");
+            throw new ArgumentException(L.GetCanonical("HistoricalRateResolver.InvalidDateCurrencyOrUseOfValuation"));
         if (input.Use == HistoricalUse.Flow && (input.SubjectId is null || input.SubjectId == Guid.Empty ||
             input.Revision is null or <= 0 || input.FlowKind is not { } kind || !Enum.IsDefined(kind) ||
             (kind is HistoricalFlowKind.TransferDebit or HistoricalFlowKind.TransferCredit or HistoricalFlowKind.Fee) != input.TransferId.HasValue ||
             input.TransferId == Guid.Empty || (kind is HistoricalFlowKind.Income or HistoricalFlowKind.TransferCredit ? input.NativeAmount < 0 : input.NativeAmount > 0)))
-            throw new ArgumentException("Identité, nature ou signe du flux invalide.");
+            throw new ArgumentException(L.GetCanonical("HistoricalRateResolver.IdentityNatureOrSignOfInvalidFlow"));
         if (input.Use == HistoricalUse.BalanceAtDate && (input.SubjectId is null || input.SubjectId == Guid.Empty ||
             input.BalanceOperationCount is null or < 0 || input.BalanceSha256 is not { Length: 64 } hash || !hash.All(Uri.IsHexDigit)))
-            throw new ArgumentException("L’arrêté doit identifier le compte et le périmètre de son calcul.");
+            throw new ArgumentException(L.GetCanonical("HistoricalRateResolver.TheOrderMustIdentifyTheAccountAndThe"));
     }
 
     internal static void ValidateDate(RateProvider provider, DateOnly date, DateOnly requested, DateOnly effective, DateTimeOffset retrieved)
@@ -170,6 +170,6 @@ public sealed class HistoricalValuation(HistoricalRateResolver resolver, TimePro
         // NBRB's ondate rows must attest the date itself. An empty reply proves no earlier rate.
         if (date != requested || effective > date || (provider == RateProvider.Nbrb && effective != date) ||
             (effective < date && DateOnly.FromDateTime(retrieved.UtcDateTime) < date))
-            throw new RateException(RateFailure.InvalidResponse, "La réponse n’atteste pas un cours applicable à la date demandée.");
+            throw new RateException(RateFailure.InvalidResponse, L.GetCanonical("HistoricalRateResolver.TheAnswerDoesNotAttestToARate"));
     }
 }

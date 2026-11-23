@@ -1,30 +1,30 @@
-<Window x:Class="Moneta.App.AccountWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Ajouter un compte" Width="560" Height="670" MinWidth="480" MinHeight="500" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.AccountWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="{loc:LocalizedText Common.AddAccount}" Width="560" Height="670" MinWidth="480" MinHeight="500" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}" Language="{loc:LocalizedLanguage}">
  <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
  <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
- <TextBlock x:Name="Heading" Text="Nouveau compte" Style="{StaticResource WindowHeading}" TextWrapping="Wrap"/>
+ <TextBlock x:Name="Heading" Text="{loc:LocalizedText AccountWindow.NewAccount}" Style="{StaticResource WindowHeading}" TextWrapping="Wrap"/>
  <TextBlock x:Name="ModeNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,16"/>
- <Label Content="_Nom" Target="{Binding ElementName=AccountName}"/><TextBox x:Name="AccountName" MaxLength="120" AutomationProperties.AutomationId="NewAccountName" AutomationProperties.Name="Nom du compte"/>
- <Label Content="_Devise native (non modifiable après création)" Target="{Binding ElementName=NativeCurrency}"/><ComboBox x:Name="NativeCurrency" ItemsSource="{Binding CurrencyRegistry.Currencies}" DisplayMemberPath="Code" SelectedIndex="0" AutomationProperties.AutomationId="NewAccountCurrency" AutomationProperties.Name="Devise native du nouveau compte"/>
- <Label Content="_Type de compte" Target="{Binding ElementName=AccountType}"/><ComboBox x:Name="AccountType" IsEditable="True" Text="Courant" AutomationProperties.Name="Type de compte, suggestion ou saisie libre"><ComboBoxItem Content="Courant"/><ComboBoxItem Content="Épargne"/><ComboBoxItem Content="Espèces"/><ComboBoxItem Content="Autre"/></ComboBox>
- <Label Content="Solde _initial (dans la devise native)" Target="{Binding ElementName=OpeningBalance}"/><TextBox x:Name="OpeningBalance" Text="0,00" AutomationProperties.AutomationId="NewAccountOpeningBalance" AutomationProperties.Name="Solde initial signé dans la devise native"/>
+ <Label Content="{loc:LocalizedText Common.NameAccessKey}" Target="{Binding ElementName=AccountName}"/><TextBox x:Name="AccountName" MaxLength="120" AutomationProperties.AutomationId="NewAccountName" AutomationProperties.Name="{loc:LocalizedText AccountWindow.AccountName}"/>
+ <Label Content="{loc:LocalizedText AccountWindow.NativeCurrencyNotSubjectToChangeAfterCreationAccessKey}" Target="{Binding ElementName=NativeCurrency}"/><ComboBox x:Name="NativeCurrency" ItemsSource="{Binding CurrencyRegistry.Currencies}" DisplayMemberPath="Code" SelectedIndex="0" AutomationProperties.AutomationId="NewAccountCurrency" AutomationProperties.Name="{loc:LocalizedText AccountWindow.NativeCurrencyOfTheNewAccount}"/>
+ <Label Content="{loc:LocalizedText AccountWindow.AccountTypeAccessKey}" Target="{Binding ElementName=AccountType}"/><ComboBox x:Name="AccountType" IsEditable="True" Text="{loc:LocalizedText AccountWindow.Checking}" AutomationProperties.Name="{loc:LocalizedText AccountWindow.AccountTypeSuggestionOrFreeEntry}"><ComboBoxItem Content="{loc:LocalizedText AccountWindow.Checking}"/><ComboBoxItem Content="{loc:LocalizedText AccountWindow.Savings}"/><ComboBoxItem Content="{loc:LocalizedText AccountWindow.Cash}"/><ComboBoxItem Content="{loc:LocalizedText AccountWindow.Other}"/></ComboBox>
+ <Label Content="{loc:LocalizedText AccountWindow.InitialBalanceInTheNativeCurrencyAccessKey}" Target="{Binding ElementName=OpeningBalance}"/><TextBox x:Name="OpeningBalance" Text="0,00" AutomationProperties.AutomationId="NewAccountOpeningBalance" AutomationProperties.Name="{loc:LocalizedText AccountWindow.InitialBalanceSignedInTheNativeCurrency}"/>
  <StackPanel x:Name="BankFields">
      <Grid>
          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-         <StackPanel><Label Content="_Banque (facultatif)" Target="{Binding ElementName=BankName}"/>
+         <StackPanel><Label Content="{loc:LocalizedText AccountWindow.BankOptionalAccessKey}" Target="{Binding ElementName=BankName}"/>
              <TextBox x:Name="BankName" MaxLength="120" AutomationProperties.AutomationId="AccountBankName"/>
          </StackPanel>
-         <StackPanel Grid.Column="2"><Label Content="T_itulaire (facultatif)" Target="{Binding ElementName=Holder}"/>
+         <StackPanel Grid.Column="2"><Label Content="{loc:LocalizedText AccountWindow.AccountHolderOptionalAccessKey}" Target="{Binding ElementName=Holder}"/>
              <TextBox x:Name="Holder" MaxLength="120" AutomationProperties.AutomationId="AccountHolder"/>
          </StackPanel>
      </Grid>
-     <Label Content="_Référence bancaire (facultatif)" Target="{Binding ElementName=BankReference}"/>
+     <Label Content="{loc:LocalizedText AccountWindow.BankReferenceOptionalAccessKey}" Target="{Binding ElementName=BankReference}"/>
      <TextBox x:Name="BankReference" MaxLength="120" AutomationProperties.AutomationId="AccountBankReference"/>
  </StackPanel>
- <Label Content="Infos complémentaires et _notes" Target="{Binding ElementName=Notes}"/><TextBox x:Name="Notes" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" Height="65" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Informations complémentaires du compte, facultatives"/>
+ <Label Content="{loc:LocalizedText AccountWindow.AdditionalInformationAndNotesAccessKey}" Target="{Binding ElementName=Notes}"/><TextBox x:Name="Notes" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" Height="65" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="{loc:LocalizedText AccountWindow.AdditionalAccountInformationOptional}"/>
  </StackPanel></ScrollViewer>
  <StackPanel Grid.Row="1" Margin="0,12,0,0">
      <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}" AutomationProperties.AutomationId="NewAccountError"/>
-     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0"><Button Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"/><Button x:Name="ConfirmAccount" Content="Ajouter au dossier" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Add_Click" AutomationProperties.AutomationId="ConfirmAccount"/></StackPanel>
+     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0"><Button Content="{loc:LocalizedText Common.Cancel}" IsCancel="True" MinWidth="90" Margin="0,0,8,0"/><Button x:Name="ConfirmAccount" Content="{loc:LocalizedText AccountWindow.AddToDocument}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Add_Click" AutomationProperties.AutomationId="ConfirmAccount"/></StackPanel>
  </StackPanel>
  </Grid>
 </Window>

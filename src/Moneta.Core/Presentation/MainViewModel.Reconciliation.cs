@@ -16,7 +16,7 @@ public sealed partial class MainViewModel
     public decimal? UnmarkedAmount => _totals?.UnmarkedAmount;
     public string SelectedPointedBalanceText => FormatTotal(PointedBalance);
     public string SelectedUnmarkedAmountText => FormatTotal(UnmarkedAmount);
-    public string DateColumnHeader => ShowMarkingDates ? "Date de pointage" : "Date";
+    public string DateColumnHeader => ShowMarkingDates ? L.Get("Common.ClearingDate") : L.Get("Common.Date");
     public bool ShowMarkingDates
     {
         get => _showMarkingDates;
@@ -58,7 +58,7 @@ public sealed partial class MainViewModel
     private static void EnsureNotReconciled(Transaction value)
     {
         if (value.Status == ReconciliationStatus.Reconciled)
-            throw new InvalidOperationException("Cette opération est rapprochée. Rouvrez le relevé ou libérez explicitement le rapprochement hérité avant de la modifier.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisIsACloseUpTransactionOpenThe"));
     }
 
     public void SetPointing(IReadOnlyCollection<TransactionSelection> selection, bool pointed, DateOnly? markedOn = null) =>
@@ -71,16 +71,16 @@ public sealed partial class MainViewModel
     {
         ArgumentNullException.ThrowIfNull(selection);
         var account = EditableAccount();
-        if (selection.Count == 0) throw new ArgumentException("Sélectionnez au moins une opération.", nameof(selection));
+        if (selection.Count == 0) throw new ArgumentException(L.Get("MainViewModel.SelectAtLeastOneTransaction"), nameof(selection));
         var ids = new HashSet<Guid>();
         var updates = new List<Transaction>(selection.Count);
         var today = DateOnly.FromDateTime(DateTime.Today);
         foreach (var item in selection)
         {
-            if (!ids.Add(item.Id)) throw new ArgumentException("Une opération apparaît plusieurs fois dans la sélection.");
+            if (!ids.Add(item.Id)) throw new ArgumentException(L.Get("MainViewModel.AnTransactionAppearsSeveralTimesInTheSelection"));
             // Status clicks operate only on the already loaded, bounded page: never reread the ledger.
             if (!_rows.Any(row => row.Transaction.Id == item.Id))
-                throw new InvalidOperationException("La sélection n’appartient pas à la page courante.");
+                throw new InvalidOperationException(L.Get("MainViewModel.TheSelectionDoesNotBelongToTheCurrent"));
             var original = FindEditable(item.Id, item.Revision, account);
             var pointed = target(original);
             if (pointed && original.Status == ReconciliationStatus.Marked && markedOn is null) continue;
@@ -102,7 +102,7 @@ public sealed partial class MainViewModel
         var account = EditableAccount();
         var original = FindEditable(selection.Id, selection.Revision, account);
         if (original.Status != ReconciliationStatus.Marked)
-            throw new InvalidOperationException("Seule la date d’une opération pointée peut être modifiée.");
+            throw new InvalidOperationException(L.Get("MainViewModel.OnlyTheDateOfAClearedTransactionCan"));
         ReconciliationRules.ValidatePointing(original, true, date, DateOnly.FromDateTime(DateTime.Today));
         if (original.MarkedOn != date)
             PublishStatusChanges([NextRevision(original with { MarkedOn = date }, original)], _pendingReconciliations);
@@ -125,7 +125,7 @@ public sealed partial class MainViewModel
             FinancialRules.ValidateTransaction(value, _document!);
             var original = _pending.TryGetValue(value.Id, out var existing) ? existing.Value
                 : _rows.FirstOrDefault(row => row.Transaction.Id == value.Id)?.Transaction;
-            if (original is null) throw new InvalidOperationException("Opération absente de la page courante.");
+            if (original is null) throw new InvalidOperationException(L.Get("MainViewModel.TransactionMissingFromCurrentPage"));
             var expected = existing?.ExpectedRevision ?? original.Revision;
             proposed[value.Id] = new TransactionChange(value, expected);
             if (totals is not null && (value.Status == ReconciliationStatus.Unmarked) != (original.Status == ReconciliationStatus.Unmarked))
@@ -156,7 +156,7 @@ public sealed partial class MainViewModel
     private (Account Account, IReconciliationSource Source) CleanReconciliationContext()
     {
         var account = EditableAccount();
-        if (!CanReconcile) throw new InvalidOperationException("Enregistrez d’abord le dossier et tous ses brouillons avant cette action de rapprochement.");
+        if (!CanReconcile) throw new InvalidOperationException(L.Get("MainViewModel.FirstSaveTheFileAndAllItsDrafts"));
         return (account, ReconciliationSource!);
     }
 
@@ -167,32 +167,32 @@ public sealed partial class MainViewModel
         var (account, source) = CleanReconciliationContext();
         var today = DateOnly.FromDateTime(DateTime.Today);
         if (request.StatementDate == default || request.StatementDate > today)
-            throw new ArgumentException("La date du relevé ne peut pas être future.");
+            throw new ArgumentException(L.Get("MainViewModel.TheDateOfTheSurveyCannotBeFuture"));
         if (request.StatementNumber is null || request.StatementNumber.Length > 120)
-            throw new ArgumentException("Le numéro de relevé est limité à 120 caractères.");
+            throw new ArgumentException(L.Get("MainViewModel.TheSurveyNumberIsLimitedTo120Characters"));
         _ = ExactMoney.ToMinorUnits(request.ExpectedClosingBalance, account.Currency);
         var ids = selectedIds.ToHashSet();
-        if (ids.Count != selectedIds.Count) throw new ArgumentException("La sélection contient des identifiants dupliqués.");
+        if (ids.Count != selectedIds.Count) throw new ArgumentException(L.Get("MainViewModel.TheSelectionContainsDuplicateIdentifiers"));
         var preview = source.ReadReconciliationCandidates(account, request.StatementDate, ids, 0, PageSize);
         if (preview.LegacyReconciledCount != 0)
-            throw new InvalidOperationException("Libérez explicitement les rapprochements hérités avant de valider un relevé.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ExplicitlyReleaseInheritedReconciliationsBeforeValidatingARecord"));
         var originals = source.ReadTransactions(ids.ToArray());
         if (originals.Count != ids.Count || originals.Select(value => value.Id).Distinct().Count() != ids.Count || originals.Any(value => !ids.Contains(value.Id)))
-            throw new InvalidOperationException("La sélection du relevé a changé ou contient une opération absente.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheSurveySelectionHasChangedOrContainsA"));
         var previous = preview.PreviousSessionId is { } previousId ? source.ReadReconciliation(previousId).Session : null;
-        if (previous is { State: not ReconciliationSessionState.Validated }) throw new InvalidOperationException("Le relevé précédent n’est plus actif.");
+        if (previous is { State: not ReconciliationSessionState.Validated }) throw new InvalidOperationException(L.Get("MainViewModel.ThePreviousSurveyIsNoLongerActive"));
         var now = DateTimeOffset.UtcNow;
         var session = new ReconciliationSession(Guid.NewGuid(), account.Id, request.StatementDate, request.StatementNumber.Trim(),
             preview.OpeningBalance, request.ExpectedClosingBalance, checked(preview.OpeningBalance + preview.SelectedNet), previous?.Id, now);
         var entries = Array.AsReadOnly(originals.Select(value => new ReconciliationEntry(session.Id, value)).ToArray());
         ReconciliationRules.ValidateSession(session, account, previous, entries);
         if (preview.SelectedCount != ids.Count || originals.Aggregate(0m, (sum, value) => checked(sum + FinancialRules.SignedAmount(value))) != preview.SelectedNet)
-            throw new InvalidOperationException("La sélection a changé depuis le calcul du relevé.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheSelectionHasChangedSinceTheCalculationOf"));
         foreach (var visible in preview.Transactions.Where(value => ids.Contains(value.Id)))
         {
             var actual = originals.Single(value => value.Id == visible.Id);
             if (actual.Revision != visible.Revision || actual.Status != visible.Status || actual.MarkedOn != visible.MarkedOn ||
-                !ReconciliationRules.FinancialPayloadEquals(actual, visible)) throw new InvalidOperationException("Une opération du relevé a changé.");
+                !ReconciliationRules.FinancialPayloadEquals(actual, visible)) throw new InvalidOperationException(L.Get("MainViewModel.ASurveyTransactionHasChanged"));
         }
         var updates = originals.Select(value => NextRevision(value with
         { Status = ReconciliationStatus.Reconciled, ReconciliationId = session.Id, MarkedOn = value.MarkedOn ?? today }, value)).ToArray();
@@ -209,21 +209,21 @@ public sealed partial class MainViewModel
         var details = source.ReadReconciliation(sessionId);
         var session = details.Session;
         if (session.AccountId != account.Id || session.Revision != expectedRevision || session.State != ReconciliationSessionState.Validated)
-            throw new InvalidOperationException("Ce relevé a changé ou n’est plus actif.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisSurveyHasChangedOrIsNoLonger"));
         var latest = source.ReadReconciliationCandidates(account, DateOnly.MaxValue, new HashSet<Guid>(), 0, 1);
-        if (latest.PreviousSessionId != session.Id) throw new InvalidOperationException("Rouvrez d’abord les relevés actifs plus récents.");
+        if (latest.PreviousSessionId != session.Id) throw new InvalidOperationException(L.Get("MainViewModel.FirstReOpenTheMoreRecentActiveSurveys"));
         var entries = details.Entries;
         var ids = entries.Select(entry => entry.Original.Id).ToArray();
         if (ids.Distinct().Count() != ids.Length || entries.Any(entry => entry.SessionId != sessionId))
-            throw new InvalidOperationException("Les instantanés du relevé sont incohérents.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheSnapshotsOfTheSurveyAreInconsistent"));
         var current = source.ReadTransactions(ids).ToDictionary(value => value.Id);
-        if (current.Count != ids.Length) throw new InvalidOperationException("Une opération du relevé est absente.");
+        if (current.Count != ids.Length) throw new InvalidOperationException(L.Get("MainViewModel.ASurveyTransactionIsMissing"));
         var updates = new List<Transaction>(entries.Count);
         foreach (var entry in entries)
         {
             if (!current.TryGetValue(entry.Original.Id, out var value) || value.Status != ReconciliationStatus.Reconciled ||
                 value.ReconciliationId != session.Id || !ReconciliationRules.FinancialPayloadEquals(value, entry.Original))
-                throw new InvalidOperationException("Le contenu financier d’une opération rapprochée a changé.");
+                throw new InvalidOperationException(L.Get("MainViewModel.TheFinancialContentOfACloseUpTransaction"));
             updates.Add(NextRevision(value with { Status = entry.Original.Status, MarkedOn = entry.Original.MarkedOn, ReconciliationId = null }, value));
         }
         var now = DateTimeOffset.UtcNow;
@@ -238,11 +238,11 @@ public sealed partial class MainViewModel
         var (account, source) = CleanReconciliationContext();
         ReconciliationRules.ValidateReason(reason);
         var values = source.ReadTransactions([selection.Id]);
-        if (values.Count != 1) throw new InvalidOperationException("L’opération héritée est absente.");
+        if (values.Count != 1) throw new InvalidOperationException(L.Get("MainViewModel.TheInheritedTransactionIsAbsent"));
         var original = values[0];
         if (original.Id != selection.Id || original.AccountId != account.Id || original.Revision != selection.Revision || original.IsDeleted ||
             original.Status != ReconciliationStatus.Reconciled || original.ReconciliationId is not null)
-            throw new InvalidOperationException("Cette opération n’est pas un rapprochement hérité libérable.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisOperationIsNotALiberableLegacyReconciliation"));
         var value = NextRevision(original with { Status = ReconciliationStatus.Unmarked, MarkedOn = null, ReconciliationId = null }, original);
         var entry = new ReconciliationEvent(Guid.NewGuid(), null, original.Id, ReconciliationEventKind.LegacyReleased, value.ModifiedUtc, reason.Trim()) { OperationBefore = original };
         PublishSessionChanges([value], new ReconciliationBatch(Array.Empty<ReconciliationSessionChange>(), [entry]));

@@ -100,8 +100,8 @@ public partial class MainWindow
         if (_workspace.HasUnsavedChanges)
         {
             if (MessageBox.Show(this,
-                "Le rapprochement utilise les opérations enregistrées. Enregistrer d’abord les brouillons actuels ?",
-                "Moneta — avant rapprochement", MessageBoxButton.YesNo, MessageBoxImage.Question,
+                L.Get("Pointing.TheReconciliationUsesTheRecordedTransactionsFirstSave"),
+                L.Get("Pointing.MonetaBeforeReconciliation"), MessageBoxButton.YesNo, MessageBoxImage.Question,
                 MessageBoxResult.No) != MessageBoxResult.Yes || !await SaveAsync()) return;
         }
         if (_workspace.Model is not { CanReconcile: true } model) return;
@@ -120,18 +120,18 @@ public partial class MainWindow
         if (!CanEditLedger || _workspace.Model is not { } model || SingleSelectedRow is not { } row) return;
         if (!model.CanReconcile)
         {
-            MessageBox.Show(this, "Enregistrez d’abord le dossier et tous ses brouillons avec Ctrl+S avant de réexaminer cet état hérité.",
-                "Moneta — avant le réexamen", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, L.Get("Pointing.FirstSaveTheFileAndAllItsDrafts"),
+                L.Get("Pointing.MonetaPriorToReview"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var reason = new ReopenReasonWindow("Réexaminer un rapprochement hérité",
-            "Cet état rapproché n’est lié à aucun relevé Moneta. L’opération redeviendra non pointée, sans modifier ses données financières. Un motif et l’état d’origine seront conservés. Enregistrez ensuite avec Ctrl+S.") { Owner = this };
+        var reason = new ReopenReasonWindow(L.Get("Pointing.ReconsiderAnInheritedReconciliation"),
+            L.Get("Pointing.ThisCloseStateIsNotLinkedToAny")) { Owner = this };
         if (reason.ShowDialog() != true) return;
-        if (MessageBox.Show(this, "Confirmer la libération de cet état hérité vers Non pointé ?",
-            "Moneta — confirmer le réexamen", MessageBoxButton.YesNo, MessageBoxImage.Question,
+        if (MessageBox.Show(this, L.Get("Pointing.ConfirmTheReleaseOfThisInheritedStateTo"),
+            L.Get("Pointing.MonetaConfirmReview"), MessageBoxButton.YesNo, MessageBoxImage.Question,
             MessageBoxResult.No) != MessageBoxResult.Yes) return;
         try { model.ReleaseLegacyReconciliation(new(row.Transaction.Id, row.Transaction.Revision), reason.Reason); }
-        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "réexamen interrompu"); }
+        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, L.Get("Pointing.ReExaminationDiscontinued")); }
         CommandManager.InvalidateRequerySuggested();
     }
 

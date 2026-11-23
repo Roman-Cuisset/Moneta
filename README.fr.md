@@ -103,6 +103,10 @@ Moneta est utilisable, mais encore jeune. **Windows 11 x64** est la seule cible 
 
 Essayez d’abord Moneta avec un dossier fictif, conservez des sauvegardes indépendantes et vérifiez une restauration avant de l’utiliser avec des données importantes.
 
+## Français et anglais dans les versions de développement
+
+Le code en préparation pour la 0.2.0 prend en charge le français et l’anglais américain. Ouvrez **Outils → Options → Langue** ou **Tools → Options → Language**. Le changement s’affiche immédiatement. Enregistrez les options pour retrouver votre choix au prochain démarrage. [Langues et formats régionaux](docs/LOCALIZATION.md)
+
 ## Documentation et retours
 
 - [Guide Alpha](docs/ALPHA_GUIDE.md) — installation, premiers pas et récupération.

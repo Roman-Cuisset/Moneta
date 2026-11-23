@@ -37,13 +37,13 @@ public sealed partial class MonetaFile
     internal static void UpgradeV4(SqliteConnection connection)
     {
         var original = ReadValidated(connection, true);
-        if (original.SchemaVersion != 4) throw Error(DocumentError.UnsupportedVersion, "Seul un dossier v4 peut recevoir les virements v5.");
+        if (original.SchemaVersion != 4) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.OnlyAV4DocumentCanReceiveV5Transfers"));
         using var transaction = connection.BeginTransaction();
         Execute(connection, TransferSchemaSql + "UPDATE Document SET schema_version=5,min_reader=5,min_writer=5; PRAGMA user_version=5;", transaction);
         InsertHistory(connection, transaction, 5, 4, "v4-to-v5-transfers", "linked-transfer-legs-v5");
         var migrated = ReadWithinTransaction(connection, true, transaction);
         var legacy = ReadLedgerMetadata(connection, migrated with { SchemaVersion = 4, TransferCount = 0 }, transaction);
-        if (!SameSnapshot(original, legacy)) throw Error(DocumentError.VerificationFailed, "La migration a modifié le registre ou son historique de rapprochement.");
+        if (!SameSnapshot(original, legacy)) throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.MigrationHasChangedTheRegistryOrItsReconciliation"));
         transaction.Commit();
     }
 
@@ -51,7 +51,7 @@ public sealed partial class MonetaFile
     {
         using var transaction = connection.BeginTransaction(deferred: true);
         var current = ReadWithinTransaction(connection, true, transaction);
-        if (current.SchemaVersion < 4) throw Error(DocumentError.UnsupportedVersion, "Un registre v4 ou v5 est requis.");
+        if (current.SchemaVersion < 4) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.AV4OrV5RegisterIsRequired"));
         var result = current.SchemaVersion == 4 ? current : ReadLedgerMetadata(connection, current with { SchemaVersion = 4, TransferCount = 0 }, transaction);
         transaction.Commit();
         return Freeze(result);

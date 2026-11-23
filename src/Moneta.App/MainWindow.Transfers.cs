@@ -56,7 +56,7 @@ public partial class MainWindow
             var details = model.GetTransfer(id);
             new TransferWindow(model, details, readOnly: !CanEditLedger || details.HasReconciledLeg) { Owner = this }.ShowDialog();
         }
-        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "lecture du virement interrompue"); }
+        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, L.Get("Transfers.ReadTheInterruptedTransfer")); }
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -69,7 +69,7 @@ public partial class MainWindow
             if (model.SelectedRow is { } selected) TransactionsGrid.ScrollIntoView(selected);
             TransactionsGrid.Focus();
         }
-        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "navigation du virement interrompue"); }
+        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, L.Get("Transfers.NavigationOfTheInterruptedTransfer")); }
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -85,18 +85,18 @@ public partial class MainWindow
         {
             var details = model.GetTransfer(id);
             if (model.HasArchivedTransferAccount(details))
-                throw new InvalidOperationException("Réactivez les comptes du virement, frais compris, avant de le supprimer.");
+                throw new InvalidOperationException(L.Get("Transfers.ReactivateTheTransferAccountsIncludingFeesBeforeDeleting"));
             if (details.HasReconciledLeg)
-                throw new InvalidOperationException("Un mouvement de ce virement est rapproché. Rouvrez le relevé concerné puis enregistrez avant de corriger ou supprimer le virement entier.");
+                throw new InvalidOperationException(L.Get("Transfers.AMovementOfThisTransferIsReconciledReopen"));
             string Name(Guid accountId) => model.Accounts.First(account => account.Account.Id == accountId).DisplayName;
             var fee = details.Fee is { } value
-                ? $"\nFrais : −{MoneyFormatter.Format(value.Amount, value.Currency)} sur {Name(value.AccountId)}" : string.Empty;
-            var message = $"Supprimer le virement entier ?\n\n{ Name(details.Debit.AccountId) } : −{MoneyFormatter.Format(details.Debit.Amount, details.Debit.Currency)}\n{ Name(details.Credit.AccountId) } : +{MoneyFormatter.Format(details.Credit.Amount, details.Credit.Currency)}{fee}\n\nLes deux mouvements et les frais liés seront retirés ensemble. Les traces déjà enregistrées seront conservées. Ctrl+S reste nécessaire.";
-            if (MessageBox.Show(this, message, "Moneta — supprimer le virement entier", MessageBoxButton.YesNo,
+                ? L.Format("Transfers.Cost0On1", (MoneyFormatter.Format(value.Amount, value.Currency)), (Name(value.AccountId))) : string.Empty;
+            var message = L.Format("Transfers.DeleteTheEntireTransfer0123", (Name(details.Debit.AccountId)), (MoneyFormatter.Format(details.Debit.Amount, details.Debit.Currency)), (Name(details.Credit.AccountId)), (MoneyFormatter.Format(details.Credit.Amount, details.Credit.Currency)), (fee));
+            if (MessageBox.Show(this, message, L.Get("Transfers.MonetaDeleteTheEntireTransfer"), MessageBoxButton.YesNo,
                 MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
             model.DeleteTransfer(id, details.Value.Revision);
         }
-        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, "suppression du virement interrompue"); }
+        catch (Exception error) when (IsLedgerError(error)) { ShowLedgerError(error, L.Get("Transfers.RemovalOfTheInterruptedTransfer")); }
         CommandManager.InvalidateRequerySuggested();
     }
 }

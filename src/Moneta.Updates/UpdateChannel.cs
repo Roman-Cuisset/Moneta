@@ -6,6 +6,7 @@ public sealed class UpdateChannel
 {
     private const string Repository = "https://github.com/Roman-Cuisset/Moneta/releases/";
     private const string Loopback = "http://127.0.0.1:18761/";
+    public const string HelperLanguageVariable = "MONETA_UPDATE_LANGUAGE";
 #if MONETA_LAB
     public const string InstallName = "Moneta Lab";
     public const string RunningMutex = @"Local\Moneta.Lab.Running.v1";
@@ -43,7 +44,7 @@ public sealed class UpdateChannel
     private static byte[] ReadKey()
     {
         using var stream = typeof(UpdateChannel).Assembly.GetManifestResourceStream("Moneta.UpdateKey")
-            ?? throw new InvalidOperationException("Clé publique Moneta absente.");
+            ?? throw new InvalidOperationException(L.Get("UpdateChannel.MonetaPublicKeyAbsent"));
         using var reader = new StreamReader(stream);
         return Convert.FromBase64String(reader.ReadToEnd().Trim());
     }

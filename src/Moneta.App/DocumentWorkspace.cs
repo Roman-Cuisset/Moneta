@@ -42,7 +42,7 @@ public sealed class DocumentWorkspace : IDisposable
     public void Save(string? newPath = null)
     {
         if (Model is not { IsDemo: false } model)
-            throw new InvalidOperationException("Le mode démonstration ne peut pas être enregistré. Créez un nouveau dossier vierge.");
+            throw new InvalidOperationException(L.Get("DocumentWorkspace.TheDemoModeCannotBeSavedCreateA"));
         var snapshot = model.CaptureDocument();
         if (_file is null || newPath is not null)
         {
@@ -64,7 +64,7 @@ public sealed class DocumentWorkspace : IDisposable
     public BackupResult Backup(string destination)
     {
         if (_file is null || HasUnsavedChanges)
-            throw new InvalidOperationException("Enregistrez les modifications avant de sauvegarder le dossier.");
+            throw new InvalidOperationException(L.Get("DocumentWorkspace.SaveTheChangesBeforeSavingTheDocument"));
         return MonetaBackup.Create(_file, destination);
     }
 

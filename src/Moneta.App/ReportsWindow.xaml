@@ -1,8 +1,8 @@
-<Window x:Class="Moneta.App.ReportsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.ReportsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Moneta.App"
-        Title="Rapports et budgets — Moneta" Width="1080" Height="735" MinWidth="740" MinHeight="530"
+        Title="{loc:LocalizedText ReportsWindow.ReportsAndBudgetsMoneta}" Width="1080" Height="735" MinWidth="740" MinHeight="530"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Style="{StaticResource {x:Type Window}}"
-        AutomationProperties.AutomationId="FinancialReportsWindow" PreviewKeyDown="Window_KeyDown">
+        AutomationProperties.AutomationId="FinancialReportsWindow" PreviewKeyDown="Window_KeyDown" Language="{loc:LocalizedLanguage}">
     <Window.Resources>
         <Style x:Key="ReportGrid" TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
             <Setter Property="AutoGenerateColumns" Value="False" /><Setter Property="IsReadOnly" Value="True" />
@@ -14,146 +14,146 @@
     <Grid Margin="16">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel x:Name="Header">
-            <TextBlock Text="Rapports et budgets" Style="{StaticResource WindowHeading}" Margin="0,0,0,5" />
+            <TextBlock Text="{loc:LocalizedText ReportsWindow.ReportsAndBudgets}" Style="{StaticResource WindowHeading}" Margin="0,0,0,5" />
             <Expander x:Name="ScopePanel" IsExpanded="True" Margin="0,0,0,7">
-                <Expander.Header><TextBlock Text="Périmètre et cours" Foreground="{DynamicResource TextBrush}" /></Expander.Header>
+                <Expander.Header><TextBlock Text="{loc:LocalizedText ReportsWindow.PerimeterAndRate}" Foreground="{DynamicResource TextBrush}" /></Expander.Header>
                 <Grid Margin="0,2,0,0">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="205" /></Grid.ColumnDefinitions>
                     <StackPanel>
                         <WrapPanel>
-                            <StackPanel Margin="0,0,7,4"><Label Content="_Période" Target="{Binding ElementName=Period}" /><ComboBox x:Name="Period" Width="132" SelectionChanged="Period_Changed" AutomationProperties.Name="Type de période">
-                                <ComboBoxItem Content="Mois"/><ComboBoxItem Content="Trimestre"/><ComboBoxItem Content="Année"/><ComboBoxItem Content="Personnalisée"/>
+                            <StackPanel Margin="0,0,7,4"><Label Content="{loc:LocalizedText ReportsWindow.PeriodAccessKey}" Target="{Binding ElementName=Period}" /><ComboBox x:Name="Period" Width="132" SelectionChanged="Period_Changed" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.TypeOfPeriod}">
+                                <ComboBoxItem Content="{loc:LocalizedText ReportsWindow.Month}"/><ComboBoxItem Content="{loc:LocalizedText ReportsWindow.Quarter}"/><ComboBoxItem Content="{loc:LocalizedText ReportsWindow.Year}"/><ComboBoxItem Content="{loc:LocalizedText Common.Custom}"/>
                             </ComboBox></StackPanel>
-                            <StackPanel Margin="0,0,7,4"><Label Content="_Du (jj/mm/aaaa)" Target="{Binding ElementName=StartDate}" /><TextBox x:Name="StartDate" Width="108" MaxLength="10" AutomationProperties.Name="Début de la période" /></StackPanel>
-                            <StackPanel Margin="0,0,7,4"><Label Content="_Au (jj/mm/aaaa)" Target="{Binding ElementName=EndDate}" /><TextBox x:Name="EndDate" Width="108" MaxLength="10" AutomationProperties.Name="Fin de la période" /></StackPanel>
-                            <Button Content="‹" Margin="0,0,4,4" VerticalAlignment="Bottom" Click="PreviousPeriod_Click" AutomationProperties.Name="Période précédente" />
-                            <Button Content="›" Margin="0,0,7,4" VerticalAlignment="Bottom" Click="NextPeriod_Click" AutomationProperties.Name="Période suivante" />
-                            <StackPanel Margin="0,0,7,4"><Label Content="De_vise cible" Target="{Binding ElementName=Target}" /><ComboBox x:Name="Target" Width="80" DisplayMemberPath="Code" AutomationProperties.Name="Devise du rapport" /></StackPanel>
-                            <StackPanel Margin="0,0,7,4"><Label Content="_Source" Target="{Binding ElementName=Provider}" /><ComboBox x:Name="Provider" Width="87" AutomationProperties.Name="Fournisseur de cours"><ComboBoxItem Content="NBRB"/><ComboBoxItem Content="CBR"/></ComboBox></StackPanel>
+                            <StackPanel Margin="0,0,7,4"><Label Content="{loc:LocalizedText ReportsWindow.OfMmDdYyyyAccessKey}" Target="{Binding ElementName=StartDate}" /><TextBox x:Name="StartDate" Width="108" MaxLength="10" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.StartOfPeriod}" /></StackPanel>
+                            <StackPanel Margin="0,0,7,4"><Label Content="{loc:LocalizedText ReportsWindow.InMmDdYyyyAccessKey}" Target="{Binding ElementName=EndDate}" /><TextBox x:Name="EndDate" Width="108" MaxLength="10" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.EndOfPeriod}" /></StackPanel>
+                            <Button Content="‹" Margin="0,0,4,4" VerticalAlignment="Bottom" Click="PreviousPeriod_Click" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.PreviousPeriod}" />
+                            <Button Content="›" Margin="0,0,7,4" VerticalAlignment="Bottom" Click="NextPeriod_Click" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.NextPeriod}" />
+                            <StackPanel Margin="0,0,7,4"><Label Content="{loc:LocalizedText ReportsWindow.TargetVisitAccessKey}" Target="{Binding ElementName=Target}" /><ComboBox x:Name="Target" Width="80" DisplayMemberPath="Code" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.CurrencyOfReport}" /></StackPanel>
+                            <StackPanel Margin="0,0,7,4"><Label Content="{loc:LocalizedText ReportsWindow.SourceAccessKey}" Target="{Binding ElementName=Provider}" /><ComboBox x:Name="Provider" Width="87" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.ExchangeRateProvider}"><ComboBoxItem Content="NBRB"/><ComboBoxItem Content="CBR"/></ComboBox></StackPanel>
                         </WrapPanel>
                         <WrapPanel Margin="0,2,0,3">
-                            <StackPanel Margin="0,0,8,0"><Label Content="_Catégorie des flux" Target="{Binding ElementName=Category}" /><ComboBox x:Name="Category" Width="178" DisplayMemberPath="Label" AutomationProperties.Name="Filtre sur la catégorie" /></StackPanel>
-                            <CheckBox x:Name="Network" Content="Rechercher les cours manquants en ligne" VerticalAlignment="Bottom" Margin="0,0,8,7" />
-                            <Button x:Name="Generate" Content="_Générer" Style="{StaticResource PrimaryButton}" VerticalAlignment="Bottom" Click="Generate_Click" Margin="0,0,6,0" />
-                            <Button x:Name="CancelRun" Content="Annuler le calcul" VerticalAlignment="Bottom" Click="CancelRun_Click" IsEnabled="False" />
+                            <StackPanel Margin="0,0,8,0"><Label Content="{loc:LocalizedText ReportsWindow.FlowCategoryAccessKey}" Target="{Binding ElementName=Category}" /><ComboBox x:Name="Category" Width="178" DisplayMemberPath="Label" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.FilterOnCategory}" /></StackPanel>
+                            <CheckBox x:Name="Network" Content="{loc:LocalizedText ReportsWindow.SearchForMissingRatesOnline}" VerticalAlignment="Bottom" Margin="0,0,8,7" />
+                            <Button x:Name="Generate" Content="{loc:LocalizedText ReportsWindow.GenerateAccessKey}" Style="{StaticResource PrimaryButton}" VerticalAlignment="Bottom" Click="Generate_Click" Margin="0,0,6,0" />
+                            <Button x:Name="CancelRun" Content="{loc:LocalizedText Common.CancelCalculation}" VerticalAlignment="Bottom" Click="CancelRun_Click" IsEnabled="False" />
                         </WrapPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                        <Label Content="_Comptes inclus" Target="{Binding ElementName=Accounts}" />
-                        <ListBox x:Name="Accounts" Height="76" SelectionMode="Multiple" DisplayMemberPath="Label" Style="{StaticResource FinancialScopeList}" AutomationProperties.Name="Comptes du rapport" />
+                        <Label Content="{loc:LocalizedText ReportsWindow.AccountsIncludedAccessKey}" Target="{Binding ElementName=Accounts}" />
+                        <ListBox x:Name="Accounts" Height="76" SelectionMode="Multiple" DisplayMemberPath="Label" Style="{StaticResource FinancialScopeList}" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.ReportAccounts}" />
                         <WrapPanel Margin="0,4,0,0">
-                            <Button Content="Tous" Click="AllAccounts_Click" AutomationProperties.Name="Inclure tous les comptes visibles" Margin="0,0,5,0" />
-                            <CheckBox x:Name="Archived" Content="Inclure les archivés" Checked="Archived_Changed" Unchecked="Archived_Changed" VerticalAlignment="Center" />
+                            <Button Content="{loc:LocalizedText ReportsWindow.All}" Click="AllAccounts_Click" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.IncludeAllVisibleAccounts}" Margin="0,0,5,0" />
+                            <CheckBox x:Name="Archived" Content="{loc:LocalizedText ReportsWindow.IncludeArchivedRecords}" Checked="Archived_Changed" Unchecked="Archived_Changed" VerticalAlignment="Center" />
                         </WrapPanel>
                     </StackPanel>
                 </Grid>
             </Expander>
         </StackPanel>
-        <TabControl x:Name="Views" Grid.Row="1" AutomationProperties.Name="Vues du rapport">
-            <TabItem Header="Synthèse">
+        <TabControl x:Name="Views" Grid.Row="1" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.ViewsOfTheReport}">
+            <TabItem Header="{loc:LocalizedText ReportsWindow.ExecutiveSummary}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="12">
                     <TextBlock x:Name="ScopeText" Style="{StaticResource SectionHeading}" />
                     <Border x:Name="CoverageCard" Style="{StaticResource MetricCard}" Margin="0,7,0,12" Visibility="Collapsed">
                         <TextBlock x:Name="Coverage" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
                     </Border>
                     <UniformGrid Columns="3" Margin="0,0,0,16">
-                        <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Recettes connues" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="IncomeText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
-                        <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Dépenses connues" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="ExpenseText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
-                        <Border Style="{StaticResource MetricCard}"><StackPanel><TextBlock Text="Flux net" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="NetText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
+                        <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0"><StackPanel><TextBlock Text="{loc:LocalizedText ReportsWindow.KnownRevenue}" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="IncomeText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
+                        <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0"><StackPanel><TextBlock Text="{loc:LocalizedText ReportsWindow.KnownExpenditure}" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="ExpenseText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
+                        <Border Style="{StaticResource MetricCard}"><StackPanel><TextBlock Text="{loc:LocalizedText ReportsWindow.NetFlows}" Style="{StaticResource BodyMuted}" /><TextBlock x:Name="NetText" Style="{StaticResource MetricValue}" /></StackPanel></Border>
                     </UniformGrid>
-                    <TextBlock Text="Principales dépenses par catégorie" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="{loc:LocalizedText ReportsWindow.MajorExpenditureByCategory}" Style="{StaticResource SectionHeading}" />
                     <TextBlock x:Name="TopCategories" TextWrapping="Wrap" Margin="0,5,0,12" />
                     <TextBlock x:Name="BudgetAlert" TextWrapping="Wrap" Margin="0,0,0,8" />
                     <TextBlock x:Name="UpcomingText" TextWrapping="Wrap" />
                 </StackPanel></ScrollViewer>
             </TabItem>
-            <TabItem Header="Flux et cours"><DockPanel Margin="8">
-                <CheckBox x:Name="MissingOnly" DockPanel.Dock="Top" Content="Afficher uniquement les flux sans valeur" Checked="Missing_Changed" Unchecked="Missing_Changed" Margin="0,0,0,7" />
+            <TabItem Header="{loc:LocalizedText ReportsWindow.FlowAndPrice}"><DockPanel Margin="8">
+                <CheckBox x:Name="MissingOnly" DockPanel.Dock="Top" Content="{loc:LocalizedText ReportsWindow.ShowOnlyUnvaluedStreams}" Checked="Missing_Changed" Unchecked="Missing_Changed" Margin="0,0,0,7" />
                 <TextBlock x:Name="FlowEvidence" DockPanel.Dock="Bottom" TextWrapping="Wrap" Margin="0,6,0,0" />
-                <DataGrid x:Name="Flows" Style="{StaticResource ReportGrid}" SelectionChanged="Detail_Changed" AutomationProperties.Name="Flux et couverture des cours">
+                <DataGrid x:Name="Flows" Style="{StaticResource ReportGrid}" SelectionChanged="Detail_Changed" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.PriceFlowAndCoverage}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat=dd/MM/yyyy}" Width="99" />
-                        <DataGridTextColumn Header="Compte" Binding="{Binding Account}" Width="135" />
-                        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="150" />
-                        <DataGridTextColumn Header="Nature" Binding="{Binding Kind}" Width="90" />
-                        <DataGridTextColumn Header="Natif" Binding="{Binding Native}" SortMemberPath="NativeAmount" ElementStyle="{StaticResource NumberCell}" Width="130" />
-                        <DataGridTextColumn Header="Valorisé" Binding="{Binding Display}" SortMemberPath="Value" ElementStyle="{StaticResource NumberCell}" Width="135" />
-                        <DataGridTextColumn Header="Provenance ou motif" Binding="{Binding Status}" Width="*" MinWidth="170" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.Date}" Binding="{Binding Date, StringFormat=d}" Width="99" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Account}" Width="135" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.Category}" Binding="{Binding Category}" Width="150" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Nature}" Binding="{Binding Kind}" Width="90" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Native}" Binding="{Binding Native}" SortMemberPath="NativeAmount" ElementStyle="{StaticResource NumberCell}" Width="130" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Valued}" Binding="{Binding Display}" SortMemberPath="Value" ElementStyle="{StaticResource NumberCell}" Width="135" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.SourceOrMotive}" Binding="{Binding Status}" Width="*" MinWidth="170" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel></TabItem>
-            <TabItem Header="Répartition"><DockPanel Margin="8">
-                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,7"><Label Content="Regrouper par" Target="{Binding ElementName=Grouping}" /><ComboBox x:Name="Grouping" Width="165" SelectionChanged="Grouping_Changed" AutomationProperties.Name="Regroupement financier"><ComboBoxItem Content="Catégorie"/><ComboBoxItem Content="Sous-catégorie"/><ComboBoxItem Content="Compte"/><ComboBoxItem Content="Devise native"/><ComboBoxItem Content="Mois"/></ComboBox></WrapPanel>
-                <DataGrid x:Name="Groups" Style="{StaticResource ReportGrid}" AutomationProperties.Name="Totaux regroupés">
+            <TabItem Header="{loc:LocalizedText ReportsWindow.Distribution}"><DockPanel Margin="8">
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,7"><Label Content="{loc:LocalizedText ReportsWindow.GroupingBy}" Target="{Binding ElementName=Grouping}" /><ComboBox x:Name="Grouping" Width="165" SelectionChanged="Grouping_Changed" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.FinancialConsolidation}"><ComboBoxItem Content="{loc:LocalizedText Common.Category}"/><ComboBoxItem Content="{loc:LocalizedText Common.Subcategory}"/><ComboBoxItem Content="{loc:LocalizedText Common.Account}"/><ComboBoxItem Content="{loc:LocalizedText Common.NativeCurrency}"/><ComboBoxItem Content="{loc:LocalizedText ReportsWindow.Month}"/></ComboBox></WrapPanel>
+                <DataGrid x:Name="Groups" Style="{StaticResource ReportGrid}" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.TotalsCombined}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Groupe" Binding="{Binding Label}" Width="*" />
-                        <DataGridTextColumn Header="Recettes connues" Binding="{Binding Income}" SortMemberPath="Total.Income" ElementStyle="{StaticResource NumberCell}" Width="150" />
-                        <DataGridTextColumn Header="Dépenses connues" Binding="{Binding Expense}" SortMemberPath="Total.Expense" ElementStyle="{StaticResource NumberCell}" Width="150" />
-                        <DataGridTextColumn Header="Flux net" Binding="{Binding Net}" SortMemberPath="Total.Net" ElementStyle="{StaticResource NumberCell}" Width="138" />
-                        <DataGridTextColumn Header="Valorisées" Binding="{Binding Coverage}" Width="105" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Group}" Binding="{Binding Label}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.KnownRevenue}" Binding="{Binding Income}" SortMemberPath="Total.Income" ElementStyle="{StaticResource NumberCell}" Width="150" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.KnownExpenditure}" Binding="{Binding Expense}" SortMemberPath="Total.Expense" ElementStyle="{StaticResource NumberCell}" Width="150" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.NetFlows}" Binding="{Binding Net}" SortMemberPath="Total.Net" ElementStyle="{StaticResource NumberCell}" Width="138" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Valued2}" Binding="{Binding Coverage}" Width="105" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel></TabItem>
-            <TabItem Header="Graphiques"><DockPanel Margin="8">
-                <WrapPanel DockPanel.Dock="Top"><Label Content="Graphique" Target="{Binding ElementName=PlotMode}" /><ComboBox x:Name="PlotMode" Width="230" SelectionChanged="Plot_Changed" AutomationProperties.Name="Choix du graphique"><ComboBoxItem Content="Répartition des dépenses"/><ComboBoxItem Content="Dépenses par mois"/><ComboBoxItem Content="Recettes et dépenses par mois"/></ComboBox></WrapPanel>
+            <TabItem Header="{loc:LocalizedText Common.Charts}"><DockPanel Margin="8">
+                <WrapPanel DockPanel.Dock="Top"><Label Content="{loc:LocalizedText ReportsWindow.Graph}" Target="{Binding ElementName=PlotMode}" /><ComboBox x:Name="PlotMode" Width="230" SelectionChanged="Plot_Changed" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.ChoosingTheChart}"><ComboBoxItem Content="{loc:LocalizedText ReportsWindow.Apportionment}"/><ComboBoxItem Content="{loc:LocalizedText ReportsWindow.ExpenditurePerMonth}"/><ComboBoxItem Content="{loc:LocalizedText ReportsWindow.IncomeAndExpenditurePerMonth}"/></ComboBox></WrapPanel>
                 <TextBlock x:Name="ChartNotice" DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,6,0,5" />
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"><local:ReportPlots x:Name="Plots" AutomationProperties.Name="Graphique des données du rapport" /></ScrollViewer>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"><local:ReportPlots x:Name="Plots" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.GraphOfTheReportData}" /></ScrollViewer>
             </DockPanel></TabItem>
-            <TabItem Header="Soldes à date"><DockPanel Margin="8">
+            <TabItem Header="{loc:LocalizedText ReportsWindow.BalancesAtDate}"><DockPanel Margin="8">
                 <TextBlock x:Name="BalanceSummary" DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,7" />
                 <TextBlock x:Name="BalanceEvidence" DockPanel.Dock="Bottom" TextWrapping="Wrap" Margin="0,6,0,0" />
-                <DataGrid x:Name="Balances" Style="{StaticResource ReportGrid}" SelectionChanged="Detail_Changed" AutomationProperties.Name="Soldes des comptes à la date d’arrêté">
+                <DataGrid x:Name="Balances" Style="{StaticResource ReportGrid}" SelectionChanged="Detail_Changed" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.BalancesOfAccountsAsAtTheDateOf}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Compte" Binding="{Binding Account}" Width="*" />
-                        <DataGridTextColumn Header="Arrêté" Binding="{Binding Date, StringFormat=dd/MM/yyyy}" Width="108" />
-                        <DataGridTextColumn Header="Solde natif" Binding="{Binding Native}" SortMemberPath="NativeAmount" ElementStyle="{StaticResource NumberCell}" Width="145" />
-                        <DataGridTextColumn Header="Valorisé" Binding="{Binding Display}" SortMemberPath="Value" ElementStyle="{StaticResource NumberCell}" Width="145" />
-                        <DataGridTextColumn Header="Source et effet" Binding="{Binding Status}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Account}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Arrested}" Binding="{Binding Date, StringFormat=d}" Width="108" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.NativeBalance}" Binding="{Binding Native}" SortMemberPath="NativeAmount" ElementStyle="{StaticResource NumberCell}" Width="145" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Valued}" Binding="{Binding Display}" SortMemberPath="Value" ElementStyle="{StaticResource NumberCell}" Width="145" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.SourceAndEffect}" Binding="{Binding Status}" Width="*" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel></TabItem>
-            <TabItem Header="Prévisions"><DockPanel Margin="8">
+            <TabItem Header="{loc:LocalizedText ReportsWindow.Projections}"><DockPanel Margin="8">
                 <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,7">
-                    <CheckBox x:Name="Estimate" Content="Estimer les montants en devise du rapport au cours applicable aujourd’hui" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Button x:Name="Project" Content="Calculer la prévision" Click="Project_Click" />
+                    <CheckBox x:Name="Estimate" Content="{loc:LocalizedText ReportsWindow.EstimateTheCurrencyAmountsOfTheReportAt}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Button x:Name="Project" Content="{loc:LocalizedText ReportsWindow.CalculateTheForecast}" Click="Project_Click" />
                 </WrapPanel>
                 <TextBlock x:Name="ForecastSummary" DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,7" />
-                <DataGrid x:Name="ForecastMonths" DockPanel.Dock="Bottom" Height="116" Margin="0,8,0,0" Style="{StaticResource ReportGrid}" AutomationProperties.Name="Prévision mensuelle par devise">
+                <DataGrid x:Name="ForecastMonths" DockPanel.Dock="Bottom" Height="116" Margin="0,8,0,0" Style="{StaticResource ReportGrid}" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.MonthlyForecastByCurrency}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Mois" Binding="{Binding Month, StringFormat=MMM yyyy}" Width="110" />
-                        <DataGridTextColumn Header="Recettes prévues" Binding="{Binding Income}" SortMemberPath="Row.Income" ElementStyle="{StaticResource NumberCell}" Width="150" />
-                        <DataGridTextColumn Header="Dépenses prévues" Binding="{Binding Expense}" SortMemberPath="Row.Expense" ElementStyle="{StaticResource NumberCell}" Width="150" />
-                        <DataGridTextColumn Header="Base du total" Binding="{Binding Coverage}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Month}" Binding="{Binding Month, StringFormat=MMM yyyy}" Width="110" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.EstimatedIncome}" Binding="{Binding Income}" SortMemberPath="Row.Income" ElementStyle="{StaticResource NumberCell}" Width="150" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.EstimatedExpenditure}" Binding="{Binding Expense}" SortMemberPath="Row.Expense" ElementStyle="{StaticResource NumberCell}" Width="150" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.BasisOfTotal}" Binding="{Binding Coverage}" Width="*" />
                     </DataGrid.Columns>
                 </DataGrid>
-                <DataGrid x:Name="Forecasts" Style="{StaticResource ReportGrid}" AutomationProperties.Name="Échéances futures et estimations">
+                <DataGrid x:Name="Forecasts" Style="{StaticResource ReportGrid}" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.FutureScheduledTransactionAndEstimates}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Date prévue" Binding="{Binding Date, StringFormat=dd/MM/yyyy}" Width="100" />
-                        <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
-                        <DataGridTextColumn Header="Compte" Binding="{Binding Account}" Width="155" />
-                        <DataGridTextColumn Header="Natif" Binding="{Binding Native}" SortMemberPath="NativeAmount" ElementStyle="{StaticResource NumberCell}" Width="115" />
-                        <DataGridTextColumn Header="Prévu ou estimé" Binding="{Binding Value}" ElementStyle="{StaticResource NumberCell}" Width="136" />
-                        <DataGridTextColumn Header="Méthode" Binding="{Binding Status}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.ExpectedDate}" Binding="{Binding Date, StringFormat=d}" Width="100" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.ScheduledTransaction}" Binding="{Binding Label}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Account}" Width="155" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Native}" Binding="{Binding Native}" SortMemberPath="NativeAmount" ElementStyle="{StaticResource NumberCell}" Width="115" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.PlannedOrEstimated}" Binding="{Binding Value}" ElementStyle="{StaticResource NumberCell}" Width="136" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Method}" Binding="{Binding Status}" Width="*" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel></TabItem>
-            <TabItem Header="Budgets"><DockPanel Margin="8">
+            <TabItem Header="{loc:LocalizedText Common.Budgets}"><DockPanel Margin="8">
                 <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                    <Label Content="Mois (mm/aaaa)" Target="{Binding ElementName=BudgetMonth}" /><TextBox x:Name="BudgetMonth" Width="85" MaxLength="7" Margin="0,0,5,0" AutomationProperties.Name="Mois des budgets" />
-                    <Button Content="‹" AutomationProperties.Name="Budget du mois précédent" Click="PreviousBudget_Click" Margin="0,0,4,0" /><Button Content="›" AutomationProperties.Name="Budget du mois suivant" Click="NextBudget_Click" Margin="0,0,7,0" />
-                    <Button x:Name="BudgetCalculate" Content="Calculer le réalisé" Click="Budgets_Click" Margin="0,0,5,0" /><Button x:Name="NewBudget" Content="Nouveau…" Click="EditBudget_Click" Margin="0,0,5,0" />
-                    <Button x:Name="EditBudget" Content="Modifier…" Click="EditBudget_Click" Margin="0,0,5,0" /><Button x:Name="DuplicateBudget" Content="Dupliquer…" Click="EditBudget_Click" Margin="0,0,5,0" />
-                    <Button x:Name="DeleteBudget" Content="Supprimer…" Style="{StaticResource DangerButton}" Click="DeleteBudget_Click" />
+                    <Label Content="{loc:LocalizedText ReportsWindow.MonthMmYyyy}" Target="{Binding ElementName=BudgetMonth}" /><TextBox x:Name="BudgetMonth" Width="85" MaxLength="7" Margin="0,0,5,0" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.BudgetMonths}" />
+                    <Button Content="‹" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.BudgetForThePreviousMonth}" Click="PreviousBudget_Click" Margin="0,0,4,0" /><Button Content="›" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.BudgetForTheFollowingMonth}" Click="NextBudget_Click" Margin="0,0,7,0" />
+                    <Button x:Name="BudgetCalculate" Content="{loc:LocalizedText ReportsWindow.CalculatingTheAchievement}" Click="Budgets_Click" Margin="0,0,5,0" /><Button x:Name="NewBudget" Content="{loc:LocalizedText ReportsWindow.New}" Click="EditBudget_Click" Margin="0,0,5,0" />
+                    <Button x:Name="EditBudget" Content="{loc:LocalizedText ReportsWindow.Edit}" Click="EditBudget_Click" Margin="0,0,5,0" /><Button x:Name="DuplicateBudget" Content="{loc:LocalizedText ReportsWindow.Duplicate}" Click="EditBudget_Click" Margin="0,0,5,0" />
+                    <Button x:Name="DeleteBudget" Content="{loc:LocalizedText ReportsWindow.Delete}" Style="{StaticResource DangerButton}" Click="DeleteBudget_Click" />
                 </WrapPanel>
                 <TextBlock x:Name="BudgetSummary" DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,7" />
-                <DataGrid x:Name="BudgetGrid" Style="{StaticResource ReportGrid}" AutomationProperties.Name="Budgets mensuels et réalisé" SelectionChanged="BudgetSelection_Changed">
+                <DataGrid x:Name="BudgetGrid" Style="{StaticResource ReportGrid}" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.MonthlyAndRealizedBudgets}" SelectionChanged="BudgetSelection_Changed">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Budget" Binding="{Binding Plan.Name}" Width="*" />
-                        <DataGridTextColumn Header="Prévu" Binding="{Binding Planned}" ElementStyle="{StaticResource NumberCell}" Width="116" />
-                        <DataGridTextColumn Header="Réalisé connu" Binding="{Binding Known}" ElementStyle="{StaticResource NumberCell}" Width="128" />
-                        <DataGridTextColumn Header="Reste" Binding="{Binding Difference}" ElementStyle="{StaticResource NumberCell}" Width="112" />
-                        <DataGridTextColumn Header="Utilisation" Binding="{Binding Percent}" ElementStyle="{StaticResource NumberCell}" Width="88" />
-                        <DataGridTemplateColumn Header="Prévu / réalisé" Width="111"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.Budget}" Binding="{Binding Plan.Name}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Budgeted}" Binding="{Binding Planned}" ElementStyle="{StaticResource NumberCell}" Width="116" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.KnownAchievement}" Binding="{Binding Known}" ElementStyle="{StaticResource NumberCell}" Width="128" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Stay}" Binding="{Binding Difference}" ElementStyle="{StaticResource NumberCell}" Width="112" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Use}" Binding="{Binding Percent}" ElementStyle="{StaticResource NumberCell}" Width="88" />
+                        <DataGridTemplateColumn Header="{loc:LocalizedText ReportsWindow.PlannedAchieved}" Width="111"><DataGridTemplateColumn.CellTemplate><DataTemplate>
                             <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}" Height="9" Margin="5" Visibility="{Binding ProgressVisibility}">
                                 <ProgressBar.Style><Style TargetType="ProgressBar">
                                     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /><Setter Property="Background" Value="{DynamicResource SubtleBrush}" />
@@ -161,29 +161,29 @@
                                 </Style></ProgressBar.Style>
                             </ProgressBar>
                         </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
-                        <DataGridTextColumn Header="État" Binding="{Binding Status}" Width="190" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.State}" Binding="{Binding Status}" Width="190" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel></TabItem>
-            <TabItem Header="Rapports figés"><DockPanel Margin="8">
+            <TabItem Header="{loc:LocalizedText ReportsWindow.ReportSnapshots}"><DockPanel Margin="8">
                 <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,7">
-                    <Label Content="Nom de la nouvelle version" Target="{Binding ElementName=ReportName}" /><TextBox x:Name="ReportName" MinWidth="180" MaxLength="120" Margin="0,0,7,0" AutomationProperties.Name="Nom du rapport figé" />
-                    <Button x:Name="Freeze" Content="Figer les résultats" Click="Freeze_Click" Margin="0,0,5,0" /><Button x:Name="Replay" Content="Rejouer hors ligne" Click="Replay_Click" Margin="0,0,5,0" /><Button x:Name="Recalculate" Content="Recalculer depuis le dossier" Click="Recalculate_Click" />
+                    <Label Content="{loc:LocalizedText ReportsWindow.NewVersionName}" Target="{Binding ElementName=ReportName}" /><TextBox x:Name="ReportName" MinWidth="180" MaxLength="120" Margin="0,0,7,0" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.NameOfFrozenReport}" />
+                    <Button x:Name="Freeze" Content="{loc:LocalizedText ReportsWindow.FrozenResults}" Click="Freeze_Click" Margin="0,0,5,0" /><Button x:Name="Replay" Content="{loc:LocalizedText ReportsWindow.ReplayOffline}" Click="Replay_Click" Margin="0,0,5,0" /><Button x:Name="Recalculate" Content="{loc:LocalizedText ReportsWindow.RecalculateFromDocument}" Click="Recalculate_Click" />
                 </WrapPanel>
                 <TextBlock x:Name="ArchiveSummary" DockPanel.Dock="Bottom" TextWrapping="Wrap" Margin="0,6,0,0" />
-                <DataGrid x:Name="ArchiveGrid" Style="{StaticResource ReportGrid}" SelectionChanged="ArchiveSelection_Changed" AutomationProperties.Name="Versions figées des rapports">
+                <DataGrid x:Name="ArchiveGrid" Style="{StaticResource ReportGrid}" SelectionChanged="ArchiveSelection_Changed" AutomationProperties.Name="{loc:LocalizedText ReportsWindow.FixedVersionsOfReports}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Rapport" Binding="{Binding Value.Name}" Width="*" />
-                        <DataGridTextColumn Header="Date locale" Binding="{Binding Captured}" Width="145" />
-                        <DataGridTextColumn Header="État" Binding="{Binding Status}" Width="100" />
-                        <DataGridTextColumn Header="Version précédente" Binding="{Binding Parent}" Width="143" />
-                        <DataGridTextColumn Header="SHA-256" Binding="{Binding Value.Sha256}" Width="210" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Report}" Binding="{Binding Value.Name}" Width="*" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.LocalDate}" Binding="{Binding Captured}" Width="145" />
+                        <DataGridTextColumn Header="{loc:LocalizedText Common.State}" Binding="{Binding Status}" Width="100" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.PreviousVersion}" Binding="{Binding Parent}" Width="143" />
+                        <DataGridTextColumn Header="{loc:LocalizedText ReportsWindow.Sha256}" Binding="{Binding Value.Sha256}" Width="210" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel></TabItem>
         </TabControl>
         <DockPanel Grid.Row="2" Margin="0,8,0,0">
-            <WrapPanel DockPanel.Dock="Right"><Button x:Name="SaveDraft" Content="Enregistrer le dossier (Ctrl+S)" Click="Save_Click" Margin="0,0,7,0" /><Button Content="Retour au registre" IsCancel="True" /></WrapPanel>
+            <WrapPanel DockPanel.Dock="Right"><Button x:Name="SaveDraft" Content="{loc:LocalizedText ReportsWindow.SaveDocumentCtrlS}" Click="Save_Click" Margin="0,0,7,0" /><Button Content="{loc:LocalizedText ReportsWindow.ReturnToRegister}" IsCancel="True" /></WrapPanel>
             <TextBlock x:Name="Status" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
         </DockPanel>
     </Grid>

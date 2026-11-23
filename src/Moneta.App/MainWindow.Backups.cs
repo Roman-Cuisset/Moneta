@@ -11,7 +11,8 @@ public partial class MainWindow
 {
     private sealed record BackupKey(Guid DocumentId, string Destination);
     private sealed record BackupJob(BackupKey Key, BackupPolicy Policy, string Source, FinancialDocument Snapshot, BackupKind? Kind);
-    private sealed record BackupNotice(BackupVersion? Latest = null, string? Failure = null, string? Outcome = null);
+    private sealed record BackupNotice(BackupVersion? Latest = null, string? Failure = null, string? Outcome = null,
+        bool FailureAfterSave = false);
 
     private readonly BackupLibrary _backupLibrary;
     private readonly Func<BackupPolicy> _readBackupPolicy;
@@ -92,7 +93,7 @@ public partial class MainWindow
                     notice = notice with
                     {
                         Latest = result.Latest ?? notice.Latest,
-                        Outcome = result.RotationWarning ?? (result.Published is not null ? "Sauvegarde vérifiée et publiée." : null)
+                        Outcome = result.RotationWarning ?? (result.Published is not null ? L.Get("Backups.BackupVerifiedAndPublished") : null)
                     };
                 }
                 else
@@ -103,7 +104,7 @@ public partial class MainWindow
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                notice = notice with { Outcome = "Sauvegarde annulée." };
+                notice = notice with { Outcome = L.Get("Backups.BackupCanceled") };
             }
             catch (Exception error) when (error is DocumentException or IOException or UnauthorizedAccessException or
                 ArgumentException or NotSupportedException or InvalidOperationException)
@@ -111,24 +112,28 @@ public partial class MainWindow
                 failed = true;
                 var message = current.Kind switch
                 {
-                    BackupKind.AfterSave => "Dossier enregistré, mais sauvegarde automatique échouée.",
-                    BackupKind.Daily => "Sauvegarde quotidienne échouée.",
-                    BackupKind.Manual => "Sauvegarde immédiate échouée.",
-                    _ => "Historique des sauvegardes indisponible."
+                    BackupKind.AfterSave => L.Get("Backups.SavedDocumentButFailedAutoBackup"),
+                    BackupKind.Daily => L.Get("Backups.FailedDailyBackup"),
+                    BackupKind.Manual => L.Get("Backups.ImmediateBackupFailed"),
+                    _ => L.Get("Backups.BackupHistoryUnavailable")
                 };
                 var details = error switch
                 {
-                    UnauthorizedAccessException => "Accès refusé au répertoire des sauvegardes.",
-                    DirectoryNotFoundException => "Répertoire des sauvegardes indisponible.",
-                    IOException => "Vérifiez le répertoire de sauvegarde, l’espace disponible ou une sauvegarde déjà en cours.",
+                    UnauthorizedAccessException => L.Get("Backups.AccessDeniedToTheBackupDirectory"),
+                    DirectoryNotFoundException => L.Get("Backups.DirectoryOfBackupsNotAvailable"),
+                    IOException => L.Get("Backups.CheckTheBackupDirectoryAvailableSpaceOrA"),
                     _ => error.Message
                 };
-                notice = notice with { Failure = message + " " + details };
+                notice = notice with { Failure = message + " " + details, FailureAfterSave = current.Kind == BackupKind.AfterSave };
             }
             finally
             {
                 // Acknowledging a failure while background work was running must not restore it.
-                if (!failed) notice = notice with { Failure = Notice(current.Key).Failure };
+                if (!failed)
+                {
+                    var previous = Notice(current.Key);
+                    notice = notice with { Failure = previous.Failure, FailureAfterSave = previous.FailureAfterSave };
+                }
                 _backupNotices[current.Key] = notice;
                 _runningBackup = null;
                 _backupCancellation = null;
@@ -147,11 +152,11 @@ public partial class MainWindow
 
     private string DescribeBackup()
     {
-        if (CurrentBackupKey() is not { } key) return "Ouvrez un dossier enregistré pour consulter ses sauvegardes.";
+        if (CurrentBackupKey() is not { } key) return L.Get("Backups.OpenASavedDocumentToViewItsBackups");
         var notice = Notice(key);
         var published = notice.Latest is { } date
-            ? $"Dernière sauvegarde publiée : {date.CreatedUtc.ToLocalTime():dd/MM/yyyy HH:mm}."
-            : notice.Failure is null ? "Aucune version publiée dans cet emplacement." : "Dernière sauvegarde indisponible.";
+            ? L.Format("Backups.LastSavedPublished0MmDdYyyyHh", (date.CreatedUtc.ToLocalTime()))
+            : notice.Failure is null ? L.Get("Common.NoVersionPublishedInThisLocation") : L.Get("Backups.LastBackupUnavailable");
         var current = notice.Failure ?? notice.Outcome;
         return current is null ? published : $"{current} {published}";
     }
@@ -165,11 +170,11 @@ public partial class MainWindow
         BackupCancel.IsEnabled = running && _backupCancellation?.IsCancellationRequested == false;
         BackupStatus.Visibility = key is not null && (running || state.Failure is not null || state.Latest is not null || state.Outcome is not null)
             ? Visibility.Visible : Visibility.Collapsed;
-        BackupStatus.Text = running ? "Sauvegarde en cours…" : state.Failure is not null
-            ? (state.Failure.StartsWith("Dossier enregistré", StringComparison.Ordinal)
-                ? "Dossier enregistré, mais sauvegarde automatique échouée." : "Sauvegarde : consultez l’historique.")
+        BackupStatus.Text = running ? L.Get("Backups.BackingUp") : state.Failure is not null
+            ? (state.FailureAfterSave
+                ? L.Get("Backups.SavedDocumentButFailedAutoBackup") : L.Get("Backups.BackupSeeHistory"))
             : state.Outcome ?? (state.Latest is { } latest
-                ? $"Sauvegarde publiée le {latest.CreatedUtc.ToLocalTime():dd/MM HH:mm}" : "");
+                ? L.Format("Backups.BackupPublishedOn0DdMmHhMm", (latest.CreatedUtc.ToLocalTime())) : "");
         BackupStatus.ToolTip = DescribeBackup();
     }
 
@@ -188,7 +193,7 @@ public partial class MainWindow
         var failures = _backupNotices.Values.Select(notice => notice.Failure).OfType<string>().Distinct().ToArray();
         if (failures.Length == 0) return;
         MessageBox.Show(this, string.Join(Environment.NewLine + Environment.NewLine, failures),
-            "Moneta — sauvegardes à vérifier", MessageBoxButton.OK, MessageBoxImage.Warning);
+            L.Get("Backups.MonetaBackupsToCheck"), MessageBoxButton.OK, MessageBoxImage.Warning);
         foreach (var key in _backupNotices.Keys.ToArray())
             _backupNotices[key] = Notice(key) with { Failure = null };
     }

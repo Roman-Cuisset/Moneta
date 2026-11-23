@@ -60,7 +60,7 @@ public sealed partial class MonetaFile
 
     internal static string SchemaSql(int version)
     {
-        if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, "Schéma inconnu.");
+        if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.UnknownDiagram"));
         return string.Join(";\n", DocumentSql, CurrenciesSql, AccountsSql(version), HistorySql) + ";" +
             (version >= 4 ? LedgerSchemaSql4 : version == 3 ? LedgerSchemaSql : "") + (version >= 5 ? TransferSchemaSql : "") +
             (version >= 7 ? SchedulingSql : "") + (version >= 8 ? AnalysisSql : "");
@@ -82,9 +82,9 @@ public sealed partial class MonetaFile
     private static FinancialDocument ReadWithinTransaction(SqliteConnection connection, bool allowVersion1, SqliteTransaction transaction)
     {
         if (Integer(connection, "PRAGMA application_id;", transaction) != ApplicationId)
-            throw Error(DocumentError.InvalidFormat, "Cette base SQLite n’appartient pas à Moneta.");
+            throw Error(DocumentError.InvalidFormat, L.Get("MonetaFile.ThisSqliteDatabaseDoesNotBelongToMoneta"));
         var version = Integer(connection, "PRAGMA user_version;", transaction);
-        if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, "Version du dossier inconnue ou plus récente.");
+        if (version is < 1 or > CurrentSchemaVersion) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.VersionOfTheFileUnknownOrMoreRecent"));
         var hasProvenance = ValidateSchema(connection, (int)version, transaction);
         using (var integrity = connection.CreateCommand())
         {
@@ -92,14 +92,14 @@ public sealed partial class MonetaFile
             integrity.CommandText = "PRAGMA integrity_check;";
             using var reader = integrity.ExecuteReader();
             if (!reader.Read() || reader.GetString(0) != "ok" || reader.Read())
-                throw Error(DocumentError.Corrupt, "L’intégrité structurelle SQLite n’est pas confirmée.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.SqliteStructuralIntegrityIsNotConfirmed"));
         }
         using (var foreignKeys = connection.CreateCommand())
         {
             foreignKeys.Transaction = transaction;
             foreignKeys.CommandText = "PRAGMA foreign_key_check;";
             using var reader = foreignKeys.ExecuteReader();
-            if (reader.Read()) throw Error(DocumentError.Corrupt, "Référence de devise invalide.");
+            if (reader.Read()) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.InvalidCurrencyReference"));
         }
         Guid id;
         string name;
@@ -114,13 +114,13 @@ public sealed partial class MonetaFile
                 reader.GetInt64(5) != version || reader.GetInt64(6) != version ||
                 (reader.GetString(7) != "Moneta-6" && !(version >= 7 && reader.GetString(7) == "Moneta-7") &&
                  !(version >= 8 && reader.GetString(7) == "Moneta-8")))
-                throw Error(DocumentError.InvalidFormat, "Métadonnées Moneta incohérentes.");
+                throw Error(DocumentError.InvalidFormat, L.Get("MonetaFile.IncoherentMonetaMetadata"));
             id = ReadGuid(reader.GetString(2));
             name = reader.GetString(3);
             created = ReadTimestamp(reader.GetString(8));
             modified = ReadTimestamp(reader.GetString(9));
             selected = reader.IsDBNull(10) ? null : ReadGuid(reader.GetString(10));
-            if (reader.Read()) throw Error(DocumentError.Corrupt, "Métadonnées multiples.");
+            if (reader.Read()) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.MultipleMetadata"));
         }
         ValidateHistory(connection, (int)version, transaction, hasProvenance);
         var currencies = new List<Currency>();
@@ -131,7 +131,7 @@ public sealed partial class MonetaFile
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                if (reader.GetInt64(7) != currencies.Count) throw Error(DocumentError.Corrupt, "Ordre des devises invalide.");
+                if (reader.GetInt64(7) != currencies.Count) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.OrderOfInvalidCurrencies"));
                 currencies.Add(new Currency(reader.GetString(0), reader.GetString(1), checked((int)reader.GetInt64(2)))
                 {
                     Symbol = reader.GetString(3),
@@ -149,7 +149,7 @@ public sealed partial class MonetaFile
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                if (reader.GetInt64(8) != accounts.Count) throw Error(DocumentError.Corrupt, "Ordre des comptes invalide.");
+                if (reader.GetInt64(8) != accounts.Count) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.OrderOfAccountsInvalid"));
                 var currency = byCode[reader.GetString(3)];
                 accounts.Add(new Account(ReadGuid(reader.GetString(0)), reader.GetString(1), currency, ExactMoney.FromMinorUnits(reader.GetInt64(4), currency))
                 {
@@ -169,14 +169,14 @@ public sealed partial class MonetaFile
         try { ValidateSnapshot(document, allowLegacy: true); }
         catch (DocumentException exception) when (exception.Error == DocumentError.InvalidData)
         {
-            throw new DocumentException(DocumentError.Corrupt, "Les données enregistrées violent les invariants du dossier.", exception);
+            throw new DocumentException(DocumentError.Corrupt, L.Get("MonetaFile.TheRecordedDataViolatesTheFileSInvariants"), exception);
         }
         if (version >= 3) document = ReadLedgerMetadata(connection, document, transaction);
         if (hasProvenance)
             document = document with { BankPerfectProvenanceHash = VerifyBankPerfectProvenance(connection, transaction) };
         if (version >= 7) document = ReadSchedule(connection, document, transaction);
         if (version >= 8) document = ReadAnalysis(connection, document, transaction);
-        if (version < CurrentSchemaVersion && !allowVersion1) throw Error(DocumentError.MigrationRequired, "Ce dossier doit être migré sur une nouvelle copie avec consentement.");
+        if (version < CurrentSchemaVersion && !allowVersion1) throw Error(DocumentError.MigrationRequired, L.Get("MonetaFile.ThisFileMustBeMigratedToANew"));
         return Freeze(document);
     }
 
@@ -246,9 +246,9 @@ public sealed partial class MonetaFile
             if (type == "index" && !reader.IsDBNull(3) && declaredIndexes.TryGetValue(name, out var declared) &&
                 reader.GetString(2) == declared.Table && CanonicalSql(reader.GetString(3)) == CanonicalSql(declared.Sql) && seenIndexes.Add(name)) continue;
             if (type != "table" || !expected.TryGetValue(name, out var sql) || reader.GetString(2) != name || reader.IsDBNull(3) || CanonicalSql(reader.GetString(3)) != CanonicalSql(sql) || !seen.Add(name))
-                throw Error(DocumentError.InvalidFormat, "Schéma non reconnu : table, index, vue ou déclencheur inattendu.");
+                throw Error(DocumentError.InvalidFormat, L.Get("MonetaFile.UnrecognizedDiagramTableIndexViewOrUnexpectedTrigger"));
         }
-        if (seen.Count != expected.Count || seenIndexes.Count != indexes.Count + declaredIndexes.Count) throw Error(DocumentError.InvalidFormat, "Schéma Moneta incomplet.");
+        if (seen.Count != expected.Count || seenIndexes.Count != indexes.Count + declaredIndexes.Count) throw Error(DocumentError.InvalidFormat, L.Get("MonetaFile.IncompleteMonetaDiagram"));
         return hasProvenance;
     }
 
@@ -272,15 +272,15 @@ public sealed partial class MonetaFile
         try
         {
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is >= 1 and < CurrentSchemaVersion)) throw new ArgumentException("Version du snapshot invalide.");
+            if (snapshot.SchemaVersion != CurrentSchemaVersion && !(allowLegacy && snapshot.SchemaVersion is >= 1 and < CurrentSchemaVersion)) throw new ArgumentException(L.Get("MonetaFile.InvalidSnapshotVersion"));
             if (snapshot.SchemaVersion >= 7) ValidateSchedule(snapshot);
             if (snapshot.SchemaVersion >= 8) ValidateAnalysis(snapshot);
-            if (snapshot.Id == Guid.Empty) throw new ArgumentException("Identifiant du dossier vide.");
+            if (snapshot.Id == Guid.Empty) throw new ArgumentException(L.Get("MonetaFile.EmptyDocumentId"));
             ValidateText(snapshot.Name, true);
             ValidateTimes(snapshot.CreatedUtc, snapshot.ModifiedUtc);
-            if (snapshot.Currencies is null || snapshot.Accounts is null) throw new ArgumentException("Collections du dossier absentes.");
+            if (snapshot.Currencies is null || snapshot.Accounts is null) throw new ArgumentException(L.Get("MonetaFile.DocumentCollectionsAreMissing"));
             var registry = new CurrencyRegistry(snapshot.Currencies);
-            if (registry.Currencies.Count != snapshot.Currencies.Count) throw new ArgumentException("Code devise dupliqué.");
+            if (registry.Currencies.Count != snapshot.Currencies.Count) throw new ArgumentException(L.Get("MonetaFile.DuplicatedCurrencyCode"));
             foreach (var currency in snapshot.Currencies)
             {
                 ValidateText(currency.Name, true);
@@ -290,7 +290,7 @@ public sealed partial class MonetaFile
             var ids = new HashSet<Guid>();
             foreach (var account in snapshot.Accounts)
             {
-                if (account is null || account.Id == Guid.Empty || !ids.Add(account.Id)) throw new ArgumentException("Identifiant du compte vide ou dupliqué.");
+                if (account is null || account.Id == Guid.Empty || !ids.Add(account.Id)) throw new ArgumentException(L.Get("MonetaFile.IdentifierOfEmptyOrDuplicatedAccount"));
                 ValidateText(account.Name, true);
                 ValidateText(account.Type, false);
                 ValidateText(account.Notes, false);
@@ -298,46 +298,46 @@ public sealed partial class MonetaFile
                 ValidateAccountField(account.BankReference, 120);
                 ValidateAccountField(account.Holder, 120);
                 ValidateTimes(account.CreatedUtc, account.ModifiedUtc);
-                if (registry.Get(account.Currency.Code) != account.Currency) throw new ArgumentException("Définition de devise du compte incohérente.");
+                if (registry.Get(account.Currency.Code) != account.Currency) throw new ArgumentException(L.Get("MonetaFile.DefinitionOfTheCurrencyOfTheInconsistentAccount"));
                 _ = ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency);
             }
-            if (snapshot.SelectedAccountId is { } selected && !ids.Contains(selected)) throw new ArgumentException("Compte sélectionné absent.");
+            if (snapshot.SelectedAccountId is { } selected && !ids.Contains(selected)) throw new ArgumentException(L.Get("MonetaFile.SelectedAccountMissing"));
             FinancialRules.ValidateCatalog(snapshot);
         }
         catch (Exception exception) when (exception is ArgumentException or OverflowException or NullReferenceException)
         {
-            throw new DocumentException(DocumentError.InvalidData, "Données du dossier invalides : " + exception.Message, exception);
+            throw new DocumentException(DocumentError.InvalidData, L.Get("MonetaFile.InvalidFileData") + exception.Message, exception);
         }
     }
 
     private static void ValidateText(string? value, bool required)
     {
         if ((required && string.IsNullOrWhiteSpace(value)) || value?.Length > 1_000_000 || value?.Contains('\0') == true)
-            throw new ArgumentException("Texte vide, trop long ou contenant NUL.");
+            throw new ArgumentException(L.Get("MonetaFile.TextIsEmptyTooLongOrContainsNul"));
     }
 
     private static void ValidateAccountField(string? value, int maxLength)
     {
         if (value?.Length > maxLength || value?.Contains('\0') == true)
-            throw new ArgumentException("Information bancaire trop longue ou contenant NUL.");
+            throw new ArgumentException(L.Get("MonetaFile.BankInformationTooLongOrContainingNul"));
     }
 
     private static void ValidateTimes(DateTimeOffset created, DateTimeOffset modified)
     {
         if (created == default || modified == default || created.Offset != TimeSpan.Zero || modified.Offset != TimeSpan.Zero || modified < created)
-            throw new ArgumentException("Horodatages UTC chronologiques requis.");
+            throw new ArgumentException(L.Get("MonetaFile.TimedUtcTimestampsRequired"));
     }
 
     private static Guid ReadGuid(string value)
     {
-        if (!Guid.TryParseExact(value, "D", out var id) || id == Guid.Empty || id.ToString("D") != value) throw Error(DocumentError.Corrupt, "UUID non canonique.");
+        if (!Guid.TryParseExact(value, "D", out var id) || id == Guid.Empty || id.ToString("D") != value) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.UidNonCanonical"));
         return id;
     }
 
     private static DateTimeOffset ReadTimestamp(string value)
     {
         if (!DateTimeOffset.TryParseExact(value, "O", CultureInfo.InvariantCulture, DateTimeStyles.None, out var timestamp) || timestamp.Offset != TimeSpan.Zero || timestamp.ToString("O", CultureInfo.InvariantCulture) != value)
-            throw Error(DocumentError.Corrupt, "Horodatage UTC non canonique.");
+            throw Error(DocumentError.Corrupt, L.Get("MonetaFile.NonCanonicalUtcTimeStamping"));
         return timestamp;
     }
 
@@ -345,7 +345,7 @@ public sealed partial class MonetaFile
     {
         0 => false,
         1 => true,
-        _ => throw Error(DocumentError.Corrupt, "Booléen invalide.")
+        _ => throw Error(DocumentError.Corrupt, L.Get("MonetaFile.InvalidBoolean"))
     };
 
     private static void ValidateHistory(SqliteConnection connection, int version, SqliteTransaction transaction, bool hasProvenance)
@@ -354,56 +354,56 @@ public sealed partial class MonetaFile
         command.Transaction = transaction;
         command.CommandText = "SELECT version,from_version,migration_id,definition,applied_utc FROM MigrationHistory ORDER BY version;";
         using var reader = command.ExecuteReader();
-        if (!reader.Read()) throw Error(DocumentError.Corrupt, "Historique de schéma absent.");
+        if (!reader.Read()) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfMissingSchema"));
         var first = reader.GetInt64(0);
         var definition = $"native-accounts-v{first}" + (hasProvenance ? "+bankperfect-v1" : "");
         if (reader.GetInt64(1) != 0 || first < 1 || first > version ||
             (hasProvenance && first < 5) || reader.GetString(2) != $"create-v{first}" || reader.GetString(3) != definition)
-            throw Error(DocumentError.Corrupt, "Origine du schéma inconnue.");
+            throw Error(DocumentError.Corrupt, L.Get("MonetaFile.OriginOfTheUnknownSchema"));
         _ = ReadTimestamp(reader.GetString(4));
         if (first == 1 && version >= 2)
         {
             if (!reader.Read() || reader.GetInt64(0) != 2 || reader.GetInt64(1) != 1 || reader.GetString(2) != "v1-to-v2-archive" || reader.GetString(3) != "add-is-archived-default-false")
-                throw Error(DocumentError.Corrupt, "Historique de migration incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfIncompleteMigration"));
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (first <= 2 && version >= 3)
         {
             if (!reader.Read() || reader.GetInt64(0) != 3 || reader.GetInt64(1) != 2 || reader.GetString(2) != "v2-to-v3-ledger" || reader.GetString(3) != "normalized-ledger-v3")
-                throw Error(DocumentError.Corrupt, "Historique de migration du registre incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfIncompleteRegistryMigration"));
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (first <= 3 && version >= 4)
         {
             if (!reader.Read() || reader.GetInt64(0) != 4 || reader.GetInt64(1) != 3 || reader.GetString(2) != "v3-to-v4-reconciliation" || reader.GetString(3) != "pointing-and-statement-history-v4")
-                throw Error(DocumentError.Corrupt, "Historique du rapprochement incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfIncompleteReconciliation"));
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (first <= 4 && version >= 5)
         {
             if (!reader.Read() || reader.GetInt64(0) != 5 || reader.GetInt64(1) != 4 || reader.GetString(2) != "v4-to-v5-transfers" || reader.GetString(3) != "linked-transfer-legs-v5")
-                throw Error(DocumentError.Corrupt, "Historique des virements incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfIncompleteTransfers"));
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (first <= 5 && version >= 6)
         {
             if (!reader.Read() || reader.GetInt64(0) != 6 || reader.GetInt64(1) != 5 || reader.GetString(2) != "v5-to-v6-account-properties" || reader.GetString(3) != "account-descriptions-v6")
-                throw Error(DocumentError.Corrupt, "Historique des propriétés de comptes incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfIncompleteAccountProperties"));
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (first <= 6 && version >= 7)
         {
             if (!reader.Read() || reader.GetInt64(0) != 7 || reader.GetInt64(1) != 6 || reader.GetString(2) != "v6-to-v7-schedule" || reader.GetString(3) != "schedule-and-decisions-v7")
-                throw Error(DocumentError.Corrupt, "Historique de migration de l’échéancier incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfMigrationOfIncompleteSchedule"));
             _ = ReadTimestamp(reader.GetString(4));
         }
         if (first <= 7 && version >= 8)
         {
             if (!reader.Read() || reader.GetInt64(0) != 8 || reader.GetInt64(1) != 7 || reader.GetString(2) != "v7-to-v8-analysis" || reader.GetString(3) != "budgets-and-frozen-reports-v8")
-                throw Error(DocumentError.Corrupt, "Historique de migration des budgets et rapports incomplet.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.HistoryOfMigrationOfBudgetsAndIncompleteReports"));
             _ = ReadTimestamp(reader.GetString(4));
         }
-        if (reader.Read()) throw Error(DocumentError.Corrupt, "Migration inconnue.");
+        if (reader.Read()) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.UnknownMigration"));
     }
 
     private static void InsertHistory(SqliteConnection connection, SqliteTransaction transaction, int version, int from, string id, string definition)
@@ -422,7 +422,7 @@ public sealed partial class MonetaFile
     internal static void UpgradeV1(SqliteConnection connection)
     {
         var original = ReadValidated(connection, true);
-        if (original.SchemaVersion != 1) throw Error(DocumentError.UnsupportedVersion, "Seul le brouillon interne v1 peut être migré.");
+        if (original.SchemaVersion != 1) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.OnlyTheInternalDraftV1CanBeMigrated"));
         using var transaction = connection.BeginTransaction();
         Execute(connection, "ALTER TABLE Accounts RENAME TO Accounts_v1;" + AccountsSql(2) + "; INSERT INTO Accounts(account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal,is_archived) SELECT account_id,name,type,native_code,opening_minor,notes,created_utc,modified_utc,ordinal,0 FROM Accounts_v1; DROP TABLE Accounts_v1; UPDATE Document SET schema_version=2,min_reader=2,min_writer=2; PRAGMA user_version=2;", transaction);
         InsertHistory(connection, transaction, 2, 1, "v1-to-v2-archive", "add-is-archived-default-false");

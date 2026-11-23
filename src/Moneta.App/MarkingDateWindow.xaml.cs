@@ -7,7 +7,7 @@ namespace Moneta.App;
 
 public partial class MarkingDateWindow : Window
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly MainViewModel _model;
     private readonly TransactionSelection _selection;
     private bool _submitting;
@@ -19,7 +19,7 @@ public partial class MarkingDateWindow : Window
         _model = model;
         _selection = selection;
         InitializeComponent();
-        MarkingDate.Text = (currentDate ?? DateOnly.FromDateTime(DateTime.Today)).ToString("dd/MM/yyyy", French);
+        MarkingDate.Text = (currentDate ?? DateOnly.FromDateTime(DateTime.Today)).ToString(L.DatePattern, DisplayCulture);
         Loaded += (_, _) => { MarkingDate.Focus(); MarkingDate.SelectAll(); };
     }
 
@@ -27,10 +27,10 @@ public partial class MarkingDateWindow : Window
     {
         if (_submitting)
             return;
-        if (!DateOnly.TryParseExact(MarkingDate.Text.Trim(), "dd/MM/yyyy", French, DateTimeStyles.None, out var date)
+        if (!DateOnly.TryParseExact(MarkingDate.Text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date)
             || date == default || date > DateOnly.FromDateTime(DateTime.Today))
         {
-            ErrorText.Text = "Saisissez une date valide au format jj/mm/aaaa, au plus tard aujourd’hui.";
+            ErrorText.Text = L.Get("MarkingDateWindow.EnterAValidDateInMmDdYyyy");
             MarkingDate.Focus();
             return;
         }
@@ -43,7 +43,7 @@ public partial class MarkingDateWindow : Window
         }
         catch (Exception error)
         {
-            ErrorText.Text = "La date n’a pas été modifiée. Votre saisie est conservée.\n" + error.Message;
+            ErrorText.Text = L.Get("MarkingDateWindow.TheDateHasNotBeenChangedYourEntry") + error.Message;
             _submitting = false;
             ConfirmMarkingDate.IsEnabled = true;
         }

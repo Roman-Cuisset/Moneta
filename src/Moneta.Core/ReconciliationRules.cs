@@ -16,17 +16,17 @@ public static class ReconciliationRules
     public static void ValidateReason(string reason)
     {
         if (string.IsNullOrWhiteSpace(reason) || reason.Length > 1000)
-            throw new ArgumentException("Un motif non vide, limité à 1 000 caractères, est obligatoire.", nameof(reason));
+            throw new ArgumentException(L.Get("ReconciliationRules.ANonEmptyPatternLimitedTo1000"), nameof(reason));
     }
 
     public static void ValidatePointing(Transaction value, bool pointed, DateOnly markedOn, DateOnly today)
     {
         if (value.IsDeleted || value.Status == ReconciliationStatus.Reconciled)
-            throw new InvalidOperationException("Une opération rapprochée ou supprimée ne peut pas être pointée ou dépointée. Rouvrez d’abord son rapprochement.");
+            throw new InvalidOperationException(L.Get("ReconciliationRules.ACloseUpOrDeletedTransactionCannotBe"));
         if (pointed && (markedOn == default || markedOn > today))
-            throw new ArgumentException("La date de pointage doit être renseignée et ne peut pas être future.", nameof(markedOn));
+            throw new ArgumentException(L.Get("ReconciliationRules.TheDateOfTheScoreMustBeGiven"), nameof(markedOn));
         if (pointed && value.Status == ReconciliationStatus.Unmarked && value.Date > today)
-            throw new InvalidOperationException("Une opération future ne peut pas être pointée.");
+            throw new InvalidOperationException(L.Get("ReconciliationRules.AFutureTransactionCannotBeClearedTo"));
     }
 
     // Historical validation deliberately has no today check: rewinding the clock must
@@ -38,29 +38,29 @@ public static class ReconciliationRules
             session.StatementNumber is null || session.StatementNumber.Length > 120 ||
             session.ValidatedUtc == default || session.ValidatedUtc.Offset != TimeSpan.Zero ||
             !Enum.IsDefined(session.State))
-            throw new ArgumentException("Relevé de rapprochement invalide.", nameof(session));
+            throw new ArgumentException(L.Get("ReconciliationRules.InvalidReconciliationRecord"), nameof(session));
         _ = ExactMoney.ToMinorUnits(session.OpeningBalance, account.Currency);
         _ = ExactMoney.ToMinorUnits(session.ExpectedClosingBalance, account.Currency);
         _ = ExactMoney.ToMinorUnits(session.CalculatedBalance, account.Currency);
         if (previous is null)
         {
             if (session.PreviousSessionId is not null || session.OpeningBalance != account.OpeningBalance)
-                throw new ArgumentException("Le premier relevé doit partir du solde initial du compte.");
+                throw new ArgumentException(L.Get("ReconciliationRules.TheFirstStatementMustBeTakenFromThe"));
         }
         else if (previous.AccountId != account.Id ||
             session.PreviousSessionId != previous.Id || session.OpeningBalance != previous.ExpectedClosingBalance ||
             session.StatementDate <= previous.StatementDate)
-            throw new ArgumentException("La chaîne des relevés actifs est incohérente.");
+            throw new ArgumentException(L.Get("ReconciliationRules.TheChainOfActiveSurveysIsInconsistent"));
         if (session.State == ReconciliationSessionState.Validated)
         {
             if (session.Revision != 1 || session.ReopenedUtc is not null || session.ReopenReason is not null)
-                throw new ArgumentException("État du relevé validé incohérent.");
+                throw new ArgumentException(L.Get("ReconciliationRules.IncoherentValidatedSurveyStatus"));
         }
         else
         {
             if (session.Revision != 2 || session.ReopenedUtc is not { } reopened ||
                 reopened.Offset != TimeSpan.Zero || reopened < session.ValidatedUtc)
-                throw new ArgumentException("État du relevé rouvert incohérent.");
+                throw new ArgumentException(L.Get("ReconciliationRules.IncoherentReOpeningStatus"));
             ValidateReason(session.ReopenReason!);
         }
         var ids = new HashSet<Guid>();
@@ -75,11 +75,11 @@ public static class ReconciliationRules
                 value.Currency.DecimalPlaces != account.Currency.DecimalPlaces || value.Amount < 0 ||
                 value.Revision < 1 || !Enum.IsDefined(value.Direction) ||
                 (value.Status == ReconciliationStatus.Unmarked && value.MarkedOn is not null) || value.MarkedOn == default(DateOnly))
-                throw new ArgumentException("Une opération du relevé est invalide, dupliquée ou inéligible.");
+                throw new ArgumentException(L.Get("ReconciliationRules.ASurveyTransactionIsInvalidDuplicatedOrIneligible"));
             _ = ExactMoney.ToMinorUnits(value.Amount, value.Currency);
             calculated = checked(calculated + FinancialRules.SignedAmount(value));
         }
         if (calculated != session.CalculatedBalance || calculated != session.ExpectedClosingBalance)
-            throw new ArgumentException("L’écart du relevé doit être exactement nul.");
+            throw new ArgumentException(L.Get("ReconciliationRules.TheDeviationOfTheReadingShallBeExactly"));
     }
 }

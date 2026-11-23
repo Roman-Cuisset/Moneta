@@ -50,9 +50,9 @@ public sealed class OfficialRateClient : IOfficialRateSource, IDisposable
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
             // Redirects are HTTP failures; never contact a supplied Location or another provider.
             if (!response.IsSuccessStatusCode)
-                throw new RateException(RateFailure.Http, $"Le service officiel a répondu HTTP {(int)response.StatusCode}.");
+                throw new RateException(RateFailure.Http, L.FormatCanonical("OfficialRateClient.TheOfficialServiceRepliedHttp0", ((int)response.StatusCode)));
             if (response.Content.Headers.ContentLength > OfficialRateParsers.MaximumPayloadBytes)
-                throw new RateException(RateFailure.InvalidResponse, "La réponse de cours dépasse la taille autorisée.");
+                throw new RateException(RateFailure.InvalidResponse, L.GetCanonical("OfficialRateClient.TheRateResponseExceedsTheAuthorizedSize"));
             await using var body = await response.Content.ReadAsStreamAsync(deadline.Token).ConfigureAwait(false);
             using var buffer = new MemoryStream();
             var block = new byte[8192];
@@ -61,7 +61,7 @@ public sealed class OfficialRateClient : IOfficialRateSource, IDisposable
                 var read = await body.ReadAsync(block, deadline.Token).ConfigureAwait(false);
                 if (read == 0) break;
                 if (buffer.Length + read > OfficialRateParsers.MaximumPayloadBytes)
-                    throw new RateException(RateFailure.InvalidResponse, "La réponse de cours dépasse la taille autorisée.");
+                    throw new RateException(RateFailure.InvalidResponse, L.GetCanonical("OfficialRateClient.TheRateResponseExceedsTheAuthorizedSize"));
                 buffer.Write(block, 0, read);
             }
             deadline.Token.ThrowIfCancellationRequested();
@@ -77,15 +77,15 @@ public sealed class OfficialRateClient : IOfficialRateSource, IDisposable
         }
         catch (OperationCanceledException ex) when (deadline.IsCancellationRequested)
         {
-            throw new RateException(RateFailure.Timeout, "Le délai de réponse du service officiel est dépassé.", ex);
+            throw new RateException(RateFailure.Timeout, L.GetCanonical("OfficialRateClient.TheResponseTimeOfTheOfficialServiceIs"), ex);
         }
         catch (HttpRequestException ex)
         {
-            throw new RateException(RateFailure.Network, "Le service officiel est inaccessible.", ex);
+            throw new RateException(RateFailure.Network, L.GetCanonical("OfficialRateClient.TheOfficialServiceIsInaccessible"), ex);
         }
         catch (IOException ex)
         {
-            throw new RateException(RateFailure.Network, "La réponse du service officiel a été interrompue.", ex);
+            throw new RateException(RateFailure.Network, L.GetCanonical("OfficialRateClient.TheResponseOfTheOfficialServiceWasInterrupted"), ex);
         }
     }
 

@@ -28,7 +28,7 @@ public static class MonetaBackup
     {
         ArgumentNullException.ThrowIfNull(source);
         return Execute(() => CreateCore(source.Connection, source.Snapshot, destination, default, null),
-            "Création de la sauvegarde impossible.");
+            L.Get("MonetaBackup.CreatingTheImpossibleBackup"));
     }
 
     internal static BackupResult CreateFromCommitted(string sourcePath, FinancialDocument expected, string destination,
@@ -37,7 +37,7 @@ public static class MonetaBackup
         cancellation.ThrowIfCancellationRequested();
         using var source = MonetaFile.OpenConnection(ExistingPath(sourcePath), readOnly: true);
         return CreateCore(source, expected, destination, cancellation, phase);
-    }, "Création de la sauvegarde impossible.");
+    }, L.Get("MonetaBackup.CreatingTheImpossibleBackup"));
 
     private static BackupResult CreateCore(SqliteConnection source, FinancialDocument snapshot, string destination,
         CancellationToken cancellation, Action<BackupPhase>? phase, bool allowLegacy = false)
@@ -51,7 +51,7 @@ public static class MonetaBackup
             cancellation.ThrowIfCancellationRequested();
             var expected = Digest(snapshot);
             var live = MonetaFile.ReadValidated(source, allowLegacy);
-            RequireEqual(expected, Digest(live), "Le dossier actif a changé depuis son ouverture ou sa dernière sauvegarde.");
+            RequireEqual(expected, Digest(live), L.Get("MonetaBackup.TheActiveDocumentHasChangedSinceItsOpening"));
             cancellation.ThrowIfCancellationRequested();
             temporary = ReserveTemporary(target);
             var copied = CopyDatabase(source, temporary, allowLegacy, beforeVerification: () =>
@@ -59,7 +59,7 @@ public static class MonetaBackup
                 phase?.Invoke(BackupPhase.Verification);
                 cancellation.ThrowIfCancellationRequested();
             });
-            RequireEqual(expected, Digest(copied), "La copie SQLite ne correspond pas au dossier actif.");
+            RequireEqual(expected, Digest(copied), L.Get("MonetaBackup.TheSqliteCopyDoesNotMatchTheActive"));
             cancellation.ThrowIfCancellationRequested();
             using (var bytes = new FileStream(temporary, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
                 bytes.Flush(flushToDisk: true);
@@ -95,7 +95,7 @@ public static class MonetaBackup
         var snapshot = MonetaFile.ReadValidated(source, allowVersion1: true);
         VerifySnapshot(snapshot, manifest);
         return new BackupInspection(new(sourcePath, manifest.Sha256, manifest.DocumentId), manifest.ManifestVersion, manifest.Length, snapshot);
-    }, "Vérification de la sauvegarde impossible.");
+    }, L.Get("MonetaBackup.CheckingTheImpossibleBackup"));
 
     internal static void VerifyCertifiedBytes(string archive, BackupVersion version) => Execute(() =>
     {
@@ -103,11 +103,11 @@ public static class MonetaBackup
         var manifest = ReadManifest(archive + ".manifest.json");
         if (manifest.DocumentId != version.DocumentId || manifest.SchemaVersion != version.SchemaVersion ||
             manifest.Length != version.Length)
-            throw new DocumentException(DocumentError.VerificationFailed, "Le manifeste ne correspond pas à la version publiée.");
-        RequireEqual(version.Sha256, manifest.Sha256, "L’empreinte ne correspond pas à la version publiée.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.TheManifestDoesNotCorrespondToThePublished"));
+        RequireEqual(version.Sha256, manifest.Sha256, L.Get("MonetaBackup.ThePrintDoesNotMatchThePublishedVersion"));
         VerifyFile(bytes, manifest);
         return true;
-    }, "Vérification de la dernière version impossible.");
+    }, L.Get("MonetaBackup.CheckingTheLatestVersionImpossible"));
 
     public static MonetaFile Restore(string backup, string destination) => Execute(() =>
     {
@@ -134,7 +134,7 @@ public static class MonetaBackup
             return PublishAndOpen(ref temporary, target, expected);
         }
         finally { DeleteTemporary(temporary); }
-    }, "Restauration de la sauvegarde impossible.");
+    }, L.Get("MonetaBackup.RestoringTheImpossibleBackup"));
 
     public static MonetaFile Migrate(string source, string destination, string? preMigrationBackup = null) => Execute(() =>
     {
@@ -150,19 +150,19 @@ public static class MonetaBackup
                 var originalHash = Hash(sourceBytes);
                 var original = MonetaFile.ReadValidated(connection, allowVersion1: true);
                 if (original.SchemaVersion is < 1 or >= MonetaFile.CurrentSchemaVersion)
-                    throw new DocumentException(DocumentError.InvalidData, "Le dossier ne nécessite pas de migration par copie.");
+                    throw new DocumentException(DocumentError.InvalidData, L.Get("MonetaBackup.TheDocumentDoesNotRequireCopyMigration"));
                 if (preMigrationBackup is not null)
                     _ = CreateCore(connection, original, preMigrationBackup, default, null, allowLegacy: true);
                 temporary = ReserveTemporary(target);
                 var copied = CopyDatabase(connection, temporary, allowLegacy: true);
-                RequireEqual(Digest(original), Digest(copied), "La copie avant migration diffère du dossier source.");
+                RequireEqual(Digest(original), Digest(copied), L.Get("MonetaBackup.TheCopyBeforeMigrationDiffersFromTheSource"));
                 expected = Digest(UpgradeCopy(temporary, copied));
-                RequireEqual(originalHash, Hash(sourceBytes), "Le dossier source a changé pendant la migration.");
+                RequireEqual(originalHash, Hash(sourceBytes), L.Get("MonetaBackup.TheSourceDocumentChangedDuringTheMigration"));
             }
             return PublishAndOpen(ref temporary, target, expected);
         }
         finally { DeleteTemporary(temporary); }
-    }, "Migration par copie impossible.");
+    }, L.Get("MonetaBackup.MigrationByImpossibleCopy"));
 
     public static MonetaFile SaveAs(MonetaFile source, string destination, FinancialDocument metadata,
         IReadOnlyCollection<TransactionChange> changes, ReconciliationBatch? reconciliation = null,
@@ -177,10 +177,10 @@ public static class MonetaBackup
         {
             var baseline = Digest(source.Snapshot);
             RequireEqual(baseline, Digest(MonetaFile.ReadValidated(source.Connection)),
-                "Le dossier actif a changé depuis son ouverture ou sa dernière sauvegarde.");
+                L.Get("MonetaBackup.TheActiveDocumentHasChangedSinceItsOpening"));
             temporary = ReserveTemporary(target);
             var copied = CopyDatabase(source.Connection, temporary);
-            RequireEqual(baseline, Digest(copied), "La copie SQLite ne correspond pas au dossier actif.");
+            RequireEqual(baseline, Digest(copied), L.Get("MonetaBackup.TheSqliteCopyDoesNotMatchTheActive"));
             string expected;
             // Only the owned work copy is writable; failure leaves the source and drafts untouched.
             using (var candidate = MonetaFile.Open(temporary))
@@ -194,7 +194,7 @@ public static class MonetaBackup
             return PublishAndOpen(ref temporary, target, expected);
         }
         finally { DeleteTemporary(temporary); }
-    }, "Enregistrement sous un nouveau nom impossible.");
+    }, L.Get("MonetaBackup.RegistrationUnderAnImpossibleNewName"));
 
     private static FinancialDocument UpgradeCopy(string path, FinancialDocument original)
     {
@@ -217,10 +217,10 @@ public static class MonetaBackup
             _ => upgraded with { SchemaVersion = original.SchemaVersion }
         };
         RequireEqual(Digest(original), Digest(originalRepresentation),
-            "La migration a modifié les données du dossier.");
+            L.Get("MonetaBackup.MigrationChangedTheFileData"));
         if (original.SchemaVersion <= 2 && (upgraded.OperationCount != 0 || upgraded.Categories.Count != 0 ||
             upgraded.Payees.Count != 0 || upgraded.PaymentMethods.Count != 0))
-            throw new DocumentException(DocumentError.VerificationFailed, "La migration a ajouté des données financières.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.MigrationHasAddedFinancialData"));
         MakeStandalone(connection);
         return upgraded;
     }
@@ -243,24 +243,24 @@ public static class MonetaBackup
         using (var reader = command.ExecuteReader())
         {
             if (!reader.Read() || reader.GetInt64(0) != 0)
-                throw new DocumentException(DocumentError.Locked, "La copie SQLite ne peut pas être consolidée.");
+                throw new DocumentException(DocumentError.Locked, L.Get("MonetaBackup.TheSqliteCopyCannotBeConsolidated"));
         }
         command.CommandText = "PRAGMA journal_mode=DELETE;";
         if (!string.Equals(command.ExecuteScalar()?.ToString(), "delete", StringComparison.OrdinalIgnoreCase))
-            throw new DocumentException(DocumentError.VerificationFailed, "La sauvegarde dépend encore d'un journal SQLite.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.TheBackupStillDependsOnASqliteLog"));
     }
 
     private static MonetaFile PublishAndOpen(ref string? temporary, string destination, string expected)
     {
         // Reopen the standalone copy without creating a temporary ownership-lock file.
         using (var check = MonetaFile.OpenConnection(temporary!, readOnly: true))
-            RequireEqual(expected, Digest(MonetaFile.ReadValidated(check)), "La réouverture de la copie a changé ses données.");
+            RequireEqual(expected, Digest(MonetaFile.ReadValidated(check)), L.Get("MonetaBackup.TheReOpeningOfTheCopyChangedIts"));
         File.Move(temporary!, destination, overwrite: false);
         temporary = null;
         var result = MonetaFile.Open(destination);
         try
         {
-            RequireEqual(expected, Digest(result.Snapshot), "Le dossier publié ne correspond pas à la copie vérifiée.");
+            RequireEqual(expected, Digest(result.Snapshot), L.Get("MonetaBackup.ThePublishedFileDoesNotMatchTheVerified"));
             return result;
         }
         catch { result.Dispose(); throw; }
@@ -276,17 +276,17 @@ public static class MonetaBackup
     private static Certification ReadManifest(string path)
     {
         if (!File.Exists(path))
-            throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde absent : cette copie n'est pas certifiée.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.AbsenceOfBackupManifestThisCopyIsNot"));
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (stream.Length is <= 0 or > 65536)
-            throw new DocumentException(DocumentError.VerificationFailed, "Taille du manifeste de sauvegarde invalide.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.SizeOfTheInvalidBackupManifest"));
         Certification? manifest;
         try { manifest = JsonSerializer.Deserialize<Certification>(stream, ManifestJson); }
-        catch (JsonException ex) { throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde illisible.", ex); }
+        catch (JsonException ex) { throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.UnreadableBackupManifest"), ex); }
         if (manifest is null || manifest.ManifestVersion != ManifestVersion || manifest.SchemaVersion is < 1 or > MonetaFile.CurrentSchemaVersion ||
             manifest.DocumentId == Guid.Empty || manifest.Length <= 0 || manifest.CurrencyCount < 0 || manifest.AccountCount < 0 ||
             !ValidHash(manifest.Sha256) || !ValidHash(manifest.SnapshotDigest))
-            throw new DocumentException(DocumentError.VerificationFailed, "Manifeste de sauvegarde invalide ou non pris en charge.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.InvalidOrUnsupportedBackupManifest"));
         return manifest;
     }
 
@@ -295,16 +295,16 @@ public static class MonetaBackup
     private static void VerifyFile(FileStream stream, Certification manifest)
     {
         if (stream.Length != manifest.Length)
-            throw new DocumentException(DocumentError.VerificationFailed, "La taille de la sauvegarde ne correspond pas au manifeste.");
-        RequireEqual(manifest.Sha256, Hash(stream), "L'empreinte SHA-256 de la sauvegarde ne correspond pas au manifeste.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.TheSizeOfTheBackupDoesNotMatch"));
+        RequireEqual(manifest.Sha256, Hash(stream), L.Get("MonetaBackup.TheSha256FingerprintOfTheBackupDoes"));
     }
 
     private static void VerifySnapshot(FinancialDocument snapshot, Certification manifest)
     {
         if (snapshot.Id != manifest.DocumentId || snapshot.SchemaVersion != manifest.SchemaVersion ||
             snapshot.Currencies.Count != manifest.CurrencyCount || snapshot.Accounts.Count != manifest.AccountCount)
-            throw new DocumentException(DocumentError.VerificationFailed, "L'identité ou le contenu de la sauvegarde ne correspond pas au manifeste.");
-        RequireEqual(manifest.SnapshotDigest, Digest(snapshot), "Les données complètes de la sauvegarde ne correspondent pas au manifeste.");
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaBackup.TheIdentityOrContentOfTheBackupDoes"));
+        RequireEqual(manifest.SnapshotDigest, Digest(snapshot), L.Get("MonetaBackup.TheCompleteDataOfTheBackupDoesNot"));
     }
 
     // Canonical, culture-independent full snapshot, retaining the document's list order.
@@ -446,9 +446,9 @@ public static class MonetaBackup
         var full = Path.GetFullPath(path);
         foreach (var suffix in DatabaseCompanions)
             if (File.Exists(full + suffix) || Directory.Exists(full + suffix))
-                throw new DocumentException(DocumentError.DestinationExists, "Un fichier compagnon de destination existe déjà ; il ne sera pas remplacé.");
+                throw new DocumentException(DocumentError.DestinationExists, L.Get("MonetaBackup.ADestinationCompanionFileAlreadyExistsItWill"));
         if (requireManifest && (File.Exists(full + ".manifest.json") || Directory.Exists(full + ".manifest.json")))
-            throw new DocumentException(DocumentError.DestinationExists, "Le manifeste de destination existe déjà ; il ne sera pas remplacé.");
+            throw new DocumentException(DocumentError.DestinationExists, L.Get("MonetaBackup.TheDestinationManifestAlreadyExistsItWillNot"));
         return full;
     }
 
@@ -499,7 +499,7 @@ public static class MonetaBackup
                 _ => DocumentError.WriteFailed
             };
             throw new DocumentException(error, error == DocumentError.Locked
-                ? message + " Le fichier est verrouillé par une autre application ; libérez son accès puis réessayez."
+                ? message + L.Get("MonetaBackup.TheFileIsLockedByAnotherApplicationRelease")
                 : message, ex);
         }
         catch (ArgumentException ex) { throw new DocumentException(DocumentError.InvalidData, message, ex); }

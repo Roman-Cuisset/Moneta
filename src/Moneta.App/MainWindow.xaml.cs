@@ -36,31 +36,46 @@ public partial class MainWindow : Window
         };
         App.Rates.Changed += Rates_Changed;
         Closed += (_, _) => App.Rates.Changed -= Rates_Changed;
+        PropertyChangedEventManager.AddHandler(L.Current, LanguageChanged, nameof(L.CultureName));
         UpdateDocumentState();
+    }
+
+    private void LanguageChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        ApplyRateState();
+        _workspace.Model?.RefreshDisplayLanguage();
+        RefreshDocumentLabels();
+        RefreshBackupUi();
+        RefreshScheduleReminder();
     }
 
     private void UpdateDocumentState()
     {
         UpdateRegisterSearch();
         if (!ReferenceEquals(DataContext, _workspace.Model)) DataContext = _workspace.Model;
-        var model = _workspace.Model;
-        var caption = model is null ? "Aucun dossier ouvert" : model.IsDemo ? "Démonstration · en mémoire" : model.DocumentName;
-        var state = _workspace.HasUnsavedChanges ? " · non enregistré" : _workspace.FilePath is not null ? " · enregistré" : "";
-        Title = $"Moneta — {caption}{(_workspace.HasUnsavedChanges ? " *" : "")}";
-        DocumentCaption.Text = _operation ?? caption + state;
-        DocumentCaption.ToolTip = _workspace.FilePath ?? caption + state;
-        AccountsSelector.ToolTip = "Choisir un compte du dossier affiché.";
-        DevelopmentNotice.Text = model is null ? "Version de développement — ouvrez ou créez un dossier"
-            : model.IsDemo ? "Version de développement — données fictives"
-            : !model.PendingReconciliations.IsEmpty ? "Rapprochement en brouillon — Ctrl+S avant de modifier les opérations"
-            : _workspace.HasUnsavedChanges ? "Brouillon — Ctrl+S pour enregistrer durablement"
-            : "Développement — dossier local enregistré";
-        RegisterDateColumn.Header = model?.DateColumnHeader ?? "Date";
+        RefreshDocumentLabels();
         ApplyRateState();
         IsEnabled = !_busy && !_stopBackupRequests;
         UpdateBackupContext();
         RefreshScheduleReminder();
         CommandManager.InvalidateRequerySuggested();
+    }
+
+    private void RefreshDocumentLabels()
+    {
+        var model = _workspace.Model;
+        var caption = model is null ? L.Get("MainWindow.NoDocumentOpen") : model.IsDemo ? L.Get("MainWindow.DemonstrationInMemory") : model.DocumentName;
+        var state = _workspace.HasUnsavedChanges ? L.Get("MainWindow.NotRegistered") : _workspace.FilePath is not null ? L.Get("MainWindow.Registered") : "";
+        Title = $"Moneta — {caption}{(_workspace.HasUnsavedChanges ? " *" : "")}";
+        DocumentCaption.Text = _operation ?? caption + state;
+        DocumentCaption.ToolTip = _workspace.FilePath ?? caption + state;
+        AccountsSelector.ToolTip = L.Get("MainWindow.ChooseAnAccountOfTheDocumentDisplayed");
+        DevelopmentNotice.Text = model is null ? L.Get("MainWindow.DevelopmentVersionOpenOrCreateADocument")
+            : model.IsDemo ? L.Get("MainWindow.DevelopmentVersionFictitiousData")
+            : !model.PendingReconciliations.IsEmpty ? L.Get("MainWindow.DraftApproachCtrlSBeforeChangingTransactions")
+            : _workspace.HasUnsavedChanges ? L.Get("MainWindow.DraftCtrlSForLongTermRecording")
+            : L.Get("MainWindow.DevelopmentLocalDocumentRegistered");
+        RegisterDateColumn.Header = model?.DateColumnHeader ?? L.Get("Common.Date");
     }
 
     private void Available_CanExecute(object sender, CanExecuteRoutedEventArgs e) { e.CanExecute = !_busy; e.Handled = true; }
@@ -91,7 +106,7 @@ public partial class MainWindow : Window
         {
             // A failed binding setter must never leave one account's caption over another account's rows.
             selector.GetBindingExpression(System.Windows.Controls.Primitives.Selector.SelectedItemProperty)?.UpdateTarget();
-            MessageBox.Show(this, error.Message, "Moneta — changement de compte interrompu", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, error.Message, L.Get("MainWindow.MonetaAccountChangeInterrupted"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         CommandManager.InvalidateRequerySuggested();
     }
@@ -109,7 +124,7 @@ public partial class MainWindow : Window
         }
         catch (Exception error) when (error is DocumentException or IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
-            MessageBox.Show(this, error is DocumentException ? error.Message : "L’opération n’a pas abouti. Les modifications en mémoire sont conservées. Vérifiez le fichier, son emplacement et les droits d’accès.", "Moneta — opération interrompue", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, error is DocumentException ? error.Message : L.Get("MainWindow.TheTransactionDidNotSucceedMemoryChangesAre"), L.Get("MainWindow.MonetaTransactionInterrupted"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         finally
@@ -123,8 +138,8 @@ public partial class MainWindow : Window
 
     private static SaveFileDialog Destination(string title, string fileName = "Mes comptes.moneta") => new()
     {
-        Title = title + " — choisissez un nouveau fichier",
-        Filter = "Dossier Moneta (*.moneta)|*.moneta",
+        Title = title + L.Get("MainWindow.ChooseANewFile"),
+        Filter = L.Get("Common.DocumentMonetaMonetaMoneta"),
         DefaultExt = ".moneta", AddExtension = true, OverwritePrompt = false,
         CheckPathExists = true, FileName = fileName
     };
@@ -135,7 +150,7 @@ public partial class MainWindow : Window
         string? path = null;
         if (saveAs || _workspace.FilePath is null)
         {
-            var dialog = Destination(saveAs ? "Enregistrer sous" : "Enregistrer le dossier");
+            var dialog = Destination(saveAs ? L.Get("Common.SaveAs") : L.Get("MainWindow.SaveDocument"));
             if (dialog.ShowDialog(dialogOwner ?? this) != true) return false;
             path = dialog.FileName;
         }
@@ -147,7 +162,7 @@ public partial class MainWindow : Window
     private async Task<bool> ConfirmReplacement()
     {
         if (!_workspace.HasUnsavedChanges) return true;
-        var answer = MessageBox.Show(this, "Ce dossier contient des modifications non enregistrées. Voulez-vous les enregistrer avant de continuer ?", "Moneta — modifications en attente", MessageBoxButton.YesNoCancel, MessageBoxImage.Question, MessageBoxResult.Cancel);
+        var answer = MessageBox.Show(this, L.Get("MainWindow.ThisDocumentContainsUnrecordedChangesDoYouWant"), L.Get("MainWindow.MonetaPendingChanges"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question, MessageBoxResult.Cancel);
         return answer == MessageBoxResult.No || (answer == MessageBoxResult.Yes && await SaveAsync());
     }
 
@@ -156,12 +171,12 @@ public partial class MainWindow : Window
         var dialog = new NewDocumentWindow { Owner = this };
         if (dialog.ShowDialog() != true || !await ConfirmReplacement()) return;
         var name = dialog.FolderName;
-        await RunIo(() => _workspace.New(name), "Nouveau dossier…");
+        await RunIo(() => _workspace.New(name), L.Get("MainWindow.NewDocument"));
     }
 
     private async void Open_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Title = "Ouvrir un dossier financier", Filter = "Dossiers Moneta (*.moneta)|*.moneta|Fichiers BankPerfect (*.bp)|*.bp", CheckFileExists = true };
+        var dialog = new OpenFileDialog { Title = L.Get("MainWindow.OpenAFinancialDocument"), Filter = L.Get("MainWindow.MonetaDocumentsMonetaMonetaBankperfectFilesBpBp"), CheckFileExists = true };
         if (dialog.ShowDialog(this) != true) return;
         if (string.Equals(Path.GetExtension(dialog.FileName), ".bp", StringComparison.OrdinalIgnoreCase))
         {
@@ -175,12 +190,12 @@ public partial class MainWindow : Window
         {
             try { _workspace.Open(dialog.FileName); }
             catch (DocumentException error) when (error.Error == DocumentError.MigrationRequired) { migration = true; }
-        }, "Vérification et ouverture…");
+        }, L.Get("MainWindow.CheckingAndOpening"));
         if (!migration) return;
-        if (MessageBox.Show(this, "Moneta peut ouvrir une copie migrée et vérifiée. Une sauvegarde certifiée « avant-migration » sera créée au même emplacement que la nouvelle copie. L’original est conservé. Continuer ?", "Moneta — migration sur copie", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
-        var target = Destination("Copie migrée", "Dossier migré.moneta");
+        if (MessageBox.Show(this, L.Get("MainWindow.MonetaCanOpenAMigratedAndVerifiedCopy"), L.Get("MainWindow.MonetaMigrationByCopy"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+        var target = Destination(L.Get("MainWindow.MigratedCopy"), L.Get("MainWindow.FileMigratedMoneta"));
         if (target.ShowDialog(this) == true)
-            await RunIo(() => _workspace.OpenMigratedCopy(dialog.FileName, target.FileName), "Migration sur une nouvelle copie…");
+            await RunIo(() => _workspace.OpenMigratedCopy(dialog.FileName, target.FileName), L.Get("MainWindow.MigrationOnANewCopy"));
     }
 
     private async void ImportBankPerfect_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -190,32 +205,32 @@ public partial class MainWindow : Window
     {
         var dialog = new BankPerfectImportWindow(source) { Owner = this };
         if (dialog.ShowDialog() == true && dialog.Result is { } result && await ConfirmReplacement())
-            await RunIo(() => _workspace.Open(result.Destination), "Ouverture du dossier importé…");
+            await RunIo(() => _workspace.Open(result.Destination), L.Get("MainWindow.OpeningOfTheImportedFile"));
     }
 
     private async void Save_Executed(object sender, ExecutedRoutedEventArgs e) => await SaveAsync();
     private async void SaveAs_Executed(object sender, ExecutedRoutedEventArgs e) => await SaveAsync(true);
     private async void Demo_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (await ConfirmReplacement()) await RunIo(_workspace.OpenDemo, "Ouverture des données fictives…");
+        if (await ConfirmReplacement()) await RunIo(_workspace.OpenDemo, L.Get("MainWindow.OpeningOfFictitiousData"));
     }
     private async void Backup_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (_workspace.HasUnsavedChanges && !await SaveAsync()) return;
-        var dialog = Destination("Sauvegarder le dossier", "Sauvegarde.moneta");
+        var dialog = Destination(L.Get("Common.SaveDocument"), L.Get("MainWindow.BackupMoneta"));
         if (dialog.ShowDialog(this) != true) return;
         await _backupWork;
-        if (await RunIo(() => _workspace.Backup(dialog.FileName), "Sauvegarde SQLite et vérification…"))
-            MessageBox.Show(this, "Sauvegarde cohérente vérifiée. Conservez ensemble le fichier .moneta et son fichier .manifest.json. Testez une restauration avant de considérer cette copie comme votre unique sauvegarde.", "Moneta — sauvegarde", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (await RunIo(() => _workspace.Backup(dialog.FileName), L.Get("MainWindow.SqliteBackupAndVerification")))
+            MessageBox.Show(this, L.Get("MainWindow.CheckedConsistentBackupKeepTogetherTheMonetaFile"), L.Get("MainWindow.MonetaBackup"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
     private async void Restore_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var source = new OpenFileDialog { Title = "Choisir une sauvegarde Moneta avec son manifeste", Filter = "Sauvegarde Moneta (*.moneta)|*.moneta", CheckFileExists = true };
+        var source = new OpenFileDialog { Title = L.Get("MainWindow.ChooseAMonetaBackupWithItsManifest"), Filter = L.Get("MainWindow.MonetaBackupMonetaMoneta"), CheckFileExists = true };
         if (source.ShowDialog(this) != true) return;
-        var target = Destination("Restaurer vers un nouveau dossier", "Dossier restauré.moneta");
+        var target = Destination(L.Get("MainWindow.RestoreToANewDocument"), L.Get("Common.DocumentRestoredMoneta"));
         if (target.ShowDialog(this) != true) return;
-        if (await RunIo(() => DocumentWorkspace.Restore(source.FileName, target.FileName), "Restauration, réouverture et comparaison…"))
-            MessageBox.Show(this, "La nouvelle copie a été rouverte et vérifiée. Le dossier actuellement affiché n’a pas été modifié. Utilisez Fichier → Ouvrir pour consulter le dossier restauré.", "Moneta — restauration vérifiée", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (await RunIo(() => DocumentWorkspace.Restore(source.FileName, target.FileName), L.Get("MainWindow.RestorationReopeningAndComparison")))
+            MessageBox.Show(this, L.Get("MainWindow.TheNewCopyHasBeenReopenedAndVerified"), L.Get("MainWindow.MonetaVerifiedRestoration"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     protected override async void OnClosing(CancelEventArgs e)
@@ -237,7 +252,7 @@ public partial class MainWindow : Window
             RefreshBackupUi();
             await _backupWork;
             ReportBackupFailuresOnExit();
-            if ((update is null || StartUpdateHost(update)) && await RunIo(_workspace.Dispose, "Fermeture du dossier…"))
+            if ((update is null || StartUpdateHost(update)) && await RunIo(_workspace.Dispose, L.Get("MainWindow.ClosingTheDocument")))
             {
                 authorized = update is not null && AuthorizeUpdate(update);
                 _allowClose = true;
@@ -262,7 +277,7 @@ public partial class MainWindow : Window
     private void About_Executed(object sender, ExecutedRoutedEventArgs e) => new AboutWindow { Owner = this }.ShowDialog();
     private void Settings_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        var window = new SettingsWindow(DescribeBackup(), _workspace.SavedSnapshot is null ? null : ShowBackupHistory) { Owner = this };
+        var window = new SettingsWindow(DescribeBackup, _workspace.SavedSnapshot is null ? null : ShowBackupHistory) { Owner = this };
         if (window.ShowDialog() == true) UpdateBackupContext();
     }
     private void AddAccount_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -292,13 +307,13 @@ public partial class MainWindow : Window
         if (row.TransferId is { } transferId) { DeleteWholeTransfer(transferId); return; }
         var value = row.Transaction;
         if (MessageBox.Show(this,
-            $"Retirer l’opération « {value.Label} » du {row.DateText} ?\n\n{(value.Status == ReconciliationStatus.Marked ? "Cette opération est pointée : le solde pointé sera recalculé.\n\n" : "")}La suppression sera enregistrée avec Ctrl+S. Une trace sera conservée dans le dossier ; aucune commande de récupération n’est encore disponible.",
-            "Moneta — confirmer la suppression", MessageBoxButton.YesNo, MessageBoxImage.Question,
+            L.Format("MainWindow.Remove0From12TheDeletionWill", (value.Label), (row.DateText), ((value.Status == ReconciliationStatus.Marked ? "Cette opération est pointée : le solde pointé sera recalculé.\n\n" : ""))),
+            L.Get("MainWindow.MonetaConfirmDeletion"), MessageBoxButton.YesNo, MessageBoxImage.Question,
             MessageBoxResult.No) != MessageBoxResult.Yes) return;
         try { model.DeleteTransaction(value.Id, value.Revision); }
         catch (Exception error) when (error is DocumentException or ArgumentException or InvalidOperationException or OverflowException)
         {
-            MessageBox.Show(this, error.Message, "Moneta — suppression interrompue", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, error.Message, L.Get("MainWindow.MonetaDiscontinuedDeletion"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         CommandManager.InvalidateRequerySuggested();
     }
@@ -331,7 +346,7 @@ public partial class MainWindow : Window
         }
         catch (Exception error) when (error is DocumentException or InvalidOperationException or OverflowException)
         {
-            MessageBox.Show(this, error.Message, "Moneta — registre indisponible", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, error.Message, L.Get("MainWindow.MonetaRegisterUnavailable"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
     private void Theme_Executed(object sender, ExecutedRoutedEventArgs e)

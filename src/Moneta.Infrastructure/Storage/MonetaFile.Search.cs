@@ -40,7 +40,7 @@ public sealed partial class MonetaFile
             command.CommandText = "SELECT document_id FROM Document WHERE singleton=1 AND format='Moneta' AND schema_version=$version;";
             command.Parameters.AddWithValue("$version", CurrentSchemaVersion);
             if (command.ExecuteScalar() is not string id || id != documentId.ToString("D"))
-                throw Error(DocumentError.InvalidData, "Le dossier de recherche n’est plus le dossier ouvert.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheSearchDocumentIsNoLongerTheOpen"));
             command.Parameters.Clear();
 
             var filter = ConfigureSearch(connection, command, criteria);
@@ -79,7 +79,7 @@ public sealed partial class MonetaFile
                 var places = reader.GetInt32(13);
                 var transfer = !reader.IsDBNull(16);
                 if (!DateOnly.TryParseExact(Text(5), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) || date == default)
-                    throw Error(DocumentError.Corrupt, "Date de l’opération invalide.");
+                    throw Error(DocumentError.Corrupt, L.Get("MonetaFile.DateOfTransactionNotValid"));
                 rows.Add(new(ReadGuid(Text(0)), ReadGuid(Text(1)), Text(2), reader.GetInt64(3), ReadBoolean(reader, 4),
                     date, Text(6), Text(7), Text(8), Text(9),
                     Text(10), Text(11), Text(12), places, reader.GetInt64(19) / SearchScales[places],

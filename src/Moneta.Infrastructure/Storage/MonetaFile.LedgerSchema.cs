@@ -76,7 +76,7 @@ public sealed partial class MonetaFile
     internal static void UpgradeV2(SqliteConnection connection)
     {
         var original = ReadValidated(connection, true);
-        if (original.SchemaVersion != 2) throw Error(DocumentError.UnsupportedVersion, "Seul un dossier v2 peut recevoir le registre v3.");
+        if (original.SchemaVersion != 2) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.OnlyAV2DocumentCanReceiveTheV3"));
         using var transaction = connection.BeginTransaction();
         Execute(connection, LedgerSchemaSql + "UPDATE Document SET schema_version=3,min_reader=3,min_writer=3; PRAGMA user_version=3;", transaction);
         InsertHistory(connection, transaction, 3, 2, "v2-to-v3-ledger", "normalized-ledger-v3");
@@ -84,7 +84,7 @@ public sealed partial class MonetaFile
         if (migrated.Id != original.Id || migrated.CreatedUtc != original.CreatedUtc || migrated.ModifiedUtc != original.ModifiedUtc ||
             migrated.Name != original.Name || migrated.SelectedAccountId != original.SelectedAccountId ||
             !migrated.Accounts.SequenceEqual(original.Accounts) || !migrated.Currencies.SequenceEqual(original.Currencies) || migrated.OperationCount != 0)
-            throw Error(DocumentError.VerificationFailed, "La migration a modifié les données du dossier.");
+            throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.MigrationChangedTheFileData"));
         transaction.Commit();
     }
 }

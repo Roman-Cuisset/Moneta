@@ -14,9 +14,7 @@ public static class MoneyFormatter
         ArgumentOutOfRangeException.ThrowIfNegative(currency.DecimalPlaces);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(currency.DecimalPlaces, 28);
         var rules = currency.DisplayRules;
-        var culture = rules.CultureName == FrenchCulture.Name
-            ? FrenchCulture
-            : CultureInfo.GetCultureInfo(rules.CultureName);
+        var culture = rules.CultureName == FrenchCulture.Name ? L.Culture : CultureInfo.GetCultureInfo(rules.CultureName);
         var number = amount.ToString(NumberFormats[currency.DecimalPlaces], culture);
         var unit = rules.UseSymbol ? currency.Symbol : currency.Code;
         return rules.UseSymbol && rules.SymbolBeforeAmount ? $"{unit} {number}" : $"{number} {unit}";

@@ -31,7 +31,7 @@ public sealed class ReportForecast(HistoricalValuation valuation)
         var decisions = saved.ScheduleHistory.Where(item => planIds.Contains(item.PlanId)).ToArray();
         var calendar = new ScheduleCalendar(relevant, decisions);
         if (calendar.Count(start, end) > MaximumRows)
-            throw new ArgumentException("Plus de 50 000 échéances dans ce périmètre. Réduisez la période de prévision.");
+            throw new ArgumentException(L.Get("ReportForecast.MoreThan50000ScheduledTransactionsWithinThis"));
         var result = new List<ForecastRow>();
         foreach (var item in calendar.Between(start, end))
         {
@@ -67,7 +67,7 @@ public sealed class ReportForecast(HistoricalValuation valuation)
             else if (selection.Contains(terms.AccountId)) Add(item.Date, terms.Label, terms.AccountId, terms.AmountMinor,
                 terms.Kind == ScheduleKind.Income, false);
             if (result.Count > MaximumRows)
-                throw new ArgumentException("Plus de 50 000 lignes de prévision. Réduisez la période.");
+                throw new ArgumentException(L.Get("ReportForecast.MoreThan50000ForecastLinesReduceThe"));
         }
 
         if (!estimate) return result.AsReadOnly();

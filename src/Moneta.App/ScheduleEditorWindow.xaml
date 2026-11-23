@@ -1,62 +1,62 @@
-<Window x:Class="Moneta.App.ScheduleEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Échéance — Moneta"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.ScheduleEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="{loc:LocalizedText ScheduleEditorWindow.ScheduledTransactionMoneta}"
         Width="600" Height="720" MinWidth="440" MinHeight="430" WindowStartupLocation="CenterOwner"
-        ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
+        ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}" Language="{loc:LocalizedLanguage}">
     <Grid Margin="20">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <TextBlock x:Name="Heading" Style="{StaticResource WindowHeading}" Margin="0,0,0,10" TextWrapping="Wrap"/>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,8,0">
-                <Label Content="_Type" Target="{Binding ElementName=Kind}"/>
-                <ComboBox x:Name="Kind" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Type d’échéance"/>
-                <Label Content="_Libellé" Target="{Binding ElementName=LabelText}"/>
-                <TextBox x:Name="LabelText" MaxLength="240" AutomationProperties.Name="Libellé"/>
-                <Label Content="_Compte" Target="{Binding ElementName=Source}"/>
-                <ComboBox x:Name="Source" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Compte ou compte débité"/>
-                <Label x:Name="SourceLabel" Content="_Montant" Target="{Binding ElementName=Amount}"/>
-                <TextBox x:Name="Amount" MaxLength="50" AutomationProperties.Name="Montant du compte source"/>
+                <Label Content="{loc:LocalizedText ScheduleEditorWindow.TypeAccessKey}" Target="{Binding ElementName=Kind}"/>
+                <ComboBox x:Name="Kind" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.TypeOfScheduledTransaction}"/>
+                <Label Content="{loc:LocalizedText ScheduleEditorWindow.DescriptionAccessKey}" Target="{Binding ElementName=LabelText}"/>
+                <TextBox x:Name="LabelText" MaxLength="240" AutomationProperties.Name="{loc:LocalizedText Common.Description}"/>
+                <Label Content="{loc:LocalizedText ScheduleEditorWindow.AccountAccessKey}" Target="{Binding ElementName=Source}"/>
+                <ComboBox x:Name="Source" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.AccountOrAccountCharged}"/>
+                <Label x:Name="SourceLabel" Content="{loc:LocalizedText ScheduleEditorWindow.AmountAccessKey}" Target="{Binding ElementName=Amount}"/>
+                <TextBox x:Name="Amount" MaxLength="50" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.SourceAccountAmount}"/>
                 <StackPanel x:Name="OrdinaryFields">
                     <UniformGrid Columns="2">
-                        <StackPanel Margin="0,0,8,0"><Label Content="_Tiers"/><TextBox x:Name="Payee" MaxLength="120" AutomationProperties.Name="Tiers"/></StackPanel>
-                        <StackPanel><Label Content="Mode de paiement"/><TextBox x:Name="Method" MaxLength="120" AutomationProperties.Name="Mode de paiement"/></StackPanel>
-                        <StackPanel Margin="0,0,8,0"><Label Content="Catégorie"/><TextBox x:Name="Category" MaxLength="120" AutomationProperties.Name="Catégorie"/></StackPanel>
-                        <StackPanel><Label Content="Sous-catégorie"/><TextBox x:Name="Subcategory" MaxLength="120" AutomationProperties.Name="Sous-catégorie"/></StackPanel>
+                        <StackPanel Margin="0,0,8,0"><Label Content="{loc:LocalizedText Common.PayeeAccessKey}"/><TextBox x:Name="Payee" MaxLength="120" AutomationProperties.Name="{loc:LocalizedText Common.Payee}"/></StackPanel>
+                        <StackPanel><Label Content="{loc:LocalizedText Common.PaymentMethod}"/><TextBox x:Name="Method" MaxLength="120" AutomationProperties.Name="{loc:LocalizedText Common.PaymentMethod}"/></StackPanel>
+                        <StackPanel Margin="0,0,8,0"><Label Content="{loc:LocalizedText Common.Category}"/><TextBox x:Name="Category" MaxLength="120" AutomationProperties.Name="{loc:LocalizedText Common.Category}"/></StackPanel>
+                        <StackPanel><Label Content="{loc:LocalizedText Common.Subcategory}"/><TextBox x:Name="Subcategory" MaxLength="120" AutomationProperties.Name="{loc:LocalizedText Common.Subcategory}"/></StackPanel>
                     </UniformGrid>
                 </StackPanel>
                 <StackPanel x:Name="TransferFields" Visibility="Collapsed">
-                    <Label Content="Compte _destinataire" Target="{Binding ElementName=Destination}"/>
-                    <ComboBox x:Name="Destination" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Compte destinataire"/>
-                    <Label x:Name="ReceivedLabel" Content="Montant reçu" Target="{Binding ElementName=Received}"/>
-                    <TextBox x:Name="Received" MaxLength="50" AutomationProperties.Name="Montant reçu"/>
+                    <Label Content="{loc:LocalizedText ScheduleEditorWindow.RecipientAccountAccessKey}" Target="{Binding ElementName=Destination}"/>
+                    <ComboBox x:Name="Destination" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.ReceivableAccount}"/>
+                    <Label x:Name="ReceivedLabel" Content="{loc:LocalizedText ScheduleEditorWindow.AmountReceived}" Target="{Binding ElementName=Received}"/>
+                    <TextBox x:Name="Received" MaxLength="50" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.AmountReceived}"/>
                     <TextBlock x:Name="RateNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,6"/>
                     <StackPanel x:Name="RateFields" Visibility="Collapsed">
-                        <Label Content="Provenance du taux (facultative)"/>
-                        <TextBox x:Name="RateSource" MaxLength="120" AutomationProperties.Name="Provenance du taux effectif"/>
+                        <Label Content="{loc:LocalizedText ScheduleEditorWindow.SourceOfRateOptional}"/>
+                        <TextBox x:Name="RateSource" MaxLength="120" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.SourceOfEffectiveRate}"/>
                     </StackPanel>
-                    <Label Content="Compte des frais"/>
-                    <ComboBox x:Name="FeeAccount" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Compte des frais"/>
-                    <Label x:Name="FeeLabel" Content="Montant des frais"/>
-                    <TextBox x:Name="Fee" MaxLength="50" AutomationProperties.Name="Montant des frais"/>
+                    <Label Content="{loc:LocalizedText ScheduleEditorWindow.CostAccount}"/>
+                    <ComboBox x:Name="FeeAccount" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.CostAccount}"/>
+                    <Label x:Name="FeeLabel" Content="{loc:LocalizedText ScheduleEditorWindow.FeeAmount}"/>
+                    <TextBox x:Name="Fee" MaxLength="50" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.FeeAmount}"/>
                 </StackPanel>
                 <UniformGrid Columns="2">
-                    <StackPanel Margin="0,0,8,0"><Label x:Name="StartLabel" Content="Première date (jj/mm/aaaa)"/><TextBox x:Name="Start" MaxLength="10" AutomationProperties.Name="Date de l’échéance"/></StackPanel>
-                    <StackPanel x:Name="EndFields"><Label Content="Date de fin facultative"/><TextBox x:Name="End" MaxLength="10" AutomationProperties.Name="Date de fin facultative"/></StackPanel>
+                    <StackPanel Margin="0,0,8,0"><Label x:Name="StartLabel" Content="{loc:LocalizedText ScheduleEditorWindow.FirstDateMmDdYyyy}"/><TextBox x:Name="Start" MaxLength="10" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.DateDue}"/></StackPanel>
+                    <StackPanel x:Name="EndFields"><Label Content="{loc:LocalizedText ScheduleEditorWindow.OptionalEndDate}"/><TextBox x:Name="End" MaxLength="10" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.OptionalEndDate}"/></StackPanel>
                 </UniformGrid>
                 <StackPanel x:Name="FrequencyFields">
                     <UniformGrid Columns="2">
-                        <StackPanel Margin="0,0,8,0"><Label Content="Périodicité"/><ComboBox x:Name="Unit" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="Périodicité"/></StackPanel>
-                        <StackPanel><Label Content="Intervalle"/><TextBox x:Name="Interval" MaxLength="3" AutomationProperties.Name="Intervalle de répétition"/></StackPanel>
+                        <StackPanel Margin="0,0,8,0"><Label Content="{loc:LocalizedText ScheduleEditorWindow.Periodicity}"/><ComboBox x:Name="Unit" DisplayMemberPath="Name" SelectionChanged="PresentationChanged" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.Periodicity}"/></StackPanel>
+                        <StackPanel><Label Content="{loc:LocalizedText ScheduleEditorWindow.Interval}"/><TextBox x:Name="Interval" MaxLength="3" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.RepeatInterval}"/></StackPanel>
                     </UniformGrid>
-                    <CheckBox x:Name="LastDay" Content="Dernier jour du mois" Margin="0,6,0,0"/>
+                    <CheckBox x:Name="LastDay" Content="{loc:LocalizedText ScheduleEditorWindow.LastDayOfTheMonth}" Margin="0,6,0,0"/>
                 </StackPanel>
-                <Label Content="_Notes" Target="{Binding ElementName=Notes}"/>
-                <TextBox x:Name="Notes" MaxLength="2000" AcceptsReturn="True" MinHeight="58" TextWrapping="Wrap" AutomationProperties.Name="Notes de l’échéance"/>
+                <Label Content="{loc:LocalizedText ScheduleEditorWindow.NotesAccessKey}" Target="{Binding ElementName=Notes}"/>
+                <TextBox x:Name="Notes" MaxLength="2000" AcceptsReturn="True" MinHeight="58" TextWrapping="Wrap" AutomationProperties.Name="{loc:LocalizedText ScheduleEditorWindow.DueDateNotes}"/>
             </StackPanel>
         </ScrollViewer>
         <DockPanel Grid.Row="2" Margin="0,12,0,0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="Annuler" IsCancel="True" Margin="8,0"/>
-                <Button x:Name="Accept" Content="Appliquer" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Accept_Click"/>
+                <Button Content="{loc:LocalizedText Common.Cancel}" IsCancel="True" Margin="8,0"/>
+                <Button x:Name="Accept" Content="{loc:LocalizedText ScheduleEditorWindow.Apply}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Accept_Click"/>
             </StackPanel>
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" VerticalAlignment="Center"
                        Foreground="{DynamicResource NegativeBrush}" AutomationProperties.LiveSetting="Polite"/>

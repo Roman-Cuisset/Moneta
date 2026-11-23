@@ -12,7 +12,7 @@ namespace Moneta.App;
 public partial class ReconciliationWindow : Window
 {
     private const int PageSize = 100;
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly MainViewModel _model;
     private readonly IReconciliationSource _source;
     private readonly Account _account;
@@ -33,22 +33,22 @@ public partial class ReconciliationWindow : Window
         ArgumentNullException.ThrowIfNull(model);
         var historyOnly = model.SelectedAccount?.Account.IsArchived == true;
         if (!model.CanReconcile && !historyOnly)
-            throw new InvalidOperationException("Enregistrez d’abord le dossier et sélectionnez un compte actif pour ouvrir le rapprochement.");
+            throw new InvalidOperationException(L.Get("ReconciliationWindow.FirstSaveTheDocumentAndSelectAnActive"));
         _model = model;
         _source = model.ReconciliationSource
-            ?? throw new InvalidOperationException("Ce dossier ne permet pas la lecture des rapprochements.");
+            ?? throw new InvalidOperationException(L.Get("ReconciliationWindow.ThisFileDoesNotAllowTheReadingOf"));
         _account = model.SelectedAccount?.Account
-            ?? throw new InvalidOperationException("Sélectionnez un compte actif.");
+            ?? throw new InvalidOperationException(L.Get("ReconciliationWindow.SelectAnActiveAccount"));
         InitializeComponent();
-        AccountHeading.Text = $"Rapprochement bancaire · {model.SelectedAccount!.DisplayName}";
-        StatementDate.Text = DateOnly.FromDateTime(DateTime.Today).ToString("dd/MM/yyyy", French);
+        AccountHeading.Text = L.Format("ReconciliationWindow.BankReconciliation0", (model.SelectedAccount!.DisplayName));
+        StatementDate.Text = DateOnly.FromDateTime(DateTime.Today).ToString(L.DatePattern, DisplayCulture);
         _ready = true;
         if (historyOnly)
         {
             StatementTab.Visibility = Visibility.Collapsed;
-            HistoryTab.Header = "Historique";
+            HistoryTab.Header = L.Get("ReconciliationWindow.History");
             ReconciliationTabs.SelectedItem = HistoryTab;
-            ReconciliationNotice.Text = "Compte archivé. Réactivez-le et enregistrez pour reprendre les rapprochements.";
+            ReconciliationNotice.Text = L.Get("ReconciliationWindow.ArchivedAccountReactivateItAndSaveToResume");
             LoadHistory(0);
             return;
         }
@@ -57,19 +57,19 @@ public partial class ReconciliationWindow : Window
         Loaded += (_, _) => { StatementDate.Focus(); StatementDate.SelectAll(); };
     }
 
-    private string Money(decimal value) => $"{value.ToString($"N{_account.Currency.DecimalPlaces}", French)} {_account.Currency.Code}";
+    private string Money(decimal value) => $"{value.ToString($"N{_account.Currency.DecimalPlaces}", DisplayCulture)} {_account.Currency.Code}";
 
     private void EnsureAccount()
     {
         if (_model.SelectedAccountId != _account.Id)
-            throw new InvalidOperationException("Le compte sélectionné a changé. Fermez cette fenêtre puis recommencez sur le compte voulu.");
+            throw new InvalidOperationException(L.Get("ReconciliationWindow.TheSelectedAccountHasChangedCloseThisWindow"));
     }
 
     private DateOnly ReadDate()
     {
-        if (!DateOnly.TryParseExact(StatementDate.Text.Trim(), "dd/MM/yyyy", French, DateTimeStyles.None, out var date)
+        if (!DateOnly.TryParseExact(StatementDate.Text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date)
             || date == default || date > DateOnly.FromDateTime(DateTime.Today))
-            throw new ArgumentException("La date du relevé doit être valide, au format jj/mm/aaaa, et au plus tard aujourd’hui.");
+            throw new ArgumentException(L.Get("ReconciliationWindow.TheDateOfTheSurveyMustBeValid"));
         return date;
     }
 
@@ -99,14 +99,14 @@ public partial class ReconciliationWindow : Window
                 if (highlighted.Contains(row.Original.Id)) ReconciliationCandidates.SelectedItems.Add(row);
             StatementOpeningBalance.Text = Money(page.OpeningBalance);
             LegacyWarning.Text = page.LegacyReconciledCount == 0 ? string.Empty
-                : $"Validation bloquée : {page.LegacyReconciledCount.ToString("N0", French)} opération(s) R héritée(s), sans relevé attesté. Fermez cette fenêtre et libérez explicitement chaque rapprochement hérité depuis le registre, avec un motif, puis enregistrez (Ctrl+S). Aucun relevé ni date ne sera inventé.";
-            CandidatePageText.Text = Range(page.Offset, page.Transactions.Count, page.TotalCount, "opérations");
+                : L.Format("ReconciliationWindow.LockedValidation0TransactionSRInheritedWithout", (page.LegacyReconciledCount.ToString("N0", DisplayCulture)));
+            CandidatePageText.Text = Range(page.Offset, page.Transactions.Count, page.TotalCount, L.Get("ReconciliationWindow.Transactions"));
             ErrorText.Text = string.Empty;
         }
         catch (Exception error)
         {
             _candidatesValid = false;
-            ErrorText.Text = "Lecture impossible. Vos champs et votre sélection sont conservés. Si la date exclut une opération sélectionnée, rétablissez-la ou utilisez « Vider la sélection ».\n" + error.Message;
+            ErrorText.Text = L.Get("ReconciliationWindow.ReadingImpossibleYourFieldsAndSelectionAreKept") + error.Message;
         }
         UpdateSummary();
         UpdateReopenButton();
@@ -126,34 +126,34 @@ public partial class ReconciliationWindow : Window
             if (session is not null)
                 return session.StatementDate;
             if (page.Sessions.Count == 0 || offset + (long)PageSize >= page.TotalCount || offset > int.MaxValue - PageSize)
-                throw new InvalidOperationException("Le dernier relevé actif est introuvable dans l’historique. Actualisez le dossier avant de recommencer.");
+                throw new InvalidOperationException(L.Get("ReconciliationWindow.TheLastActiveRecordIsNotFoundIn"));
             offset += PageSize;
         }
     }
 
     private static string Range(int offset, int count, long total, string noun) => total == 0
         ? $"0 {noun}"
-        : $"{(offset + 1L).ToString("N0", French)}–{(offset + (long)count).ToString("N0", French)} / {total.ToString("N0", French)} {noun}";
+        : $"{(offset + 1L).ToString("N0", DisplayCulture)}–{(offset + (long)count).ToString("N0", DisplayCulture)} / {total.ToString("N0", DisplayCulture)} {noun}";
 
     private ReconciliationRequest ReadRequest()
     {
         EnsureAccount();
         var date = ReadDate();
         if (!_candidatesValid || _candidatePage is null || _loadedDate != date)
-            throw new InvalidOperationException("Actualisez les opérations pour cette date avant de valider.");
+            throw new InvalidOperationException(L.Get("ReconciliationWindow.RefreshTheTransactionsForThisDateBeforeValidating"));
         if (!_model.CanReconcile)
-            throw new InvalidOperationException("Le dossier doit être enregistré et sans autre brouillon avant le rapprochement.");
+            throw new InvalidOperationException(L.Get("ReconciliationWindow.TheRecordMustBeRecordedAndWithoutFurther"));
         if (_candidatePage.LegacyReconciledCount != 0)
-            throw new InvalidOperationException("Libérez d’abord les rapprochements hérités depuis le registre, avec un motif, puis enregistrez.");
+            throw new InvalidOperationException(L.Get("ReconciliationWindow.FirstReleaseTheReconciliationsInheritedFromTheRegister"));
         if (_previousStatementDate is { } previous && date <= previous)
-            throw new ArgumentException($"La date doit être postérieure au dernier relevé actif ({previous.ToString("dd/MM/yyyy", French)}).");
+            throw new ArgumentException(L.Format("ReconciliationWindow.TheDateMustBeAfterTheLastActive", (previous.ToString(L.DatePattern, DisplayCulture))));
         var number = StatementNumber.Text.Trim();
         if (number.Length > 120)
-            throw new ArgumentException("Le numéro de relevé ne doit pas dépasser 120 caractères.");
-        var expected = MoneyInput.ParseFrench(StatementClosingBalance.Text, _account.Currency, allowNegative: true);
+            throw new ArgumentException(L.Get("ReconciliationWindow.TheReadingNumberShallNotExceed120Characters"));
+        var expected = MoneyInput.ParseLocalized(StatementClosingBalance.Text, _account.Currency, allowNegative: true);
         var calculated = checked(_candidatePage.OpeningBalance + _candidatePage.SelectedNet);
         if (expected != calculated)
-            throw new ArgumentException("L’écart doit être exactement nul pour valider le relevé.");
+            throw new ArgumentException(L.Get("ReconciliationWindow.TheDeviationShallBeExactlyZeroToValidate"));
         return new ReconciliationRequest(date, expected, number);
     }
 
@@ -165,16 +165,16 @@ public partial class ReconciliationWindow : Window
         CandidatesPrevious.IsEnabled = !_submitting && _candidatesValid && _candidatePage?.Offset > 0;
         CandidatesNext.IsEnabled = !_submitting && _candidatesValid && _candidatePage is { } page
             && page.Offset <= int.MaxValue - PageSize && page.Offset + (long)PageSize < page.TotalCount;
-        ReconciliationSelectedCount.Text = $"Sélection : {_selectedIds.Count.ToString("N0", French)} opération(s)";
-        ReconciliationSelectedNet.Text = _candidatesValid && _candidatePage is { } current ? "Net sélectionné : " + Money(current.SelectedNet) : "Net sélectionné : non actualisé";
-        ReconciliationGap.Text = "Écart : non calculé";
+        ReconciliationSelectedCount.Text = L.Format("ReconciliationWindow.Selection0TransactionS", (_selectedIds.Count.ToString("N0", DisplayCulture)));
+        ReconciliationSelectedNet.Text = _candidatesValid && _candidatePage is { } current ? L.Get("ReconciliationWindow.SelectedNet") + Money(current.SelectedNet) : L.Get("ReconciliationWindow.NetSelectedNotUpdated");
+        ReconciliationGap.Text = L.Get("ReconciliationWindow.VarianceNotCalculated");
         if (!_candidatesValid || _candidatePage is null)
             return;
         try
         {
-            var expected = MoneyInput.ParseFrench(StatementClosingBalance.Text, _account.Currency, allowNegative: true);
+            var expected = MoneyInput.ParseLocalized(StatementClosingBalance.Text, _account.Currency, allowNegative: true);
             var calculated = checked(_candidatePage.OpeningBalance + _candidatePage.SelectedNet);
-            ReconciliationGap.Text = "Écart : " + Money(checked(expected - calculated));
+            ReconciliationGap.Text = L.Get("ReconciliationWindow.Variance") + Money(checked(expected - calculated));
             ReadRequest();
             ValidateReconciliation.IsEnabled = !_submitting;
         }
@@ -185,7 +185,7 @@ public partial class ReconciliationWindow : Window
             ReconciliationGap.Text += "\n" + error.Message;
             return;
         }
-        ReconciliationGap.ToolTip = "Solde final du relevé − (ouverture + net sélectionné).";
+        ReconciliationGap.ToolTip = L.Get("ReconciliationWindow.FinalBalanceOfStatementOpeningNetSelected");
     }
 
     private void StatementDate_Changed(object sender, TextChangedEventArgs e)
@@ -194,12 +194,12 @@ public partial class ReconciliationWindow : Window
             return;
         _candidatesValid = false;
         // Wait for a complete date, but invalidate the old preview immediately.
-        if (DateOnly.TryParseExact(StatementDate.Text.Trim(), "dd/MM/yyyy", French, DateTimeStyles.None, out var date)
+        if (DateOnly.TryParseExact(StatementDate.Text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date)
             && date != default && date <= DateOnly.FromDateTime(DateTime.Today))
             LoadCandidates(0, _selectedIds);
         else
         {
-            ErrorText.Text = "Saisissez une date de relevé valide, au format jj/mm/aaaa, au plus tard aujourd’hui.";
+            ErrorText.Text = L.Get("ReconciliationWindow.EnterAValidStatementDateInMmDd");
             UpdateSummary();
         }
     }
@@ -286,7 +286,7 @@ public partial class ReconciliationWindow : Window
         }
         catch (Exception error)
         {
-            ErrorText.Text = "Le relevé n’a pas été validé. Vos champs et votre sélection sont conservés.\n" + error.Message;
+            ErrorText.Text = L.Get("ReconciliationWindow.TheSurveyHasNotBeenValidatedYourFields") + error.Message;
             _submitting = false;
             UpdateSummary();
         }
@@ -303,14 +303,14 @@ public partial class ReconciliationWindow : Window
             var rows = page.Sessions.Select(session => new HistoryRow(session, _account.Currency)).ToArray();
             _historyPage = page;
             ReconciliationHistory.ItemsSource = rows;
-            HistoryPageText.Text = Range(page.Offset, page.Sessions.Count, page.TotalCount, "relevés");
+            HistoryPageText.Text = Range(page.Offset, page.Sessions.Count, page.TotalCount, L.Get("ReconciliationWindow.Readings"));
             HistoryPrevious.IsEnabled = page.Offset > 0;
             HistoryNext.IsEnabled = page.Offset <= int.MaxValue - PageSize && page.Offset + (long)PageSize < page.TotalCount;
             if (rows.Length > 0) ReconciliationHistory.SelectedItem = rows[0];
         }
         catch (Exception error)
         {
-            ErrorText.Text = "L’historique n’a pas pu être lu. Vos champs sont conservés.\n" + error.Message;
+            ErrorText.Text = L.Get("ReconciliationWindow.HistoryCouldNotBeReadYourFieldsAre") + error.Message;
         }
     }
 
@@ -332,7 +332,7 @@ public partial class ReconciliationWindow : Window
                 EnsureAccount();
                 var details = _source.ReadReconciliation(row.Session.Id);
                 if (details.Session.AccountId != _account.Id)
-                    throw new InvalidOperationException("Ce relevé appartient à un autre compte.");
+                    throw new InvalidOperationException(L.Get("ReconciliationWindow.ThisStatementBelongsToAnotherAccount"));
                 _details = details;
                 ReconciliationEntries.ItemsSource = details.Entries.Select(entry => new CandidateRow(entry.Original, false, _account.Currency)).ToArray();
                 ReconciliationEvents.ItemsSource = details.Events.Select(value => new EventRow(value)).ToArray();
@@ -340,7 +340,7 @@ public partial class ReconciliationWindow : Window
             }
             catch (Exception error)
             {
-                ErrorText.Text = "Les détails du relevé n’ont pas pu être lus.\n" + error.Message;
+                ErrorText.Text = L.Get("ReconciliationWindow.TheDetailsOfTheSurveyCouldNotBe") + error.Message;
             }
         }
         UpdateReopenButton();
@@ -361,15 +361,15 @@ public partial class ReconciliationWindow : Window
         try
         {
             EnsureAccount();
-            var reasonWindow = new ReopenReasonWindow("Rouvrir le relevé bancaire",
-                "Le relevé et ses instantanés resteront dans l’historique. Ses opérations retrouveront leur pointage d’origine, sans modification financière. Le motif sera conservé. Cette action prépare un brouillon : Ctrl+S pour enregistrer.") { Owner = this };
+            var reasonWindow = new ReopenReasonWindow(L.Get("ReconciliationWindow.ReopenTheBankStatement"),
+                L.Get("ReconciliationWindow.TheSurveyAndItsSnapshotsWillRemainIn")) { Owner = this };
             reasonWindow.ReopenReason.Text = _reopenReason;
             if (reasonWindow.ShowDialog() != true)
                 return;
             _reopenReason = reasonWindow.Reason;
             if (MessageBox.Show(this,
-                $"Rouvrir le relevé du {session.StatementDate.ToString("dd/MM/yyyy", French)} ({session.StatementNumber}) ?\n\nMotif : {reasonWindow.Reason}\n\nL’historique est conservé. La réouverture sera au brouillon jusqu’à Ctrl+S.",
-                "Confirmer la réouverture", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                L.Format("ReconciliationWindow.ReopenTheStatementOf01Reason2", (session.StatementDate.ToString(L.DatePattern, DisplayCulture)), (session.StatementNumber), (reasonWindow.Reason)),
+                L.Get("ReconciliationWindow.ConfirmReopening"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
                 return;
             _model.ReopenReconciliation(session.Id, session.Revision, reasonWindow.Reason);
             staged = true;
@@ -377,7 +377,7 @@ public partial class ReconciliationWindow : Window
         }
         catch (Exception error)
         {
-            ErrorText.Text = "Le relevé n’a pas été rouvert. Vos champs sont conservés.\n" + error.Message;
+            ErrorText.Text = L.Get("ReconciliationWindow.TheSurveyHasNotBeenReopenedYourFields") + error.Message;
         }
         finally
         {
@@ -400,53 +400,54 @@ public partial class ReconciliationWindow : Window
             return;
         }
         var value = row.Original;
-        EntrySnapshotText.Text = $"Opération {value.Id} · compte {value.AccountId} · révision {value.Revision}\n"
-            + $"{row.DateText} · {value.Label} · {value.Direction} · magnitude {value.Amount.ToString(CultureInfo.InvariantCulture)} {value.Currency.Code} ({value.Currency.DecimalPlaces} décimales) · {row.StatusText} · pointé le {row.MarkedOnText}\n"
-            + $"Tiers : {value.Payee.Name} ({value.PayeeId}) · catégorie : {value.Category.Name} / {value.Category.Subcategory} ({value.CategoryId} / {value.SubcategoryId})\n"
-            + $"Paiement : {value.PaymentMode} ({value.PaymentMethodId}) · rapprochement d’origine : {value.ReconciliationId} · supprimée : {value.IsDeleted}\n"
-            + $"Créée : {value.CreatedUtc:O} · modifiée : {value.ModifiedUtc:O}\n"
-            + (value.Valuation is { } valuation ? $"Valorisation : {valuation.Amount.ToString(CultureInfo.InvariantCulture)} {valuation.Currency.Code}, date {valuation.RateDate:yyyy-MM-dd}, source {valuation.Source}\n" : string.Empty)
-            + $"Notes : {value.Details}";
+        EntrySnapshotText.Text = L.Format("ReconciliationWindow.Transaction0Account1Revision2", (value.Id), (value.AccountId), (value.Revision))
+            + L.Format("ReconciliationWindow.012Magnitude345Decimals", (row.DateText), (value.Label), (value.Direction), (value.Amount.ToString(CultureInfo.InvariantCulture)), (value.Currency.Code), (value.Currency.DecimalPlaces), (row.StatusText), (row.MarkedOnText))
+            + L.Format("ReconciliationWindow.Payee01Category2345", (value.Payee.Name), (value.PayeeId), (value.Category.Name), (value.Category.Subcategory), (value.CategoryId), (value.SubcategoryId))
+            + L.Format("ReconciliationWindow.Payment01OriginalReconciliation2Deleted3", (value.PaymentMode), (value.PaymentMethodId), (value.ReconciliationId), (value.IsDeleted))
+            + L.Format("ReconciliationWindow.Created0OModified1O", (value.CreatedUtc), (value.ModifiedUtc))
+            + (value.Valuation is { } valuation ? L.Format("Reconciliation.ValuationDetail", valuation.Amount.ToString(CultureInfo.InvariantCulture),
+                valuation.Currency.Code, valuation.RateDate, valuation.Source) : string.Empty)
+            + L.Format("ReconciliationWindow.Notes0", (value.Details));
     }
 
     public sealed class CandidateRow
     {
         public Transaction Original { get; }
         public bool Selected { get; }
-        public string DateText => Original.Date.ToString("dd/MM/yyyy", French);
-        public string MarkedOnText => Original.MarkedOn?.ToString("dd/MM/yyyy", French) ?? "—";
+        public string DateText => Original.Date.ToString(L.DatePattern, DisplayCulture);
+        public string MarkedOnText => Original.MarkedOn?.ToString(L.DatePattern, DisplayCulture) ?? "—";
         public string StatusText => Original.Status switch { ReconciliationStatus.Unmarked => "NP", ReconciliationStatus.Marked => "P", _ => "R" };
         public string AmountText { get; }
         public CandidateRow(Transaction original, bool selected, Currency currency)
         {
             Original = original;
             Selected = selected;
-            AmountText = $"{FinancialRules.SignedAmount(original).ToString($"N{currency.DecimalPlaces}", French)} {currency.Code}";
+            AmountText = $"{FinancialRules.SignedAmount(original).ToString($"N{currency.DecimalPlaces}", DisplayCulture)} {currency.Code}";
         }
     }
 
     public sealed class HistoryRow
     {
         public ReconciliationSession Session { get; }
-        public string DateText => Session.StatementDate.ToString("dd/MM/yyyy", French);
-        public string StateText => Session.State == ReconciliationSessionState.Validated ? "Validé" : "Rouvert";
+        public string DateText => Session.StatementDate.ToString(L.DatePattern, DisplayCulture);
+        public string StateText => Session.State == ReconciliationSessionState.Validated ? L.Get("ReconciliationWindow.Validated") : "Rouvert";
         public string OpeningText { get; }
         public string ClosingText { get; }
-        public string ValidatedText => Session.ValidatedUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss", French);
-        public string ReopenedText => Session.ReopenedUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss", French) ?? "—";
+        public string ValidatedText => Session.ValidatedUtc.ToLocalTime().ToString(L.DatePattern + " HH:mm:ss", DisplayCulture);
+        public string ReopenedText => Session.ReopenedUtc?.ToLocalTime().ToString(L.DatePattern + " HH:mm:ss", DisplayCulture) ?? "—";
         public HistoryRow(ReconciliationSession session, Currency currency)
         {
             Session = session;
-            OpeningText = $"{session.OpeningBalance.ToString($"N{currency.DecimalPlaces}", French)} {currency.Code}";
-            ClosingText = $"{session.ExpectedClosingBalance.ToString($"N{currency.DecimalPlaces}", French)} {currency.Code}";
+            OpeningText = $"{session.OpeningBalance.ToString($"N{currency.DecimalPlaces}", DisplayCulture)} {currency.Code}";
+            ClosingText = $"{session.ExpectedClosingBalance.ToString($"N{currency.DecimalPlaces}", DisplayCulture)} {currency.Code}";
         }
     }
 
     public sealed class EventRow
     {
         public ReconciliationEvent Event { get; }
-        public string OccurredText => Event.OccurredUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss", French);
-        public string KindText => Event.Kind switch { ReconciliationEventKind.Validated => "Validation", ReconciliationEventKind.Reopened => "Réouverture", _ => "Libération héritée" };
+        public string OccurredText => Event.OccurredUtc.ToLocalTime().ToString(L.DatePattern + " HH:mm:ss", DisplayCulture);
+        public string KindText => Event.Kind switch { ReconciliationEventKind.Validated => L.Get("Reconciliation.Validated"), ReconciliationEventKind.Reopened => L.Get("ReconciliationWindow.Reopening"), _ => L.Get("ReconciliationWindow.InheritedRelease") };
         public EventRow(ReconciliationEvent value) => Event = value;
     }
 }

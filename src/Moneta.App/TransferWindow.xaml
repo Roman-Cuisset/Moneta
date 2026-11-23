@@ -1,8 +1,8 @@
-<Window x:Class="Moneta.App.TransferWindow"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.TransferWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Nouveau virement" Width="720" Height="760" MinWidth="420" MinHeight="360"
-        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Language="fr-FR"
+        Title="{loc:LocalizedText TransferWindow.NewTransfer}" Width="720" Height="760" MinWidth="420" MinHeight="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Language="{loc:LocalizedLanguage}"
         Style="{StaticResource {x:Type Window}}"
         AutomationProperties.AutomationId="TransferWindow">
     <Grid Margin="20">
@@ -12,71 +12,71 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,12">
-            <TextBlock x:Name="Heading" Text="Nouveau virement" Style="{StaticResource WindowHeading}" />
-            <TextBlock x:Name="DraftNotice" Text="Brouillon — Ctrl+S pour enregistrer les deux mouvements et frais"
+            <TextBlock x:Name="Heading" Text="{loc:LocalizedText TransferWindow.NewTransfer}" Style="{StaticResource WindowHeading}" />
+            <TextBlock x:Name="DraftNotice" Text="{loc:LocalizedText TransferWindow.DraftCtrlSToRecordBothMovementsAnd}"
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" />
         </StackPanel>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,8,0">
                 <TextBlock x:Name="AccountNotice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,8" />
-                <Label Content="Compte _source (débit)" Target="{Binding ElementName=SourceAccount}" />
+                <Label Content="{loc:LocalizedText TransferWindow.SourceAccountDebitAccessKey}" Target="{Binding ElementName=SourceAccount}" />
                 <ComboBox x:Name="SourceAccount" DisplayMemberPath="DisplayName" SelectionChanged="Account_SelectionChanged"
-                          AutomationProperties.AutomationId="TransferSourceAccount" AutomationProperties.Name="Compte source du virement" />
-                <Label Content="Compte _destinataire (crédit)" Target="{Binding ElementName=DestinationAccount}" Margin="0,6,0,0" />
+                          AutomationProperties.AutomationId="TransferSourceAccount" AutomationProperties.Name="{loc:LocalizedText TransferWindow.SourceAccountForTransfer}" />
+                <Label Content="{loc:LocalizedText TransferWindow.ReceivableAccountCreditAccessKey}" Target="{Binding ElementName=DestinationAccount}" Margin="0,6,0,0" />
                 <ComboBox x:Name="DestinationAccount" DisplayMemberPath="DisplayName" SelectionChanged="Account_SelectionChanged"
-                          AutomationProperties.AutomationId="TransferDestinationAccount" AutomationProperties.Name="Compte destinataire du virement" />
-                <Label Content="_Date du virement (jj/mm/aaaa)" Target="{Binding ElementName=EntryDate}" Margin="0,6,0,0" />
+                          AutomationProperties.AutomationId="TransferDestinationAccount" AutomationProperties.Name="{loc:LocalizedText TransferWindow.AccountToBeTransferred}" />
+                <Label Content="{loc:LocalizedText TransferWindow.DateOfTransferMmDdYyyyAccessKey}" Target="{Binding ElementName=EntryDate}" Margin="0,6,0,0" />
                 <TextBox x:Name="EntryDate" MaxLength="10" TextChanged="Date_TextChanged"
-                         AutomationProperties.AutomationId="TransferDate" AutomationProperties.Name="Date commune du virement, jour mois année" />
+                         AutomationProperties.AutomationId="TransferDate" AutomationProperties.Name="{loc:LocalizedText TransferWindow.CommonDateOfTransferDayMonthYear}" />
                 <Grid Margin="0,6,0,0">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <StackPanel Margin="0,0,12,0">
-                        <Label Content="Montant dé_bité" Target="{Binding ElementName=DebitAmount}" />
+                        <Label Content="{loc:LocalizedText TransferWindow.DeBityAccessKey}" Target="{Binding ElementName=DebitAmount}" />
                         <TextBox x:Name="DebitAmount" MaxLength="128" TextAlignment="Right" TextChanged="Amount_TextChanged"
-                                 AutomationProperties.AutomationId="TransferDebitAmount" AutomationProperties.Name="Montant débité strictement positif, sans frais" />
+                                 AutomationProperties.AutomationId="TransferDebitAmount" AutomationProperties.Name="{loc:LocalizedText TransferWindow.StrictlyPositiveDebitedAmountWithoutCharge}" />
                         <TextBlock x:Name="DebitCurrency" Margin="0,4,0,0"
                                    AutomationProperties.AutomationId="TransferDebitCurrency" AutomationProperties.Name="{Binding Text, RelativeSource={RelativeSource Self}}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <Label Content="Montant _crédité" Target="{Binding ElementName=CreditAmount}" />
+                        <Label Content="{loc:LocalizedText TransferWindow.CreditedAmountAccessKey}" Target="{Binding ElementName=CreditAmount}" />
                         <TextBox x:Name="CreditAmount" MaxLength="128" TextAlignment="Right" TextChanged="Amount_TextChanged"
-                                 AutomationProperties.AutomationId="TransferCreditAmount" AutomationProperties.Name="Montant crédité strictement positif, sans frais" />
+                                 AutomationProperties.AutomationId="TransferCreditAmount" AutomationProperties.Name="{loc:LocalizedText TransferWindow.StrictlyPositiveCreditWithoutCharge}" />
                         <TextBlock x:Name="CreditCurrency" Margin="0,4,0,0"
                                    AutomationProperties.AutomationId="TransferCreditCurrency" AutomationProperties.Name="{Binding Text, RelativeSource={RelativeSource Self}}" />
                     </StackPanel>
                 </Grid>
                 <TextBlock x:Name="AmountHint" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,8" />
                 <StackPanel x:Name="ExchangeFields">
-                    <Label Content="Date du c_hange (jj/mm/aaaa)" Target="{Binding ElementName=ExchangeDate}" />
+                    <Label Content="{loc:LocalizedText TransferWindow.DateOfCHangMmDdYyyyAccessKey}" Target="{Binding ElementName=ExchangeDate}" />
                     <TextBox x:Name="ExchangeDate" MaxLength="10" TextChanged="ExchangeDate_TextChanged"
-                             AutomationProperties.AutomationId="TransferExchangeDate" AutomationProperties.Name="Date du change déclarée, jour mois année" />
-                    <Label Content="Source du taux — déclarée / non _vérifiée" Target="{Binding ElementName=RateSource}" Margin="0,6,0,0" />
+                             AutomationProperties.AutomationId="TransferExchangeDate" AutomationProperties.Name="{loc:LocalizedText TransferWindow.ReportedCurrencyExchangeDateDayMonthYear}" />
+                    <Label Content="{loc:LocalizedText TransferWindow.SourceOfRateDeclaredNotVerifiedAccessKey}" Target="{Binding ElementName=RateSource}" Margin="0,6,0,0" />
                     <TextBox x:Name="RateSource" TextChanged="Preview_TextChanged"
-                             AutomationProperties.AutomationId="TransferRateSource" AutomationProperties.Name="Source du change déclarée et non vérifiée" />
+                             AutomationProperties.AutomationId="TransferRateSource" AutomationProperties.Name="{loc:LocalizedText TransferWindow.SourceOfReportedAndUnverifiedForeignExchange}" />
                 </StackPanel>
                 <TextBlock x:Name="RateDescription" TextWrapping="Wrap" Margin="0,8,0,8" Foreground="{DynamicResource MutedBrush}"
                            AutomationProperties.AutomationId="TransferRateDescription" AutomationProperties.Name="{Binding Text, RelativeSource={RelativeSource Self}}"
                            AutomationProperties.LiveSetting="Polite" />
-                <CheckBox x:Name="HasFee" Content="_Frais séparés sur un compte du dossier" Checked="Fee_Changed" Unchecked="Fee_Changed" Margin="0,8,0,4"
-                          AutomationProperties.AutomationId="TransferHasFee" AutomationProperties.Name="Inclure un mouvement de frais séparé" />
+                <CheckBox x:Name="HasFee" Content="{loc:LocalizedText TransferWindow.SeparateFeesOnAFileAccountAccessKey}" Checked="Fee_Changed" Unchecked="Fee_Changed" Margin="0,8,0,4"
+                          AutomationProperties.AutomationId="TransferHasFee" AutomationProperties.Name="{loc:LocalizedText TransferWindow.IncludeASeparateFeeMovement}" />
                 <StackPanel x:Name="FeeFields">
-                    <Label Content="Compte des _frais" Target="{Binding ElementName=FeeAccount}" />
+                    <Label Content="{loc:LocalizedText TransferWindow.CostAccountAccessKey}" Target="{Binding ElementName=FeeAccount}" />
                     <ComboBox x:Name="FeeAccount" DisplayMemberPath="DisplayName" SelectionChanged="FeeAccount_SelectionChanged"
-                              AutomationProperties.AutomationId="TransferFeeAccount" AutomationProperties.Name="Compte actif du dossier pour les frais, devise native" />
-                    <Label Content="Montant des f_rais" Target="{Binding ElementName=FeeAmount}" Margin="0,6,0,0" />
+                              AutomationProperties.AutomationId="TransferFeeAccount" AutomationProperties.Name="{loc:LocalizedText TransferWindow.ActiveAccountOfTheExpenseFileNativeCurrency}" />
+                    <Label Content="{loc:LocalizedText TransferWindow.FairAmountAccessKey}" Target="{Binding ElementName=FeeAmount}" Margin="0,6,0,0" />
                     <TextBox x:Name="FeeAmount" MaxLength="128" TextAlignment="Right"
-                             AutomationProperties.AutomationId="TransferFeeAmount" AutomationProperties.Name="Montant des frais séparés, zéro autorisé uniquement pour annuler des frais existants" />
+                             AutomationProperties.AutomationId="TransferFeeAmount" AutomationProperties.Name="{loc:LocalizedText TransferWindow.SeparateFeeZeroAllowedOnlyToCancelExisting}" />
                     <TextBlock x:Name="FeeCurrency" Margin="0,4,0,0"
                                AutomationProperties.AutomationId="TransferFeeCurrency" AutomationProperties.Name="{Binding Text, RelativeSource={RelativeSource Self}}" />
                 </StackPanel>
                 <TextBlock x:Name="FeeHint" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,8" />
-                <Label Content="_Référence (facultative, 120 caractères)" Target="{Binding ElementName=EntryReference}" />
+                <Label Content="{loc:LocalizedText TransferWindow.ReferenceOptional120CharactersAccessKey}" Target="{Binding ElementName=EntryReference}" />
                 <TextBox x:Name="EntryReference" MaxLength="120"
-                         AutomationProperties.AutomationId="TransferReference" AutomationProperties.Name="Référence du virement, facultative" />
-                <Label Content="_Notes (facultatives)" Target="{Binding ElementName=EntryNotes}" Margin="0,6,0,0" />
+                         AutomationProperties.AutomationId="TransferReference" AutomationProperties.Name="{loc:LocalizedText TransferWindow.TransferReferenceOptional}" />
+                <Label Content="{loc:LocalizedText Common.NotesOptionalAccessKey}" Target="{Binding ElementName=EntryNotes}" Margin="0,6,0,0" />
                 <TextBox x:Name="EntryNotes" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" Height="84"
                          VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"
-                         AutomationProperties.AutomationId="TransferNotes" AutomationProperties.Name="Notes communes du virement, facultatives" />
+                         AutomationProperties.AutomationId="TransferNotes" AutomationProperties.Name="{loc:LocalizedText TransferWindow.CommonTransferNotesOptional}" />
             </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="2" Margin="0,10,0,0">
@@ -84,10 +84,10 @@
                        AutomationProperties.AutomationId="TransferError" AutomationProperties.Name="{Binding Text, RelativeSource={RelativeSource Self}}"
                        AutomationProperties.LiveSetting="Assertive" />
             <WrapPanel HorizontalAlignment="Right" Margin="0,10,0,0">
-                <Button x:Name="CancelTransfer" Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"
+                <Button x:Name="CancelTransfer" Content="{loc:LocalizedText Common.Cancel}" IsCancel="True" MinWidth="90" Margin="0,0,8,0"
                         AutomationProperties.AutomationId="CancelTransfer" />
-                <Button x:Name="ConfirmTransfer" Content="Valider le brouillon" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Confirm_Click"
-                        AutomationProperties.AutomationId="ConfirmTransfer" AutomationProperties.Name="Valider le brouillon de virement, sans enregistrer sur disque" />
+                <Button x:Name="ConfirmTransfer" Content="{loc:LocalizedText Common.ValidateDraft}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Confirm_Click"
+                        AutomationProperties.AutomationId="ConfirmTransfer" AutomationProperties.Name="{loc:LocalizedText TransferWindow.ValidateTheTransferDraftWithoutSavingToDisk}" />
             </WrapPanel>
         </StackPanel>
     </Grid>

@@ -7,7 +7,15 @@ namespace Moneta.App;
 
 public sealed class ReportPlots : FrameworkElement
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
+    internal static string GroupLabel(ReportGroup group)
+    {
+        if (group.Key == "others") return L.Get("Reports.OtherCategories");
+        if (group.Key == "uncategorized") return L.Get("ReportsWindow.WithoutCategory");
+        return DateOnly.TryParseExact(group.Key + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var month) ? month.ToString("MMM yyyy", DisplayCulture) : group.Label;
+    }
+
     private static readonly Typeface Face = new("Segoe UI");
     private static readonly string[] SliceBrushKeys = ["ChartIncomeBrush", "ChartExpenseBrush", "ChartBlueBrush",
         "ChartGoldBrush", "ChartGreenBrush", "ChartRoseBrush"];
@@ -43,7 +51,7 @@ public sealed class ReportPlots : FrameworkElement
     private void DrawDonut(DrawingContext drawing, Brush text)
     {
         var total = _groups.Sum(row => row.Total.Expense);
-        if (total == 0) { Write(drawing, "Aucune dépense valorisée", 10, 20, text); return; }
+        if (total == 0) { Write(drawing, L.Get("ReportPlots.NoExpenditureValued"), 10, 20, text); return; }
         var center = new Point(113, 134);
         const double radius = 80;
         var angle = -Math.PI / 2;
@@ -66,7 +74,7 @@ public sealed class ReportPlots : FrameworkElement
             }
             var rowY = 36 + index * 27;
             drawing.DrawRoundedRectangle(color, null, new Rect(240, rowY + 5, 11, 11), 2, 2);
-            Write(drawing, $"{row.Label} · {Number(row.Total.Expense)} {_currency!.Code}", 259, rowY, text, Math.Max(100, ActualWidth - 271));
+            Write(drawing, $"{GroupLabel(row)} · {Number(row.Total.Expense)} {_currency!.Code}", 259, rowY, text, Math.Max(100, ActualWidth - 271));
             angle = next;
         }
         Point PointAt(double value) => new(center.X + radius * Math.Cos(value), center.Y + radius * Math.Sin(value));
@@ -87,11 +95,11 @@ public sealed class ReportPlots : FrameworkElement
         Write(drawing, Number(maximum), 9, 55, text, 87);
         Write(drawing, "0", 9, baseline - 7, text);
         drawing.DrawRectangle(costs, null, new Rect(origin, 24, 12, 12));
-        Write(drawing, "Dépenses", origin + 18, 21, text);
+        Write(drawing, L.Get("Common.Expenses"), origin + 18, 21, text);
         if (_mode == 2)
         {
             drawing.DrawRectangle(accent, null, new Rect(origin + 103, 24, 12, 12));
-            Write(drawing, "Recettes", origin + 120, 21, text);
+            Write(drawing, L.Get("Common.Income"), origin + 120, 21, text);
         }
         for (var index = 0; index < _groups.Count; index++)
         {
@@ -100,9 +108,9 @@ public sealed class ReportPlots : FrameworkElement
             DrawBar(group.Total.Expense, x, costs);
             if (_mode == 2) DrawBar(group.Total.Income, x + 20, accent);
             var key = DateOnly.ParseExact(group.Key + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture);
-            Write(drawing, key.ToString("MM/yy", French) + (group.Total.Missing > 0 ? " *" : ""), x - 5, baseline + 8, text);
+            Write(drawing, key.ToString("MM/yy", DisplayCulture) + (group.Total.Missing > 0 ? " *" : ""), x - 5, baseline + 8, text);
         }
-        if (maximum == 0) Write(drawing, "Aucun montant à représenter", origin + 25, 116, text);
+        if (maximum == 0) Write(drawing, L.Get("ReportPlots.NoAmountToBeRepresented"), origin + 25, 116, text);
 
         void DrawBar(decimal amount, double x, Brush brush)
         {
@@ -112,11 +120,11 @@ public sealed class ReportPlots : FrameworkElement
         }
     }
 
-    private string Number(decimal amount) => amount.ToString($"N{_currency!.DecimalPlaces}", French);
+    private string Number(decimal amount) => amount.ToString($"N{_currency!.DecimalPlaces}", DisplayCulture);
 
     private void Write(DrawingContext drawing, string value, double x, double y, Brush brush, double max = 240)
     {
-        var label = new FormattedText(value, French, FlowDirection.LeftToRight, Face, 13, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip)
+        var label = new FormattedText(value, DisplayCulture, FlowDirection.LeftToRight, Face, 13, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip)
         { MaxTextWidth = max, MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis };
         drawing.DrawText(label, new Point(x, y));
     }

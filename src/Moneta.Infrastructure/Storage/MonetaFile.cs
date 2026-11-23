@@ -67,7 +67,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
                 Checkpoint(connection);
                 // Read-only verification must not recreate WAL companions under the unpublished name.
                 if (!string.Equals(Scalar(connection, "PRAGMA journal_mode=DELETE;")?.ToString(), "delete", StringComparison.OrdinalIgnoreCase))
-                    throw Error(DocumentError.VerificationFailed, "Le dossier temporaire ne peut pas être rendu autonome.");
+                    throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.TheTemporaryFileCannotBeMadeAutonomous"));
             }
             using (var validation = OpenConnection(temporary, true)) VerifySnapshot(snapshot, ReadValidated(validation));
             EnsureNewDestination(path);
@@ -136,11 +136,11 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
         reconciliation = FreezeBatch(reconciliation);
         transfers = transfers?.ToArray() ?? Array.Empty<TransferChange>();
         if (transfers.Count != 0 && (reconciliation.Sessions.Count != 0 || reconciliation.Events.Count != 0))
-            throw Error(DocumentError.InvalidData, "Enregistrez d’abord les changements de rapprochement avant de modifier un virement.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.FirstSaveReconciliationChangesBeforeChangingATransfer"));
         if (snapshot.Id != Snapshot.Id || snapshot.CreatedUtc != Snapshot.CreatedUtc)
-            throw Error(DocumentError.InvalidData, "L’identité et la date de création du dossier sont immuables.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheIdentityAndDateOfCreationOfThe"));
         if (snapshot.ModifiedUtc < Snapshot.ModifiedUtc)
-            throw Error(DocumentError.InvalidData, "La date de modification ne peut pas reculer.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheDateOfAmendmentCannotBeChanged"));
         var accounts = snapshot.Accounts.ToDictionary(account => account.Id);
         var currencies = snapshot.Currencies.ToDictionary(currency => currency.Code, StringComparer.Ordinal);
         foreach (var previous in Snapshot.Accounts)
@@ -148,25 +148,25 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             if (!accounts.TryGetValue(previous.Id, out var current))
                 continue; // Removals are checked against persisted history inside the write transaction.
             if (current.Currency.Code != previous.Currency.Code || current.CreatedUtc != previous.CreatedUtc || current.ModifiedUtc < previous.ModifiedUtc)
-                throw Error(DocumentError.InvalidData, "Devise native et création du compte immuables ; modification chronologique requise.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.NativeCurrencyAndCreationOfTheImmutableAccount"));
             if (current.OpeningBalance != previous.OpeningBalance)
-                throw Error(DocumentError.InvalidData, "Le solde initial est fixé à la création. Saisissez la correction comme opération dans le registre.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheInitialBalanceIsSetAtCreationEnter"));
         }
         foreach (var previous in Snapshot.Currencies)
             if (!currencies.TryGetValue(previous.Code, out var current) || current.DecimalPlaces != previous.DecimalPlaces)
-                throw Error(DocumentError.InvalidData, "Une devise enregistrée ne peut être supprimée ou changer d’échelle.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.ARegisteredCurrencyCannotBeDeletedOrChanged"));
         var categories = snapshot.Categories.ToDictionary(value => value.Id);
         var payees = snapshot.Payees.Select(value => value.Id).ToHashSet();
         var methods = snapshot.PaymentMethods.Select(value => value.Id).ToHashSet();
         if (Snapshot.Categories.Any(value => !categories.TryGetValue(value.Id, out var current) || current.ParentId != value.ParentId) ||
             Snapshot.Payees.Any(value => !payees.Contains(value.Id)) || Snapshot.PaymentMethods.Any(value => !methods.Contains(value.Id)))
-            throw Error(DocumentError.InvalidData, "Les références enregistrées ne peuvent être supprimées ou changer de parent.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.RegisteredReferencesCannotBeDeletedOrChangedParent"));
         try
         {
             using var transaction = Connection.BeginTransaction();
             var persisted = ReadWithinTransaction(Connection, false, transaction);
             if (!SameSnapshot(Snapshot, persisted))
-                throw Error(DocumentError.InvalidData, "Le dossier a été modifié par un autre client SQLite. Fermez et rouvrez-le avant toute sauvegarde.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheDocumentHasBeenModifiedByAnotherSqlite"));
             RemoveObsoleteBudgets(Connection, transaction, snapshot, persisted);
             ValidateAndRemoveAccounts(persisted, accounts, changes, reconciliation, transaction);
             ValidateReconciliationChanges(Connection, snapshot, changes, reconciliation, transaction, creating: false, baseline: persisted);
@@ -203,7 +203,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
     {
         foreach (var suffix in new[] { "", "-wal", "-shm", "-journal" })
             if (File.Exists(path + suffix) || Directory.Exists(path + suffix))
-                throw Error(DocumentError.DestinationExists, "La destination ou un journal SQLite existe déjà ; aucun élément n’a été remplacé.");
+                throw Error(DocumentError.DestinationExists, L.Get("MonetaFile.TheDestinationOrASqliteJournalAlreadyExists"));
     }
 
     private static bool SameSnapshot(FinancialDocument expected, FinancialDocument actual) =>
@@ -225,7 +225,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
     private static void VerifySnapshot(FinancialDocument expected, FinancialDocument actual)
     {
         if (!SameSnapshot(expected, actual))
-            throw Error(DocumentError.VerificationFailed, "Le dossier publié ne correspond pas intégralement aux données demandées.");
+            throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.ThePublishedFileDoesNotFullyMatchThe"));
     }
 
     internal static SqliteConnection OpenConnection(string path, bool readOnly)
@@ -245,16 +245,16 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             Execute(connection, "PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000;");
             var versionText = Convert.ToString(Scalar(connection, "SELECT sqlite_version();"), CultureInfo.InvariantCulture)!;
             if (!Version.TryParse(versionText, out var version) || version < new Version(3, 51, 3))
-                throw Error(DocumentError.UnsupportedVersion, "Le moteur SQLite doit inclure le correctif WAL (3.51.3 minimum).");
+                throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.TheSqliteEngineMustIncludeTheWalFix"));
             if (Integer(connection, "PRAGMA trusted_schema;") != 0 || Integer(connection, "PRAGMA foreign_keys;") != 1 || Integer(connection, "PRAGMA busy_timeout;") != 3000)
-                throw Error(DocumentError.VerificationFailed, "Configuration de sécurité SQLite non appliquée.");
+                throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.UnappliedSqliteSecurityConfiguration"));
             if (!readOnly)
             {
                 if (!string.Equals(Convert.ToString(Scalar(connection, "PRAGMA journal_mode=WAL;"), CultureInfo.InvariantCulture), "wal", StringComparison.OrdinalIgnoreCase))
-                    throw Error(DocumentError.VerificationFailed, "Le mode WAL est obligatoire.");
+                    throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.WalModeIsMandatory"));
                 Execute(connection, "PRAGMA synchronous=FULL;");
                 if (Integer(connection, "PRAGMA synchronous;") != 2)
-                    throw Error(DocumentError.VerificationFailed, "La synchronisation FULL est obligatoire.");
+                    throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.FullSynchronizationIsMandatory"));
             }
             return connection;
         }
@@ -263,21 +263,21 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
 
     internal static string ValidatePath(string path, bool mustExist)
     {
-        if (string.IsNullOrWhiteSpace(path)) throw Error(DocumentError.InvalidData, "Chemin de fichier requis.");
+        if (string.IsNullOrWhiteSpace(path)) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.FilePathRequired"));
         // Reject BankPerfect before opening, locking, creating, or otherwise touching it.
         if (Path.GetExtension(path).StartsWith(".bp", StringComparison.OrdinalIgnoreCase))
-            throw Error(DocumentError.InvalidFormat, "Un fichier BankPerfect n’est pas un dossier Moneta.");
+            throw Error(DocumentError.InvalidFormat, L.Get("MonetaFile.ABankperfectFileIsNotAMonetaDocument"));
         try
         {
             var full = Path.GetFullPath(path);
             if (full.StartsWith(@"\\", StringComparison.Ordinal) || full.StartsWith("//", StringComparison.Ordinal))
-                throw Error(DocumentError.InvalidData, "Les chemins réseau ne sont pas pris en charge.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.NetworkPathsAreNotSupported"));
             var root = Path.GetPathRoot(full)!;
             if (new DriveInfo(root).DriveType == DriveType.Network)
-                throw Error(DocumentError.InvalidData, "Une base active doit résider sur un disque local.");
-            if (mustExist && !File.Exists(full)) throw Error(DocumentError.MissingFile, "Le dossier demandé n’existe pas.");
-            if (!mustExist && (File.Exists(full) || Directory.Exists(full))) throw Error(DocumentError.DestinationExists, "La destination existe déjà.");
-            if (!Directory.Exists(Path.GetDirectoryName(full))) throw Error(DocumentError.MissingFile, "Le répertoire de destination n’existe pas.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.AnActiveBaseMustResideOnALocal"));
+            if (mustExist && !File.Exists(full)) throw Error(DocumentError.MissingFile, L.Get("MonetaFile.TheRequestedFileDoesNotExist"));
+            if (!mustExist && (File.Exists(full) || Directory.Exists(full))) throw Error(DocumentError.DestinationExists, L.Get("MonetaFile.TheDestinationAlreadyExists"));
+            if (!Directory.Exists(Path.GetDirectoryName(full))) throw Error(DocumentError.MissingFile, L.Get("MonetaFile.TheDestinationDirectoryDoesNotExist"));
             return full;
         }
         catch (Exception exception) when (exception is not DocumentException) { throw Translate(exception, DocumentError.InvalidData); }
@@ -286,8 +286,8 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
     private static FileStream AcquireOwnership(string path)
     {
         try { return new FileStream(path + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
-        catch (IOException exception) { throw new DocumentException(DocumentError.InUse, "Ce dossier est déjà ouvert ou son verrou est indisponible.", exception); }
-        catch (UnauthorizedAccessException exception) { throw new DocumentException(DocumentError.AccessDenied, "Accès au verrou du dossier refusé.", exception); }
+        catch (IOException exception) { throw new DocumentException(DocumentError.InUse, L.Get("MonetaFile.ThisDocumentIsAlreadyOpenOrItsLock"), exception); }
+        catch (UnauthorizedAccessException exception) { throw new DocumentException(DocumentError.AccessDenied, L.Get("MonetaFile.AccessToTheLockedDocumentRefused"), exception); }
     }
 
     private static void ValidateSignature(string path)
@@ -295,7 +295,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         Span<byte> header = stackalloc byte[16];
         if (stream.Read(header) != header.Length || !header.SequenceEqual("SQLite format 3\0"u8))
-            throw Error(DocumentError.InvalidFormat, "Signature SQLite absente ou tronquée ; aucun fichier n’a été recréé.");
+            throw Error(DocumentError.InvalidFormat, L.Get("MonetaFile.SqliteSignatureAbsentOrTruncatedNoFileWas"));
     }
 
     internal static void Checkpoint(SqliteConnection connection)
@@ -304,7 +304,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
         command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
         using var reader = command.ExecuteReader();
         if (!reader.Read() || reader.GetInt64(0) != 0 || reader.GetInt64(1) != 0 || reader.GetInt64(2) != 0 || reader.Read())
-            throw Error(DocumentError.Locked, "Checkpoint incomplet : conserver le dossier et tous ses journaux ; fichier unique non garanti.");
+            throw Error(DocumentError.Locked, L.Get("MonetaFile.IncompleteCheckpointKeepDocumentAndAllItsLogs"));
     }
 
     private static FinancialDocument Freeze(FinancialDocument snapshot) => snapshot with
@@ -342,7 +342,7 @@ public sealed partial class MonetaFile : IDisposable, ILedgerSource, IReconcilia
             SqliteException sqlite when sqlite.SqliteErrorCode is 10 or 13 => DocumentError.WriteFailed,
             _ => fallback
         };
-        return new DocumentException(error, error == DocumentError.Locked ? "SQLite est verrouillé ; aucune sauvegarde n’a été confirmée." : "Impossible de traiter le dossier Moneta : " + exception.Message, exception);
+        return new DocumentException(error, error == DocumentError.Locked ? L.Get("MonetaFile.SqliteIsLockedNoBackupHasBeenConfirmed") : L.Get("MonetaFile.CouldNotProcessMonetaDocument") + exception.Message, exception);
     }
 
     private static void Execute(SqliteConnection connection, string sql, SqliteTransaction? transaction = null)

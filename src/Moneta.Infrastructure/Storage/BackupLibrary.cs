@@ -21,11 +21,11 @@ public sealed record BackupPolicy
     public void Validate()
     {
         if (IntervalMinutes is < 1 or > 1440 || VersionsToKeep is < 1 or > 100)
-            throw new ArgumentException("Choisissez un intervalle de 1 à 1 440 minutes et de 1 à 100 versions.");
+            throw new ArgumentException(L.Get("BackupLibrary.ChooseAnIntervalOf1To1440"));
         if (Enabled && !AfterSave && !Daily)
-            throw new ArgumentException("Choisissez au moins un déclenchement automatique.");
+            throw new ArgumentException(L.Get("BackupLibrary.ChooseAtLeastOneAutomaticTrigger"));
         if (DirectoryPath is not null && (!Path.IsPathFullyQualified(DirectoryPath) || DirectoryPath.StartsWith(@"\\", StringComparison.Ordinal)))
-            throw new ArgumentException("Choisissez un répertoire local avec un chemin absolu.");
+            throw new ArgumentException(L.Get("BackupLibrary.ChooseALocalDirectoryWithAnAbsolutePath"));
     }
 }
 
@@ -89,10 +89,10 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
         var staging = Path.Combine(folder, ".pending-" + id.ToString("N"));
         var published = Path.Combine(folder, PublishedName(id));
         if (Directory.Exists(staging) || File.Exists(staging) || Directory.Exists(published) || File.Exists(published))
-            throw new DocumentException(DocumentError.DestinationExists, "Une version portant cet identifiant existe déjà.");
+            throw new DocumentException(DocumentError.DestinationExists, L.Get("BackupLibrary.AVersionWithThisIdentifierAlreadyExists"));
         Directory.CreateDirectory(staging);
         if (Directory.EnumerateFileSystemEntries(staging).Any())
-            throw new DocumentException(DocumentError.DestinationExists, "Le répertoire de travail contient déjà des fichiers.");
+            throw new DocumentException(DocumentError.DestinationExists, L.Get("BackupLibrary.TheWorkingDirectoryAlreadyContainsFiles"));
         var ownsStaging = false;
         var ownsArchive = false;
         try
@@ -124,11 +124,11 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
                 }
                 catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
                 {
-                    warning = "Rotation interrompue après publication.";
+                    warning = L.Get("BackupLibrary.RotationInterruptedAfterPublication");
                 }
                 catch (Exception error) when (IsLibraryError(error))
                 {
-                    warning = "La sauvegarde est publiée. La rotation a été différée : " + error.Message;
+                    warning = L.Get("BackupLibrary.TheBackupIsPublishedRotationHasBeenDelayed") + error.Message;
                 }
             }
             return new(version, version, warning);
@@ -186,11 +186,11 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
             try
             {
                 history.Add(new(id, ReadVersion(directory, documentId, id), directory,
-                    "Publiée · à vérifier"));
+                    L.Get("BackupLibrary.PublishedToBeChecked")));
             }
             catch (Exception error) when (IsLibraryError(error))
             {
-                history.Add(new(id, null, directory, "Non vérifiable · " + error.Message));
+                history.Add(new(id, null, directory, L.Get("BackupLibrary.NonVerifiable") + error.Message));
             }
         }
         return history.OrderByDescending(entry => entry.Version?.CreatedUtc).ThenByDescending(entry => entry.SnapshotId).ToList();
@@ -296,7 +296,7 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
 
     private static string Folder(BackupPolicy policy, Guid id)
     {
-        if (id == Guid.Empty) throw new ArgumentException("Identifiant du dossier absent.");
+        if (id == Guid.Empty) throw new ArgumentException(L.Get("BackupLibrary.IdentifierOfTheMissingDocument"));
         var folder = Path.Combine(Root(policy), id.ToString("N"));
         CheckNotLinked(folder);
         return folder;
@@ -308,7 +308,7 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
         var destination = Path.GetFullPath(policy.Destination);
         if (destination.StartsWith(@"\\", StringComparison.Ordinal) ||
             new DriveInfo(Path.GetPathRoot(destination)!).DriveType == DriveType.Network)
-            throw new ArgumentException("Choisissez un emplacement local ou un disque externe.");
+            throw new ArgumentException(L.Get("BackupLibrary.ChooseALocalLocationOrExternalDisk"));
         var root = Path.Combine(destination, LibraryName);
         for (var current = new DirectoryInfo(root); current is not null; current = current.Parent)
             CheckNotLinked(current.FullName);
@@ -319,7 +319,7 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
     {
         var relative = Path.GetRelativePath(Root(policy), Path.GetFullPath(path));
         if (!Path.IsPathRooted(relative) && relative != ".." && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-            throw new ArgumentException("Choisissez un dossier de travail à l’extérieur des versions historiques.");
+            throw new ArgumentException(L.Get("BackupLibrary.ChooseAWorkDocumentOutsideOfTheHistorical"));
     }
 
     private static void CheckNotLinked(string path)
@@ -327,7 +327,7 @@ public sealed class BackupLibrary(TimeProvider? clock = null)
         try
         {
             if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
-                throw new IOException("Lien ou redirection Windows dans le chemin des versions.");
+                throw new IOException(L.Get("BackupLibrary.LinkOrRedirectWindowsInTheVersionPath"));
         }
         catch (FileNotFoundException) { }
         catch (DirectoryNotFoundException) { }

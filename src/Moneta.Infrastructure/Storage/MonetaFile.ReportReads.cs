@@ -11,12 +11,12 @@ public sealed partial class MonetaFile
     {
         criteria.Validate();
         if (criteria.Accounts.Count > ReportContent.MaximumBalanceAccounts)
-            throw new ArgumentException("Limitez le rapport à 1 000 comptes.");
+            throw new ArgumentException(L.Get("MonetaFile.LimitTheReportTo1000Accounts"));
         var requested = criteria.Accounts.ToHashSet();
         var accounts = snapshot.Accounts.Where(item => requested.Contains(item.Id))
             .ToDictionary(item => item.Id);
         if (accounts.Count != requested.Count || !criteria.IncludeArchived && accounts.Values.Any(item => item.IsArchived))
-            throw new ArgumentException("Le périmètre demande un compte absent ou archivé sans autorisation.");
+            throw new ArgumentException(L.Get("MonetaFile.ThePerimeterRequiresAnAccountThatIsMissing"));
         var labels = snapshot.Accounts.Select((account, index) => (account.Id, Text: $"{index + 1}. {account.Name}"))
             .ToDictionary(item => item.Id, item => item.Text);
         return ReadHistorical(path, snapshot.Id, (connection, transaction) =>
@@ -50,13 +50,13 @@ public sealed partial class MonetaFile
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     if (rows.Count == HistoricalValuation.MaximumBatchSize)
-                        throw new ArgumentException("Le rapport dépasse 50 000 flux. Réduisez sa période ou ses comptes.");
+                        throw new ArgumentException(L.Get("MonetaFile.TheReportExceeds50000FlowsReduceIts"));
                     var account = accounts[ReadGuid(reader.GetString(1))];
                     var date = DateOnly.ParseExact(reader.GetString(2), "yyyy-MM-dd", CultureInfo.InvariantCulture);
                     var direction = (TransactionDirection)reader.GetInt32(5);
                     var minor = reader.GetInt64(3);
                     if (minor < 0 || account.Currency.Code != reader.GetString(4) || !Enum.IsDefined(direction))
-                        throw Error(DocumentError.Corrupt, "Une opération du rapport contient un montant, une devise ou un sens invalide.");
+                        throw Error(DocumentError.Corrupt, L.Get("MonetaFile.ATransactionInTheReportContainsAnInvalid"));
                     var transfer = NullableId(reader, 11);
                     var kind = transfer is not null ? HistoricalFlowKind.Fee
                         : direction == TransactionDirection.Credit ? HistoricalFlowKind.Income : HistoricalFlowKind.Expense;

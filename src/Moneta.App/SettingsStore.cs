@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using Moneta.Infrastructure.Storage;
+using Moneta.Localization;
 
 namespace Moneta.App;
 
@@ -8,6 +9,7 @@ namespace Moneta.App;
 public sealed record LocalSettings
 {
     public string Theme { get; init; } = "Light";
+    public string Language { get; init; } = L.French;
     public bool CheckUpdatesAtStartup { get; init; } = true;
     public bool RefreshRatesAtStartup { get; init; }
     public string RateSource { get; init; } = "NBRB";
@@ -61,9 +63,9 @@ public sealed class SettingsStore
         catch (Exception ex) when (ex is JsonException or SettingsException or IOException or UnauthorizedAccessException)
         {
             _loadFailure = new SettingsException(
-                $"Impossible de charger les préférences : {ex.Message}\nFichier : {FilePath}\n"
-                + "Les valeurs par défaut sont utilisées pour cette session. Aucun fichier existant n'a été remplacé. "
-                + "Corrigez ou déplacez le fichier, puis relancez Moneta avant d'enregistrer des préférences.", ex);
+                L.Format("SettingsStore.CouldNotLoadPreferences0File1", (ex.Message), (FilePath))
+                + L.Get("SettingsStore.DefaultValuesAreUsedForThisSessionNo")
+                + L.Get("SettingsStore.CorrectOrMoveTheFileThenRestartMoneta"), ex);
             throw _loadFailure;
         }
     }
@@ -78,7 +80,7 @@ public sealed class SettingsStore
         if (_loadFailure is not null)
         {
             throw new SettingsException(
-                "Enregistrement bloqué pour préserver le fichier de préférences non chargé.\n" + _loadFailure.Message,
+                L.Get("SettingsStore.SaveBlockedToPreserveTheUnloadedPreferenceFile") + _loadFailure.Message,
                 _loadFailure);
         }
 
@@ -97,6 +99,7 @@ public sealed class SettingsStore
                 {
                     SchemaVersion = SchemaVersion,
                     Theme = settings.Theme,
+                    Language = settings.Language,
                     CheckUpdatesAtStartup = settings.CheckUpdatesAtStartup,
                     RefreshRatesAtStartup = settings.RefreshRatesAtStartup,
                     RateSource = settings.RateSource,
@@ -124,7 +127,7 @@ public sealed class SettingsStore
                                    or ArgumentException or NotSupportedException)
         {
             throw new SettingsException(
-                $"Les préférences n'ont pas été enregistrées : {ex.Message}\nFichier : {FilePath}", ex);
+                L.Format("SettingsStore.PreferencesWereNotSaved0File1", (ex.Message), (FilePath)), ex);
         }
         finally
         {
@@ -146,22 +149,23 @@ public sealed class SettingsStore
     {
         using var stream = File.OpenRead(path);
         var document = JsonSerializer.Deserialize<SettingsDocument>(stream, JsonOptions)
-            ?? throw new JsonException("Le document est vide.");
+            ?? throw new JsonException(L.Get("SettingsStore.TheDocumentIsEmpty"));
         if (document.SchemaVersion is not (1 or 2 or SchemaVersion))
         {
             throw new SettingsException(
-                $"La version {document.SchemaVersion} du fichier de préférences n'est pas prise en charge.");
+                L.Format("SettingsStore.The0VersionOfThePreferencesFileIs", (document.SchemaVersion)));
         }
 
         var settings = new LocalSettings
         {
             Theme = document.Theme,
+            Language = L.ResolveLanguage(document.Language),
             CheckUpdatesAtStartup = document.CheckUpdatesAtStartup,
             RefreshRatesAtStartup = document.RefreshRatesAtStartup,
             RateSource = document.SchemaVersion == 1 ? "NBRB" : document.RateSource
-                ?? throw new SettingsException("Le fournisseur des cours est absent des préférences."),
+                ?? throw new SettingsException(L.Get("SettingsStore.TheRateProviderIsAbsentFromPreferences")),
             Backups = document.SchemaVersion < 3 ? new() : document.Backups
-                ?? throw new SettingsException("La politique de sauvegarde est absente des préférences.")
+                ?? throw new SettingsException(L.Get("SettingsStore.TheSafeguardPolicyIsAbsentFromThePreferences"))
         };
         Validate(settings);
         return settings;
@@ -171,10 +175,12 @@ public sealed class SettingsStore
     {
         if (settings.Theme is not ("Light" or "Dark"))
         {
-            throw new SettingsException("Le thème doit être Light ou Dark.");
+            throw new SettingsException(L.Get("SettingsStore.TheThemeMustBeLightOrDark"));
         }
         if (settings.RateSource is not ("NBRB" or "CBR"))
-            throw new SettingsException("Le fournisseur des cours doit être NBRB ou CBR.");
+            throw new SettingsException(L.Get("SettingsStore.TheRateProviderMustBeNbrbOrCbr"));
+        if (settings.Language is not (L.French or L.English))
+            throw new SettingsException(L.Get("Settings.UnsupportedLanguage"));
         try { settings.Backups.Validate(); }
         catch (ArgumentException error) { throw new SettingsException(error.Message, error); }
     }
@@ -187,6 +193,7 @@ public sealed class SettingsStore
 
         public required int SchemaVersion { get; init; }
         public required string Theme { get; init; }
+        public string? Language { get; init; }
         public required bool CheckUpdatesAtStartup { get; init; }
         public required bool RefreshRatesAtStartup { get; init; }
         public string? RateSource { get; init; }

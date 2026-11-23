@@ -33,7 +33,7 @@ public sealed class UpdateClient : IDisposable
         if (response.StatusCode == HttpStatusCode.NotFound) return null;
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength > UpdateManifest.MaximumEnvelopeBytes)
-            throw new InvalidDataException("Catalogue de mise à jour trop volumineux.");
+            throw new InvalidDataException(L.Get("UpdateClient.TooLargeAnUpdateCatalog"));
         using var buffer = new MemoryStream();
         await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
         await CopyBoundedAsync(body, buffer, UpdateManifest.MaximumEnvelopeBytes, null, timeout.Token).ConfigureAwait(false);
@@ -49,12 +49,12 @@ public sealed class UpdateClient : IDisposable
         var token = timeout.Token;
         var manifest = _channel.Verify(offer.SignedEnvelope);
         if (manifest != offer.Manifest || !manifest.IsNewerThan(installed))
-            throw new InvalidDataException("L’offre de mise à jour a changé ou provoquerait une rétrogradation.");
+            throw new InvalidDataException(L.Get("UpdateClient.TheUpdateOfferHasChangedOrWouldCause"));
 
         using var response = await GetAsync(_channel.Installer(manifest), token).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength is long length && length != manifest.Size)
-            throw new InvalidDataException("La taille annoncée de l’installateur a changé.");
+            throw new InvalidDataException(L.Get("UpdateClient.TheAnnouncedSizeOfTheInstallerHasChanged"));
 
         var stage = new UpdateStage(Guid.NewGuid());
         Directory.CreateDirectory(stage.Directory);
@@ -84,10 +84,10 @@ public sealed class UpdateClient : IDisposable
         {
             if (stream.Length != manifest.Size ||
                 !CryptographicOperations.FixedTimeEquals(SHA256.HashData(stream), Convert.FromHexString(manifest.Sha256)))
-                throw new InvalidDataException("L’empreinte de l’installateur ne correspond pas à la mise à jour signée.");
+                throw new InvalidDataException(L.Get("UpdateClient.TheInstallerSFootprintDoesNotMatchThe"));
             if (!UpdateManifest.TryVersion(manifest.Version, out var expected) ||
                 !MatchesVersion(path, expected, requireInstaller: true))
-                throw new InvalidDataException("La version Windows de l’installateur ne correspond pas à la version signée.");
+                throw new InvalidDataException(L.Get("UpdateClient.TheWindowsVersionOfTheInstallerDoesNot"));
             return stream;
         }
         catch
@@ -110,17 +110,17 @@ public sealed class UpdateClient : IDisposable
     {
         for (var redirects = 0; redirects < 5; redirects++)
         {
-            if (!_channel.PermitsRedirect(uri)) throw new InvalidDataException("Adresse de mise à jour non autorisée.");
+            if (!_channel.PermitsRedirect(uri)) throw new InvalidDataException(L.Get("UpdateClient.UnauthorizedUpdateAddress"));
             var reply = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
             if ((int)reply.StatusCode is not (301 or 302 or 303 or 307 or 308)) return reply;
             using (reply)
             {
                 if (reply.Headers.Location is not { } location)
-                    throw new InvalidDataException("Redirection de mise à jour incomplète.");
+                    throw new InvalidDataException(L.Get("UpdateClient.IncompleteUpdateRedirection"));
                 uri = new Uri(uri, location);
             }
         }
-        throw new InvalidDataException("Trop de redirections pendant la mise à jour.");
+        throw new InvalidDataException(L.Get("UpdateClient.TooManyRedirectionsDuringTheUpdate"));
     }
 
     private static async Task CopyBoundedAsync(Stream input, Stream output, long limit, IProgress<int>? progress, CancellationToken token)
@@ -132,7 +132,7 @@ public sealed class UpdateClient : IDisposable
         while ((count = await input.ReadAsync(buffer, token).ConfigureAwait(false)) != 0)
         {
             total += count;
-            if (total > limit) throw new InvalidDataException("La réponse dépasse la taille autorisée.");
+            if (total > limit) throw new InvalidDataException(L.Get("UpdateClient.TheResponseIsGreaterThanTheAuthorizedSize"));
             await output.WriteAsync(buffer.AsMemory(0, count), token).ConfigureAwait(false);
             var percent = (int)(total * 99 / limit);
             if (progress is not null && percent != lastPercent) { lastPercent = percent; progress.Report(percent); }

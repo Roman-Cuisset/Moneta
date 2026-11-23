@@ -1,10 +1,10 @@
-<Window x:Class="Moneta.App.TransactionWindow"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.TransactionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Nouvelle opération" Width="680" Height="760" MinWidth="540" MinHeight="520"
+        Title="{loc:LocalizedText Common.NewTransaction}" Width="680" Height="760" MinWidth="540" MinHeight="520"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Style="{StaticResource {x:Type Window}}"
-        AutomationProperties.AutomationId="TransactionWindow">
+        AutomationProperties.AutomationId="TransactionWindow" Language="{loc:LocalizedLanguage}">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -12,8 +12,8 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,14">
-            <TextBlock x:Name="Heading" Text="Nouvelle opération" Style="{StaticResource WindowHeading}" />
-            <TextBlock Text="Brouillon – Enregistrer (Ctrl+S) pour écriture SQLite après validation."
+            <TextBlock x:Name="Heading" Text="{loc:LocalizedText Common.NewTransaction}" Style="{StaticResource WindowHeading}" />
+            <TextBlock Text="{loc:LocalizedText TransactionWindow.DraftSaveCtrlSForSqliteWritingAfter}"
                        TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"
                        AutomationProperties.AutomationId="TransactionDraftNotice" />
         </StackPanel>
@@ -22,73 +22,73 @@
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="160" /></Grid.ColumnDefinitions>
                     <StackPanel Margin="0,0,12,0">
-                        <Label Content="Compte (fixe)" Target="{Binding ElementName=TransactionAccount}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.FixedAccount}" Target="{Binding ElementName=TransactionAccount}" />
                         <TextBox x:Name="TransactionAccount" IsReadOnly="True" IsTabStop="False"
-                                 AutomationProperties.AutomationId="TransactionAccount" AutomationProperties.Name="Compte de l'opération, non modifiable" />
+                                 AutomationProperties.AutomationId="TransactionAccount" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.TransactionAccountNonModifiable}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <Label Content="Devise native (fixe)" Target="{Binding ElementName=NativeCurrency}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.NationalCurrencyFixed}" Target="{Binding ElementName=NativeCurrency}" />
                         <TextBox x:Name="NativeCurrency" IsReadOnly="True" IsTabStop="False"
-                                 AutomationProperties.AutomationId="NativeCurrency" AutomationProperties.Name="Devise native, non modifiable" />
+                                 AutomationProperties.AutomationId="NativeCurrency" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.NativeCurrencyNonModifiable}" />
                     </StackPanel>
                 </Grid>
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <StackPanel Margin="0,0,12,0">
-                        <Label Content="_Date (jj/mm/aaaa)" Target="{Binding ElementName=EntryDate}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.DateMmDdYyyyAccessKey}" Target="{Binding ElementName=EntryDate}" />
                         <TextBox x:Name="EntryDate" MaxLength="10" AutomationProperties.AutomationId="EntryDate"
-                                 AutomationProperties.Name="Date de l'opération au format jour mois année" />
+                                 AutomationProperties.Name="{loc:LocalizedText TransactionWindow.DateOfTransactionInFormatDayMonthYear}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="0,0,12,0">
-                        <Label Content="_Sens" Target="{Binding ElementName=EntryDirection}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.SenseAccessKey}" Target="{Binding ElementName=EntryDirection}" />
                         <ComboBox x:Name="EntryDirection" SelectedIndex="0" AutomationProperties.AutomationId="EntryDirection"
-                                  AutomationProperties.Name="Sens de l'opération">
-                            <ComboBoxItem Content="Dépense" />
-                            <ComboBoxItem Content="Recette" />
+                                  AutomationProperties.Name="{loc:LocalizedText TransactionWindow.SenseOfTheTransaction}">
+                            <ComboBoxItem Content="{loc:LocalizedText Common.Expense}" />
+                            <ComboBoxItem Content="{loc:LocalizedText Common.Income2}" />
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
-                        <Label Content="_Montant sans signe" Target="{Binding ElementName=EntryAmount}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.AmountWithoutSignAccessKey}" Target="{Binding ElementName=EntryAmount}" />
                         <TextBox x:Name="EntryAmount" MaxLength="128" TextAlignment="Right"
-                                 AutomationProperties.AutomationId="EntryAmount" AutomationProperties.Name="Montant positif ou nul dans la devise native" />
+                                 AutomationProperties.AutomationId="EntryAmount" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.PositiveOrNilAmountInTheNativeCurrency}" />
                     </StackPanel>
                 </Grid>
                 <TextBlock x:Name="AmountHint" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,10" />
-                <Label Content="_Libellé (obligatoire)" Target="{Binding ElementName=EntryLabel}" />
+                <Label Content="{loc:LocalizedText TransactionWindow.WordingMandatoryAccessKey}" Target="{Binding ElementName=EntryLabel}" />
                 <TextBox x:Name="EntryLabel" MaxLength="240" AutomationProperties.AutomationId="EntryLabel"
-                         AutomationProperties.Name="Libellé de l'opération, obligatoire" />
+                         AutomationProperties.Name="{loc:LocalizedText TransactionWindow.DescriptionOfTheTransactionMandatory}" />
                 <Grid Margin="0,8,0,0">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <StackPanel Margin="0,0,12,0">
-                        <Label Content="Mode de _paiement" Target="{Binding ElementName=EntryPaymentMode}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.PaymentMethodAccessKey}" Target="{Binding ElementName=EntryPaymentMode}" />
                         <ComboBox x:Name="EntryPaymentMode" IsEditable="True" IsTextSearchEnabled="False"
-                                  AutomationProperties.AutomationId="EntryPaymentMode" AutomationProperties.Name="Mode de paiement, suggestion ou saisie libre" />
+                                  AutomationProperties.AutomationId="EntryPaymentMode" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.MethodOfPaymentSuggestionOrFreeEntry}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <Label Content="_Tiers" Target="{Binding ElementName=EntryPayee}" />
+                        <Label Content="{loc:LocalizedText Common.PayeeAccessKey}" Target="{Binding ElementName=EntryPayee}" />
                         <ComboBox x:Name="EntryPayee" IsEditable="True" IsTextSearchEnabled="False"
-                                  AutomationProperties.AutomationId="EntryPayee" AutomationProperties.Name="Tiers, suggestion ou saisie libre" />
+                                  AutomationProperties.AutomationId="EntryPayee" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.PayeeSuggestionOrFreeEntry}" />
                     </StackPanel>
                 </Grid>
                 <Grid Margin="0,8,0,0">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                     <StackPanel Margin="0,0,12,0">
-                        <Label Content="_Catégorie" Target="{Binding ElementName=EntryCategory}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.CategoryAccessKey}" Target="{Binding ElementName=EntryCategory}" />
                         <ComboBox x:Name="EntryCategory" IsEditable="True" IsTextSearchEnabled="False"
-                                  AutomationProperties.AutomationId="EntryCategory" AutomationProperties.Name="Catégorie racine, suggestion ou saisie libre" />
+                                  AutomationProperties.AutomationId="EntryCategory" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.RootCategorySuggestionOrFreeEntry}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <Label Content="S_ous-catégorie" Target="{Binding ElementName=EntrySubcategory}" />
+                        <Label Content="{loc:LocalizedText TransactionWindow.SOurCategoryAccessKey}" Target="{Binding ElementName=EntrySubcategory}" />
                         <ComboBox x:Name="EntrySubcategory" IsEditable="True" IsTextSearchEnabled="False"
-                                  AutomationProperties.AutomationId="EntrySubcategory" AutomationProperties.Name="Sous-catégorie de la catégorie choisie, suggestion ou saisie libre" />
+                                  AutomationProperties.AutomationId="EntrySubcategory" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.SubcategoryOfChosenCategorySuggestionOrFreeEntry}" />
                     </StackPanel>
                 </Grid>
-                <TextBlock Text="Champs facultatifs : choisissez une suggestion ou saisissez un nom. La sous-catégorie appartient à la catégorie choisie."
+                <TextBlock Text="{loc:LocalizedText TransactionWindow.OptionalFieldsChooseASuggestionOrEnterA}"
                            TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,8" />
-                <Label Content="_Notes (facultatives)" Target="{Binding ElementName=EntryNotes}" />
+                <Label Content="{loc:LocalizedText Common.NotesOptionalAccessKey}" Target="{Binding ElementName=EntryNotes}" />
                 <TextBox x:Name="EntryNotes" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap"
                          Height="84" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"
-                         AutomationProperties.AutomationId="EntryNotes" AutomationProperties.Name="Notes de l'opération, facultatives" />
+                         AutomationProperties.AutomationId="EntryNotes" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.TransactionNotesOptional}" />
             </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="2" Margin="0,12,0,0">
@@ -96,10 +96,10 @@
                        AutomationProperties.AutomationId="TransactionError" AutomationProperties.Name="{Binding Text, RelativeSource={RelativeSource Self}}"
                        AutomationProperties.LiveSetting="Assertive" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                <Button x:Name="CancelTransaction" Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"
+                <Button x:Name="CancelTransaction" Content="{loc:LocalizedText Common.Cancel}" IsCancel="True" MinWidth="90" Margin="0,0,8,0"
                         AutomationProperties.AutomationId="CancelTransaction" />
-                <Button x:Name="ConfirmTransaction" Content="Valider le brouillon" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Confirm_Click"
-                        AutomationProperties.AutomationId="ConfirmTransaction" AutomationProperties.Name="Valider le brouillon, sans enregistrer sur disque" />
+                <Button x:Name="ConfirmTransaction" Content="{loc:LocalizedText Common.ValidateDraft}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Confirm_Click"
+                        AutomationProperties.AutomationId="ConfirmTransaction" AutomationProperties.Name="{loc:LocalizedText TransactionWindow.ValidateDraftWithoutRecordingToDisc}" />
             </StackPanel>
         </StackPanel>
     </Grid>

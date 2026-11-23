@@ -10,6 +10,10 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Français et anglais — mission 20
+
+Le code de développement destiné à la 0.2.0 comprend les ressources d’interface françaises et anglaises, le choix persistant de la langue et l’actualisation à chaud. La qualification de l’installateur et les vérifications de publication appartiennent à la préparation de cette version. [Internationalisation et qualification](LOCALIZATION.md)
+
 ### Échéancier — mission 14
 
 Les programmations de recette, dépense et virement, les retards, les reports et le journal de décisions sont intégrés au schéma 7. La confirmation suivie de Ctrl+S utilise la transaction du registre. [Échéancier](SCHEDULED_TRANSACTIONS.md)

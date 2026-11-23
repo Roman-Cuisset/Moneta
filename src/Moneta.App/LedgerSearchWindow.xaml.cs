@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -14,20 +15,20 @@ public partial class LedgerSearchWindow : Window
 
     private sealed record Result(LedgerSearchRow Row)
     {
-        public string Date => Row.Date.ToString("dd/MM/yyyy", French);
-        public string Account => $"{Row.AccountOrdinal + 1}. {(Row.Archived ? "Archivé · " : "")}{Row.AccountName}";
-        public string Amount => $"{Row.SignedAmount.ToString($"N{Row.DecimalPlaces}", French)} {Row.CurrencyCode}";
+        public string Date => Row.Date.ToString(L.DatePattern, DisplayCulture);
+        public string Account => $"{Row.AccountOrdinal + 1}. {(Row.Archived ? L.Get("Search.ArchivedPrefix") : "")}{Row.AccountName}";
+        public string Amount => $"{Row.SignedAmount.ToString($"N{Row.DecimalPlaces}", DisplayCulture)} {Row.CurrencyCode}";
         public string Category => Row.Subcategory.Length == 0 ? Row.Category : $"{Row.Category} / {Row.Subcategory}";
         public string Status => Row.Status switch { ReconciliationStatus.Marked => "P", ReconciliationStatus.Reconciled => "R", _ => "NP" };
         public string Kind => Row.TransferRole switch
         {
-            LedgerTransferLeg.Fee => "Frais liés",
-            LedgerTransferLeg.Debit or LedgerTransferLeg.Credit => "Virement",
-            _ => Row.Direction == TransactionDirection.Credit ? "Recette" : "Dépense"
+            LedgerTransferLeg.Fee => L.Get("LedgerSearchWindow.LinkedFee"),
+            LedgerTransferLeg.Debit or LedgerTransferLeg.Credit => L.Get("Common.Transfer"),
+            _ => Row.Direction == TransactionDirection.Credit ? L.Get("Common.Income2") : L.Get("Common.Expense")
         };
     }
 
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly string _path;
     private readonly Guid _documentId;
     private readonly Func<LedgerSearchRow, Task<bool>> _navigate;
@@ -43,6 +44,8 @@ public partial class LedgerSearchWindow : Window
     private bool _navigating;
     private bool _refreshOnShow;
     private bool _closed;
+    private bool _localizing;
+    private CultureInfo _inputCulture = L.Culture;
 
     public LedgerSearchWindow(string path, FinancialDocument document, Func<LedgerSearchRow, Task<bool>> navigate,
         Func<(Guid? Id, string? Name)> registerAccount)
@@ -52,22 +55,28 @@ public partial class LedgerSearchWindow : Window
         _navigate = navigate;
         _registerAccount = registerAccount;
         InitializeComponent();
-        Bind(Kind, new Choice<LedgerSearchKind>[] { new(LedgerSearchKind.All, "Tous les types"), new(LedgerSearchKind.Income, "Recettes"), new(LedgerSearchKind.Expense, "Dépenses"), new(LedgerSearchKind.Transfers, "Virements et frais"), new(LedgerSearchKind.Fees, "Frais de virement") });
-        Bind(Pointing, new Choice<LedgerSearchStatus>[] { new(LedgerSearchStatus.All, "Tous les états"), new(LedgerSearchStatus.Unmarked, "NP"), new(LedgerSearchStatus.Marked, "P"), new(LedgerSearchStatus.Reconciled, "R"),
-            new(LedgerSearchStatus.Unmarked | LedgerSearchStatus.Marked, "NP + P"), new(LedgerSearchStatus.Marked | LedgerSearchStatus.Reconciled, "P + R") });
-        Bind(SortOrder, new Choice<LedgerSearchSort>[] { new(LedgerSearchSort.Date, "Date"), new(LedgerSearchSort.Amount, "Montant"), new(LedgerSearchSort.Label, "Libellé"),
-            new(LedgerSearchSort.Account, "Compte"), new(LedgerSearchSort.Category, "Catégorie"), new(LedgerSearchSort.Payee, "Tiers"), new(LedgerSearchSort.Status, "Pointage") });
-        Bind(CountryCurrency, new[] { new Choice<string?>(null, "Chaque devise") }
-            .Concat(document.Currencies.Select(currency => new Choice<string?>(currency.Code, currency.Code))));
+        RefreshChoices();
+        UpdateCurrencies(document);
+        PropertyChangedEventManager.AddHandler(L.Current, LanguageChanged, nameof(L.CultureName));
         Results.SelectionChanged += (_, _) => OpenResult.IsEnabled = Results.SelectedItem is Result;
         Closed += (_, _) => { _closed = true; CancelSearch(); };
     }
 
+    private void RefreshChoices()
+    {
+        Bind(Kind, new Choice<LedgerSearchKind>[] { new(LedgerSearchKind.All, L.Get("LedgerSearchWindow.AllTypes")), new(LedgerSearchKind.Income, L.Get("Common.Income")), new(LedgerSearchKind.Expense, L.Get("Common.Expenses")), new(LedgerSearchKind.Transfers, L.Get("LedgerSearchWindow.TransfersAndFees")), new(LedgerSearchKind.Fees, L.Get("Common.TransferFees")) });
+        Bind(Pointing, new Choice<LedgerSearchStatus>[] { new(LedgerSearchStatus.All, L.Get("LedgerSearchWindow.AllStates")), new(LedgerSearchStatus.Unmarked, "NP"), new(LedgerSearchStatus.Marked, "P"), new(LedgerSearchStatus.Reconciled, "R"),
+            new(LedgerSearchStatus.Unmarked | LedgerSearchStatus.Marked, "NP + P"), new(LedgerSearchStatus.Marked | LedgerSearchStatus.Reconciled, "P + R") });
+        Bind(SortOrder, new Choice<LedgerSearchSort>[] { new(LedgerSearchSort.Date, L.Get("Common.Date")), new(LedgerSearchSort.Amount, L.Get("Common.Amount")), new(LedgerSearchSort.Label, L.Get("Common.Description")),
+            new(LedgerSearchSort.Account, L.Get("Common.Account")), new(LedgerSearchSort.Category, L.Get("Common.Category")), new(LedgerSearchSort.Payee, L.Get("Common.Payee")), new(LedgerSearchSort.Status, L.Get("Common.ClearedStatus")) });
+    }
+
     private static void Bind<T>(ComboBox control, IEnumerable<Choice<T>> items)
     {
+        var index = Math.Max(0, control.SelectedIndex);
         control.ItemsSource = items.ToArray();
         control.DisplayMemberPath = nameof(Choice<T>.Label);
-        control.SelectedIndex = 0;
+        control.SelectedIndex = Math.Min(index, control.Items.Count - 1);
     }
 
     private static T Value<T>(ComboBox control) => ((Choice<T>)control.SelectedItem).Value;
@@ -96,12 +105,51 @@ public partial class LedgerSearchWindow : Window
 
     internal void UpdateCurrencies(FinancialDocument document)
     {
-        string? selection = Value<string?>(CountryCurrency);
-        Bind(CountryCurrency, new[] { new Choice<string?>(null, "Chaque devise") }
+        string? selection = (CountryCurrency.SelectedItem as Choice<string?>)?.Value;
+        Bind(CountryCurrency, new[] { new Choice<string?>(null, L.Get("Search.EachCurrency")) }
             .Concat(document.Currencies.Select(currency => new Choice<string?>(currency.Code, currency.Code))));
         if (selection is not null)
             CountryCurrency.SelectedItem = CountryCurrency.Items.Cast<Choice<string?>>().SingleOrDefault(item => item.Value == selection)
                 ?? CountryCurrency.Items[0];
+    }
+
+    private void LanguageChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (_closed) return;
+        _localizing = _periodUpdating = true;
+        try
+        {
+            RefreshChoices();
+            var choices = CountryCurrency.Items.Cast<Choice<string?>>().ToArray();
+            choices[0] = new(null, L.Get("Search.EachCurrency"));
+            Bind(CountryCurrency, choices);
+            foreach (var field in new[] { FromDate, ThroughDate })
+            {
+                string pattern = _inputCulture.Name == L.English ? "MM/dd/yyyy" : "dd/MM/yyyy";
+                if (DateOnly.TryParseExact(field.Text.Trim(), pattern, _inputCulture, DateTimeStyles.None, out var date))
+                    field.Text = date.ToString(L.DatePattern, L.Culture);
+            }
+            foreach (var field in new[] { ExactAmount, MinAmount, MaxAmount })
+            {
+                try
+                {
+                    if (LedgerSearchCriteria.ParseAmount(field.Text, _inputCulture) is { } amount)
+                        field.Text = amount.ToString("0.############################", L.Culture);
+                }
+                catch (ArgumentException) { /* Keep malformed input available for correction. */ }
+            }
+            _inputCulture = L.Culture;
+            if (_page is { } page && _applied is { } criteria)
+            {
+                _selectedResultId = (Results.SelectedItem as Result)?.Row.Id;
+                var (id, name) = _registerAccount();
+                if (id == criteria.AccountId && name is not null) _accountName = name;
+                RenderPage(page, criteria);
+            }
+            else if (_request is not null)
+                SearchStatus.Text = L.Get("LedgerSearchWindow.SearchingRecordedTransactions");
+        }
+        finally { _localizing = _periodUpdating = false; }
     }
 
     internal void RefreshAfterSave()
@@ -130,8 +178,8 @@ public partial class LedgerSearchWindow : Window
     private static DateOnly? ReadDate(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
-        return DateOnly.TryParseExact(text.Trim(), "dd/MM/yyyy", French, DateTimeStyles.None, out var date)
-            ? date : throw new ArgumentException("Saisissez les dates au format jj/mm/aaaa.");
+        return DateOnly.TryParseExact(text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date)
+            ? date : throw new ArgumentException(L.Get("LedgerSearchWindow.EnterTheDatesInMmDdYyyyFormat"));
     }
 
     private Task ApplyAsync(bool useRegisterAccount = false)
@@ -143,7 +191,7 @@ public partial class LedgerSearchWindow : Window
             {
                 var (id, name) = _registerAccount();
                 _accountId = id ?? Guid.Empty;
-                _accountName = name ?? "Aucun compte sélectionné";
+                _accountName = name ?? L.Get("Common.NoAccountSelected");
             }
             var criteria = ReadCriteria();
             criteria.Validate();
@@ -173,34 +221,39 @@ public partial class LedgerSearchWindow : Window
         _applied = criteria;
         _refreshOnShow = false;
         ResetPage();
-        SearchStatus.Text = "Recherche dans les opérations enregistrées…";
+        SearchStatus.Text = L.Get("LedgerSearchWindow.SearchingRecordedTransactions");
         try
         {
             var page = await Task.Run(() => MonetaFile.SearchOperations(_path, _documentId, criteria, index, token), token);
             if (_request != request) return;
             _page = page;
             _requestedPage = page.Index;
-            var rows = page.Rows.Select(row => new Result(row)).ToArray();
-            Results.ItemsSource = rows;
-            if (_selectedResultId is { } id) Results.SelectedItem = rows.FirstOrDefault(row => row.Row.Id == id);
-            Previous.IsEnabled = page.Index > 0;
-            var pages = (page.Total + LedgerSearchCriteria.PageSize - 1) / LedgerSearchCriteria.PageSize;
-            Next.IsEnabled = page.Index + 1 < pages;
-            PageStatus.Text = pages == 0 ? "" : $"Page {page.Index + 1} / {pages}";
-            var filtered = criteria.HasFilters;
-            var scope = criteria.AccountId is null
-                ? (criteria.IncludeArchived ? "Tous les comptes avec archives" : "Comptes actifs")
-                : _accountName;
-            SearchStatus.Text = $"{scope} · " + (page.Total == 0
-                ? (filtered ? "Aucun résultat pour les filtres appliqués" : "Aucune opération enregistrée")
-                : $"{page.Total:N0} résultat(s){(filtered ? " · Filtres appliqués" : "")}");
+            RenderPage(page, criteria);
         }
         catch (OperationCanceledException) when (request.IsCancellationRequested) { }
         catch (Exception error) when (error is DocumentException or IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
-            if (_request == request) SearchStatus.Text = error is DocumentException or ArgumentException ? error.Message : "Recherche interrompue. Réessayez.";
+            if (_request == request) SearchStatus.Text = error is DocumentException or ArgumentException ? error.Message : L.Get("LedgerSearchWindow.SearchInterruptedTryAgain");
         }
         finally { if (_request == request) _request = null; }
+    }
+
+    private void RenderPage(LedgerSearchPage page, LedgerSearchCriteria criteria)
+    {
+        var rows = page.Rows.Select(row => new Result(row)).ToArray();
+        Results.ItemsSource = rows;
+        if (_selectedResultId is { } id) Results.SelectedItem = rows.FirstOrDefault(row => row.Row.Id == id);
+        Previous.IsEnabled = page.Index > 0;
+        var pages = (page.Total + LedgerSearchCriteria.PageSize - 1) / LedgerSearchCriteria.PageSize;
+        Next.IsEnabled = page.Index + 1 < pages;
+        PageStatus.Text = pages == 0 ? "" : L.Format("LedgerSearchWindow.Page01", page.Index + 1, pages);
+        var filtered = criteria.HasFilters;
+        var scope = criteria.AccountId is null
+            ? L.Get(criteria.IncludeArchived ? "LedgerSearchWindow.AllAccountsWithArchive" : "LedgerSearchWindow.ActiveAccounts")
+            : _accountName;
+        SearchStatus.Text = $"{scope} · " + (page.Total == 0
+            ? L.Get(filtered ? "LedgerSearchWindow.NoResultsForAppliedFilters" : "LedgerSearchWindow.NoTransactionsRecorded")
+            : L.Format("LedgerSearchWindow.0N0ResultS1", page.Total, filtered ? L.Get("Search.FiltersApplied") : ""));
     }
 
     private void ResetPage()
@@ -231,8 +284,8 @@ public partial class LedgerSearchWindow : Window
             _ => (null, null)
         };
         _periodUpdating = true;
-        FromDate.Text = dates.Item1?.ToString("dd/MM/yyyy", French) ?? "";
-        ThroughDate.Text = dates.Item2?.ToString("dd/MM/yyyy", French) ?? "";
+        FromDate.Text = dates.Item1?.ToString(L.DatePattern, DisplayCulture) ?? "";
+        ThroughDate.Text = dates.Item2?.ToString(L.DatePattern, DisplayCulture) ?? "";
         _periodUpdating = false;
     }
 
@@ -248,7 +301,7 @@ public partial class LedgerSearchWindow : Window
 
     private async void Sort_Changed(object sender, RoutedEventArgs e)
     {
-        if (IsLoaded && _applied is { } criteria)
+        if (IsLoaded && !_localizing && _applied is { } criteria)
             await RunAsync(criteria with { Sort = Value<LedgerSearchSort>(SortOrder), Descending = Descending.IsChecked == true }, 0);
     }
 
@@ -284,7 +337,7 @@ public partial class LedgerSearchWindow : Window
             {
                 if (!_closed) Hide();
             }
-            else SearchStatus.Text = "L’opération n’est plus disponible dans le registre courant.";
+            else SearchStatus.Text = L.Get("LedgerSearchWindow.TheTransactionIsNoLongerAvailableInThe");
         }
         finally { _navigating = false; IsEnabled = true; }
     }

@@ -9,7 +9,7 @@ namespace Moneta.App;
 
 public partial class TransactionWindow : Window
 {
-    private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly MainViewModel _model;
     private readonly Guid _accountId;
     private readonly Currency _currency;
@@ -22,15 +22,15 @@ public partial class TransactionWindow : Window
     {
         ArgumentNullException.ThrowIfNull(model);
         if (model.IsDemo)
-            throw new InvalidOperationException("La saisie d’opérations n’est pas disponible dans la démonstration.");
+            throw new InvalidOperationException(L.Get("TransactionWindow.SeizureOfTransactionsIsNotAvailableInThe"));
         var account = model.SelectedAccount?.Account
-            ?? throw new InvalidOperationException("Sélectionnez un compte pour saisir une opération.");
+            ?? throw new InvalidOperationException(L.Get("TransactionWindow.SelectAnAccountToEnterATransaction"));
         if (account.IsArchived)
-            throw new InvalidOperationException("Un compte archivé ne peut pas recevoir de modifications.");
+            throw new InvalidOperationException(L.Get("TransactionWindow.AnArchivedAccountCannotReceiveChanges"));
         if (editing is not null && (editing.AccountId != account.Id || editing.IsDeleted))
-            throw new ArgumentException("L’opération à modifier doit appartenir au compte sélectionné et ne pas être supprimée.", nameof(editing));
+            throw new ArgumentException(L.Get("TransactionWindow.TheTransactionToBeModifiedMustBelongTo"), nameof(editing));
         if (editing?.Valuation is not null)
-            throw new ArgumentException("La modification d’une opération avec valorisation n’est pas prise en charge.", nameof(editing));
+            throw new ArgumentException(L.Get("TransactionWindow.TheModificationOfAValuationTransactionIsNot"), nameof(editing));
 
         _model = model;
         _accountId = account.Id;
@@ -41,14 +41,14 @@ public partial class TransactionWindow : Window
         _categories = document.Categories;
 
         InitializeComponent();
-        Title = editing is null ? "Nouvelle opération" : "Modifier l’opération";
+        Title = editing is null ? L.Get("Common.NewTransaction") : L.Get("TransactionWindow.ChangeTheTransaction");
         Heading.Text = Title;
         TransactionAccount.Text = account.Name;
         NativeCurrency.Text = _currency.Code;
-        AmountHint.Text = $"Montant en {_currency.Code}, sans signe : le sens indique la dépense ou la recette. "
-            + $"Précision : {_currency.DecimalPlaces} décimale(s), sans arrondi. Zéro est autorisé.";
-        EntryDate.Text = (editing?.Date ?? DateOnly.FromDateTime(DateTime.Today)).ToString("dd/MM/yyyy", FrenchCulture);
-        EntryAmount.Text = (editing?.Amount ?? 0m).ToString($"F{_currency.DecimalPlaces}", FrenchCulture);
+        AmountHint.Text = L.Format("TransactionWindow.AmountIn0WithoutSignTheMeaningIndicates", (_currency.Code))
+            + L.Format("TransactionWindow.Accuracy0DecimalsWithoutRoundingZeroIsAllowed", (_currency.DecimalPlaces));
+        EntryDate.Text = (editing?.Date ?? DateOnly.FromDateTime(DateTime.Today)).ToString(L.DatePattern, DisplayCulture);
+        EntryAmount.Text = (editing?.Amount ?? 0m).ToString($"F{_currency.DecimalPlaces}", DisplayCulture);
         EntryDirection.SelectedIndex = editing?.Direction switch
         {
             null or TransactionDirection.Debit => 0,
@@ -112,15 +112,15 @@ public partial class TransactionWindow : Window
             if (!TryBuildDraft(out var draft))
                 return;
             if (_model.SelectedAccountId != _accountId)
-                throw new InvalidOperationException("Le compte sélectionné a changé. Fermez cette fenêtre puis recommencez sur le compte voulu.");
+                throw new InvalidOperationException(L.Get("ReconciliationWindow.TheSelectedAccountHasChangedCloseThisWindow"));
             if (_editingId is { } id)
             {
                 var previous = _model.Rows.FirstOrDefault(row => row.Transaction.Id == id)?.Transaction;
                 if (previous is { Status: ReconciliationStatus.Marked } &&
                     (previous.Date != draft.Date || previous.Amount != draft.Amount || previous.Direction != draft.Direction) &&
                     MessageBox.Show(this,
-                        "Cette opération est pointée. Sa date, son montant ou son sens va changer. Le pointage sera conservé et le solde pointé sera recalculé. Confirmer la correction ?",
-                        "Moneta — corriger une opération pointée", MessageBoxButton.YesNo,
+                        L.Get("TransactionWindow.ThisTransactionIsMarkedItsDateAmountOr"),
+                        L.Get("TransactionWindow.MonetaCorrectAClearedTransaction"), MessageBoxButton.YesNo,
                         MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
                 _model.EditTransaction(id, _editingRevision, draft);
             }
@@ -131,7 +131,7 @@ public partial class TransactionWindow : Window
         }
         catch (Exception error)
         {
-            ErrorText.Text = "Le brouillon n’a pas pu être validé. Vos champs sont conservés.\n" + error.Message;
+            ErrorText.Text = L.Get("Common.TheDraftCouldNotBeValidatedYourFields") + error.Message;
             ErrorText.BringIntoView();
         }
         finally
@@ -147,16 +147,16 @@ public partial class TransactionWindow : Window
     private bool TryBuildDraft(out TransactionDraft draft)
     {
         draft = null!;
-        if (!DateOnly.TryParseExact(EntryDate.Text.Trim(), "dd/MM/yyyy", FrenchCulture, DateTimeStyles.None, out var date)
+        if (!DateOnly.TryParseExact(EntryDate.Text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date)
             || date == default)
-            return ShowError("Date invalide : saisissez une date au format jj/mm/aaaa, par exemple 31/10/2026.", EntryDate);
+            return ShowError(L.Get("TransactionWindow.InvalidDateEnterADateInMmDd"), EntryDate);
         if (EntryDirection.SelectedIndex is not (0 or 1))
-            return ShowError("Choisissez Dépense ou Recette pour indiquer le sens de l’opération.", EntryDirection);
+            return ShowError(L.Get("TransactionWindow.ChooseExpenditureOrRecipeToIndicateTheMeaning"), EntryDirection);
 
         decimal amount;
         try
         {
-            amount = MoneyInput.ParseFrench(EntryAmount.Text, _currency);
+            amount = MoneyInput.ParseLocalized(EntryAmount.Text, _currency);
         }
         catch (ArgumentException error)
         {
@@ -165,23 +165,23 @@ public partial class TransactionWindow : Window
 
         var label = EntryLabel.Text.Trim();
         if (string.IsNullOrWhiteSpace(label) || label.Length > 240)
-            return ShowError("Le libellé est obligatoire et doit contenir au plus 240 caractères.", EntryLabel);
+            return ShowError(L.Get("TransactionWindow.TheWordingIsMandatoryAndMustContainNo"), EntryLabel);
         var mode = OptionalName(EntryPaymentMode.Text);
         var payee = OptionalName(EntryPayee.Text);
         var category = OptionalName(EntryCategory.Text);
         var subcategory = OptionalName(EntrySubcategory.Text);
         if (mode?.Length > 80)
-            return ShowError("Le mode de paiement doit contenir au plus 80 caractères.", EntryPaymentMode);
+            return ShowError(L.Get("TransactionWindow.TheMethodOfPaymentMustContainNoMore"), EntryPaymentMode);
         if (payee?.Length > 120)
-            return ShowError("Le tiers doit contenir au plus 120 caractères.", EntryPayee);
+            return ShowError(L.Get("TransactionWindow.ThePayeeMustContainNoMoreThan120"), EntryPayee);
         if (category?.Length > 120)
-            return ShowError("La catégorie doit contenir au plus 120 caractères.", EntryCategory);
+            return ShowError(L.Get("TransactionWindow.TheCategoryMustContainNoMoreThan120"), EntryCategory);
         if (subcategory?.Length > 120)
-            return ShowError("La sous-catégorie doit contenir au plus 120 caractères.", EntrySubcategory);
+            return ShowError(L.Get("TransactionWindow.TheSubcategoryMustContainNoMoreThan120"), EntrySubcategory);
         if (subcategory is not null && category is null)
-            return ShowError("Saisissez une catégorie racine pour cette sous-catégorie, ou effacez la sous-catégorie.", EntryCategory);
+            return ShowError(L.Get("TransactionWindow.EnterARootCategoryForThisSubcategoryOr"), EntryCategory);
         if (EntryNotes.Text.Length > 2000)
-            return ShowError("Les notes doivent contenir au plus 2 000 caractères.", EntryNotes);
+            return ShowError(L.Get("TransactionWindow.NotesMustContainAMaximumOf2000"), EntryNotes);
 
         draft = new TransactionDraft(date, amount,
             EntryDirection.SelectedIndex == 0 ? TransactionDirection.Debit : TransactionDirection.Credit,

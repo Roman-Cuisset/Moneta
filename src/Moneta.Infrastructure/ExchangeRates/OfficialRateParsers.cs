@@ -18,9 +18,9 @@ public static class OfficialRateParsers
         DateTimeOffset retrievedUtc, string endpoint, ReadOnlyMemory<byte> payload)
     {
         if (payload.Length > MaximumPayloadBytes)
-            throw Invalid("La réponse de cours dépasse la taille autorisée.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheRateResponseExceedsTheAuthorizedSize"));
         if (payload.IsEmpty)
-            throw Invalid("La réponse de cours est vide.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheRateResponseIsEmpty"));
 
         // Own the exact received bytes: callers may reuse their transport buffers.
         var bytes = payload.ToArray();
@@ -41,7 +41,7 @@ public static class OfficialRateParsers
         catch (RateException) { throw; }
         catch (Exception ex) when (ex is JsonException or XmlException or ArgumentException or FormatException or OverflowException or InvalidOperationException)
         {
-            throw Invalid("La réponse officielle contient des cours invalides.", ex);
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheOfficialResponseContainsInvalidRates"), ex);
         }
     }
 
@@ -50,37 +50,37 @@ public static class OfficialRateParsers
         using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 8 });
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Array)
-            throw Invalid("Le tableau NBRB est invalide.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheNbrbTableIsInvalid"));
         if (root.GetArrayLength() > MaximumEntries)
-            throw Invalid("Le tableau NBRB contient trop de devises.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheNbrbTableContainsTooManyCurrencies"));
         var quotes = new List<OfficialRateQuote>(root.GetArrayLength());
         var sourceIds = new HashSet<string>(StringComparer.Ordinal);
         DateOnly? effectiveDate = null;
         foreach (var row in root.EnumerateArray())
         {
             if (row.ValueKind != JsonValueKind.Object)
-                throw Invalid("Une ligne NBRB est invalide.");
+                throw Invalid(L.GetCanonical("OfficialRateParsers.ANbrbLineIsInvalid"));
             var properties = new HashSet<string>(StringComparer.Ordinal);
             foreach (var property in row.EnumerateObject())
                 if (!properties.Add(property.Name))
-                    throw Invalid("Une propriété NBRB est répétée.");
+                    throw Invalid(L.GetCanonical("OfficialRateParsers.ANbrbPropertyIsRepeated"));
             var dateText = RequiredString(row, "Date");
             if (!DateTime.TryParseExact(dateText, "yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture,
                     DateTimeStyles.None, out var timestamp) || timestamp.TimeOfDay != TimeSpan.Zero)
-                throw Invalid("La date NBRB est invalide.");
+                throw Invalid(L.GetCanonical("OfficialRateParsers.TheNbrbDateIsInvalid"));
             var date = DateOnly.FromDateTime(timestamp);
             if (effectiveDate.HasValue && date != effectiveDate.Value)
-                throw Invalid("Les dates du tableau NBRB ne concordent pas.");
+                throw Invalid(L.GetCanonical("OfficialRateParsers.TheDatesInTableNbrbDoNotMatch"));
             effectiveDate = date;
             var id = RequiredInteger(row, "Cur_ID");
             if (id <= 0)
-                throw Invalid("L'identifiant NBRB est invalide.");
+                throw Invalid(L.GetCanonical("OfficialRateParsers.NbrbIdIsInvalid"));
             var sourceId = id.ToString(CultureInfo.InvariantCulture);
             if (!sourceIds.Add(sourceId))
-                throw Invalid("Un identifiant NBRB est répété.");
+                throw Invalid(L.GetCanonical("OfficialRateParsers.ANbrbIdentifierIsRepeated"));
             var nominal = RequiredInteger(row, "Cur_Scale");
             if (!row.TryGetProperty("Cur_OfficialRate", out var value) || value.ValueKind != JsonValueKind.Number)
-                throw Invalid("Le cours NBRB est invalide.");
+                throw Invalid(L.GetCanonical("OfficialRateParsers.TheNbrbRateIsInvalid"));
             var officialValue = RateRules.ParseOfficialDecimal(value.GetRawText());
             var numericCode = row.TryGetProperty("Cur_Code", out _) ? RequiredString(row, "Cur_Code") : "";
             var name = row.TryGetProperty("Cur_Name", out _) ? RequiredString(row, "Cur_Name") : "";
@@ -88,21 +88,21 @@ public static class OfficialRateParsers
                 nominal, sourceId, numericCode, name));
         }
         if (!effectiveDate.HasValue)
-            throw new RateException(RateFailure.Unavailable, "Aucun cours NBRB publié pour cette demande.");
+            throw new RateException(RateFailure.Unavailable, L.GetCanonical("OfficialRateParsers.NoNbrbRatesHaveBeenPublishedForThis"));
         return (effectiveDate.Value, quotes);
     }
 
     private static string RequiredString(JsonElement row, string name)
     {
         if (!row.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
-            throw Invalid($"Le champ NBRB {name} est invalide.");
+            throw Invalid(L.FormatCanonical("OfficialRateParsers.TheNbrb0FieldIsInvalid", name));
         return value.GetString()!;
     }
 
     private static long RequiredInteger(JsonElement row, string name)
     {
         if (!row.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var integer))
-            throw Invalid($"Le champ entier NBRB {name} est invalide.");
+            throw Invalid(L.FormatCanonical("OfficialRateParsers.TheEntireNbrb0FieldIsInvalid", name));
         return integer;
     }
 
@@ -120,10 +120,10 @@ public static class OfficialRateParsers
             IgnoreWhitespace = true
         });
         if (reader.MoveToContent() != XmlNodeType.Element || reader.Name != "ValCurs" || reader.NamespaceURI.Length != 0)
-            throw Invalid("La racine CBR est invalide.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheCbrRootIsInvalid"));
         if (!DateOnly.TryParseExact(reader.GetAttribute("Date"), "dd.MM.yyyy", CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out var date))
-            throw Invalid("La date CBR est invalide.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheCbrDateIsInvalid"));
         var quotes = new List<OfficialRateQuote>();
         var sourceIds = new HashSet<string>(StringComparer.Ordinal);
         if (reader.IsEmptyElement)
@@ -136,12 +136,12 @@ public static class OfficialRateParsers
             while (reader.MoveToContent() == XmlNodeType.Element)
             {
                 if (reader.Name != "Valute" || reader.NamespaceURI.Length != 0 || reader.Depth != 1 || reader.IsEmptyElement)
-                    throw Invalid("Une ligne CBR est invalide.");
+                    throw Invalid(L.GetCanonical("OfficialRateParsers.ACbrLineIsInvalid"));
                 if (quotes.Count == MaximumEntries)
-                    throw Invalid("Le tableau CBR contient trop de devises.");
+                    throw Invalid(L.GetCanonical("OfficialRateParsers.TableCbrContainsTooManyCurrencies"));
                 var sourceId = reader.GetAttribute("ID");
                 if (string.IsNullOrEmpty(sourceId) || !sourceIds.Add(sourceId))
-                    throw Invalid("Un identifiant CBR est absent ou répété.");
+                    throw Invalid(L.GetCanonical("OfficialRateParsers.ACbrIdentifierIsMissingOrRepeated"));
                 var fields = new Dictionary<string, string>(StringComparer.Ordinal);
                 reader.ReadStartElement("Valute");
                 while (reader.MoveToContent() == XmlNodeType.Element)
@@ -149,19 +149,19 @@ public static class OfficialRateParsers
                     var name = reader.Name;
                     if (reader.Depth != 2 || reader.NamespaceURI.Length != 0 ||
                         name is not ("NumCode" or "CharCode" or "Nominal" or "Name" or "Value" or "VunitRate") || fields.ContainsKey(name))
-                        throw Invalid("Un champ CBR est invalide ou répété.");
+                        throw Invalid(L.GetCanonical("OfficialRateParsers.ACbrFieldIsInvalidOrRepeated"));
                     // ElementContent rejects nested markup, bounding XML depth to the schema.
                     fields.Add(name, reader.ReadElementContentAsString());
                 }
                 reader.ReadEndElement();
                 var nominalText = RequiredField(fields, "Nominal");
                 if (!AsciiDigits(nominalText) || !long.TryParse(nominalText, NumberStyles.None, CultureInfo.InvariantCulture, out var nominal))
-                    throw Invalid("Le nominal CBR est invalide.");
+                    throw Invalid(L.GetCanonical("OfficialRateParsers.NominalCbrIsInvalid"));
                 var valueText = RequiredField(fields, "Value");
                 var comma = valueText.IndexOf(',');
                 if (comma <= 0 || comma == valueText.Length - 1 ||
                     !AsciiDigits(valueText.AsSpan(0, comma)) || !AsciiDigits(valueText.AsSpan(comma + 1)))
-                    throw Invalid("Le nombre décimal CBR est invalide.");
+                    throw Invalid(L.GetCanonical("OfficialRateParsers.TheDecimalNumberCbrIsInvalid"));
                 quotes.Add(new OfficialRateQuote(RequiredField(fields, "CharCode"),
                     RateRules.ParseOfficialDecimal(valueText.Replace(',', '.')), nominal, sourceId,
                     RequiredField(fields, "NumCode"), RequiredField(fields, "Name")));
@@ -169,14 +169,14 @@ public static class OfficialRateParsers
             reader.ReadEndElement();
         }
         if (reader.MoveToContent() != XmlNodeType.None)
-            throw Invalid("Le document CBR contient des données supplémentaires.");
+            throw Invalid(L.GetCanonical("OfficialRateParsers.TheCbrDocumentContainsAdditionalData"));
         if (quotes.Count == 0)
-            throw new RateException(RateFailure.Unavailable, "Aucun cours CBR publié pour cette demande.");
+            throw new RateException(RateFailure.Unavailable, L.GetCanonical("OfficialRateParsers.NoCbrRatesPublishedForThisApplication"));
         return (date, quotes);
     }
 
     private static string RequiredField(Dictionary<string, string> fields, string name) =>
-        fields.TryGetValue(name, out var value) ? value : throw Invalid($"Le champ CBR {name} est absent.");
+        fields.TryGetValue(name, out var value) ? value : throw Invalid(L.FormatCanonical("OfficialRateParsers.FieldCbr0IsMissing", name));
 
     private static bool AsciiDigits(ReadOnlySpan<char> text)
     {

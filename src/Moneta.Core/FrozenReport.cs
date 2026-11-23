@@ -29,15 +29,15 @@ public sealed record FrozenReport(Guid Id, Guid? PredecessorId, string Name, Dat
         if (Id == Guid.Empty || PredecessorId == Guid.Empty || PredecessorId == Id || string.IsNullOrWhiteSpace(Name) ||
             Name.Length > 120 || Name.Contains('\0') || CapturedUtc == default || CapturedUtc.Offset != TimeSpan.Zero ||
             Sha256 is not { Length: 64 } || !Sha256.All(Uri.IsHexDigit))
-            throw new ArgumentException("Identité ou empreinte du rapport figé invalide.");
+            throw new ArgumentException(L.Get("FrozenReport.IdentityOrImprintOfTheFrozenInvalidReport"));
     }
 
     public ReportContent Reproduce(string payload)
     {
         Validate();
         if (!string.Equals(Fingerprint(payload), Sha256, StringComparison.Ordinal))
-            throw new ArgumentException("L’empreinte du rapport ne correspond pas à son contenu.");
-        var result = JsonSerializer.Deserialize<ReportContent>(payload, Json) ?? throw new ArgumentException("Rapport figé vide.");
+            throw new ArgumentException(L.Get("FrozenReport.TheReportSFootprintDoesNotMatchIts"));
+        var result = JsonSerializer.Deserialize<ReportContent>(payload, Json) ?? throw new ArgumentException(L.Get("FrozenReport.EmptyFrozenReport"));
         result.Verify();
         return result;
     }
@@ -45,7 +45,7 @@ public sealed record FrozenReport(Guid Id, Guid? PredecessorId, string Name, Dat
     private static string Fingerprint(string payload)
     {
         var count = Encoding.UTF8.GetByteCount(payload);
-        if (count == 0 || count > MaximumPayloadBytes) throw new ArgumentException("La preuve du rapport dépasse 32 Mio.");
+        if (count == 0 || count > MaximumPayloadBytes) throw new ArgumentException(L.Get("FrozenReport.TheReportSEvidenceExceeds32Mio"));
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
     }
 }

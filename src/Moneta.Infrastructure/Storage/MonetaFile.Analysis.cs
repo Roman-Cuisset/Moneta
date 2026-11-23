@@ -44,7 +44,7 @@ public sealed partial class MonetaFile
     internal static void UpgradeV7(SqliteConnection connection)
     {
         var original = ReadValidated(connection, true);
-        if (original.SchemaVersion != 7) throw Error(DocumentError.UnsupportedVersion, "Le dossier source doit être en version 7.");
+        if (original.SchemaVersion != 7) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.TheSourceDocumentMustBeInVersion7"));
         using var transaction = connection.BeginTransaction();
         Execute(connection, AnalysisSql + "UPDATE Document SET schema_version=8,min_reader=8,min_writer=8; PRAGMA user_version=8;", transaction);
         InsertHistory(connection, transaction, 8, 7, "v7-to-v8-analysis", "budgets-and-frozen-reports-v8");
@@ -119,7 +119,7 @@ public sealed partial class MonetaFile
             query.CommandText = "SELECT report_id,predecessor_id,name,captured_utc,sha256,payload FROM FrozenReports WHERE report_id=$id;";
             query.Parameters.AddWithValue("$id", reportId.ToString("D"));
             using var reader = query.ExecuteReader();
-            if (!reader.Read()) throw Error(DocumentError.InvalidData, "Rapport figé enregistré introuvable.");
+            if (!reader.Read()) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.UnrecognizedRecordedReportNotFound"));
             return ReadFrozenReportHeader(reader).Reproduce(reader.GetString(5));
         }, token);
 
@@ -134,9 +134,9 @@ public sealed partial class MonetaFile
             var current = report;
             while (!checkedReports.Contains(current.Id))
             {
-                if (!path.Add(current.Id)) throw new ArgumentException("Une famille de rapports contient un cycle.");
+                if (!path.Add(current.Id)) throw new ArgumentException(L.Get("MonetaFile.AFamilyOfReportsContainsACycle"));
                 if (current.PredecessorId is not { } parent) break;
-                if (!byId.TryGetValue(parent, out current)) throw new ArgumentException("Version précédente du rapport introuvable.");
+                if (!byId.TryGetValue(parent, out current)) throw new ArgumentException(L.Get("MonetaFile.PreviousVersionOfReportNotFound"));
             }
             checkedReports.UnionWith(path);
         }
@@ -145,7 +145,7 @@ public sealed partial class MonetaFile
     private static void ValidateAnalysis(FinancialDocument value)
     {
         if (value.Budgets.Select(item => item.Id).Distinct().Count() != value.Budgets.Count)
-            throw new ArgumentException("Identifiant de budget en double.");
+            throw new ArgumentException(L.Get("MonetaFile.DoubleBudgetIdentifier"));
         foreach (var budget in value.Budgets) budget.Validate(value);
         ValidateReportFamily(value.FrozenReports);
     }
@@ -183,7 +183,7 @@ public sealed partial class MonetaFile
         var priorReports = (previous?.FrozenReports ?? []).ToDictionary(item => item.Id);
         var targets = desired.FrozenReports.ToDictionary(item => item.Id);
         if (priorReports.Values.Any(report => !targets.TryGetValue(report.Id, out var target) || target != report))
-            throw Error(DocumentError.InvalidData, "Les rapports figés enregistrés sont immuables.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.RecordedFrozenReportsAreImmutable"));
 
         using var write = connection.CreateCommand();
         write.Transaction = transaction;
@@ -203,10 +203,10 @@ public sealed partial class MonetaFile
         while (pending.Count != 0)
         {
             var ready = pending.Where(item => item.PredecessorId is null || written.Contains(item.PredecessorId.Value)).ToArray();
-            if (ready.Length == 0) throw Error(DocumentError.InvalidData, "Versions du rapport figé incohérentes.");
+            if (ready.Length == 0) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.VersionsOfTheFrozenInconsistentReport"));
             foreach (var report in ready)
             {
-                if (report.DraftPayload is not { } payload) throw Error(DocumentError.InvalidData, "Preuve du rapport figé manquante.");
+                if (report.DraftPayload is not { } payload) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.ProofOfMissingFrozenReport"));
                 _ = report.Reproduce(payload);
                 Run("INSERT INTO FrozenReports VALUES($id,$parent,$name,$utc,$hash,$payload);", ("$id", report.Id.ToString("D")),
                     ("$parent", SqlId(report.PredecessorId)), ("$name", report.Name), ("$utc", report.CapturedUtc.ToString("O", CultureInfo.InvariantCulture)),

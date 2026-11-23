@@ -2,6 +2,8 @@
 
 ## Contrat documentaire
 
+**Mission 20.** **Outils → Options → Langue** et **Tools → Options → Language** donnent accès au même réglage selon la langue courante. Le choix s’affiche en aperçu. **Enregistrer** ou **Save** le conserve au redémarrage. Les commandes et raccourcis sont partagés entre les deux langues. [Langues et formats régionaux](LOCALIZATION.md)
+
 **Mission 18.** **Aide → Rechercher les mises à jour…** consulte le catalogue signé. **Aide → À propos de Moneta…** indique la version installée. La recherche automatique se règle dans **Outils → Options → Mises à jour**. [Guide Alpha](ALPHA_GUIDE.md)
 
 **Mission 17.** Le solde en carte et son choix de devise restent dans la colonne Comptes. **Nouvelle**, **Modifier** et la pagination restent accessibles sous le registre pendant son défilement horizontal. Le bouton **Prévisions…** ouvre l’onglet éponyme du menu Rapports. **Affichage → Thème** conserve les variantes Clair et Sombre. **? → À propos de Moneta…** présente le nouveau symbole. Les raccourcis existants restent associés aux mêmes commandes. [Interface et accessibilité](VISUAL_IDENTITY.md)
@@ -161,7 +163,7 @@ La cartographie cible s’appuie sur le manuel et la capture privée de mission 
 | CMD-076 | Cacher / afficher les lignes inutiles | Affichage | Ctrl+H | SCREEN-001 | Deux règles de frontière contradictoires M03/M04 ; masque sans supprimer | P0 | M03/M04/M18 ; ? |
 | CMD-077 | Trier le tableau | Tableau, accès exact à relever | — | SCREEN-001 | Colonne/sens mémorisables par option ; geste sur en-tête non confirmé ici | P0 | M17 ; ? |
 | CMD-078 | Afficher monnaie principale / secondaire | BP : deux boutons de barre d’outils ; Moneta : sélecteur **Devise d’affichage** près du solde actuel | — | SCREEN-001, SCREEN-046 | **Réalisé mission 8 selon convention MON** : natif réel + estimation, source/date d’effet/récupération/cache, cours absent explicite ; aucune réécriture ni modification de l’état du dossier | P1 | M15 ; MON pour sélecteur/valorisation |
-| CMD-079 | Options | Outils > Options | — | SCREEN-040 | **Opérationnel Moneta.** Cinq rubriques, dont **Devises et taux** et **Sauvegardes** avec activation explicite | P0 | M17 ; rubriques MON distinctes |
+| CMD-079 | Options | Outils > Options / Tools > Options | — | SCREEN-040 | **Opérationnel Moneta.** La rubrique **Langue / Language** propose un aperçu immédiat et un choix persistant. Les rubriques **Devises et taux** et **Sauvegardes** restent accessibles. | P0 | M17 et mission 20 Moneta |
 | CMD-080 | Configurer soldes filtrés, saisie et pointage | Onglet Général de SCREEN-040 | — | SCREEN-040 | Ignorer filtre pour solde, séparé, autocomplete, deux états, décimales, centimes, tri/filtres mémorisés, nombre d'annulations | P0 | M17 |
 | CMD-081 | Configurer sauvegardes | Onglet Sauvegarde de SCREEN-040 | — | SCREEN-040, SCREEN-041 | Fermeture automatique, répertoires, externe ; champs réseau historiques à ne pas renseigner avec secrets | P0 | M17 |
 | CMD-082 | Configurer dates, colonnes de montants et infobulles | Onglet Affichage de SCREEN-040 | — | SCREEN-040 | Une/deux/trois colonnes, format date, infobulles | P0 | M17 |

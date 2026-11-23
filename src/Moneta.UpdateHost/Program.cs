@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Moneta.Localization;
 using Moneta.Updates;
 
 if (args.Length != 3 || !Guid.TryParseExact(args[0], "N", out var id) ||
@@ -41,9 +42,8 @@ try
 }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception)
 {
-    _ = MessageBoxW(nint.Zero,
-        "Moneta n’a pas pu être relancé. Ouvrez-le depuis le menu Démarrer. Si nécessaire, réinstallez une version Moneta vérifiée.",
-        "Moneta — mise à jour", 0x30);
+    L.SetLanguage(Environment.GetEnvironmentVariable(UpdateChannel.HelperLanguageVariable));
+    _ = MessageBoxW(nint.Zero, L.Get("Updates.CannotRestartMoneta"), L.Get("Updates.MonetaUpdate"), 0x30);
     return 5;
 }
 

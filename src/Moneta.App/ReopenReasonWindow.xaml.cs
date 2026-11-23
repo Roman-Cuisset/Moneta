@@ -19,7 +19,7 @@ public partial class ReopenReasonWindow : Window
         var reason = ReopenReason.Text.Trim();
         if (string.IsNullOrWhiteSpace(reason) || reason.Length > 1000)
         {
-            ErrorText.Text = "Saisissez un motif non vide de 1 000 caractères maximum.";
+            ErrorText.Text = L.Get("ReopenReasonWindow.EnterAnUnemptyPatternOfUpTo1");
             ReopenReason.Focus();
             return;
         }

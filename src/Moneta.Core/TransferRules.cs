@@ -15,34 +15,34 @@ public static class TransferRules
             value.FeeTransactionId == value.DebitTransactionId || value.FeeTransactionId == value.CreditTransactionId ||
             value.DebitTransactionId != details.Debit.Id || value.CreditTransactionId != details.Credit.Id ||
             value.FeeTransactionId != details.Fee?.Id)
-            throw new ArgumentException("Les liens du virement sont invalides.", nameof(details));
+            throw new ArgumentException(L.Get("TransferRules.TheTransferLinksAreInvalid"), nameof(details));
         if (value.Date == default || value.ExchangeDate == default(DateOnly) || value.Revision < 1 ||
             value.CreatedUtc == default || value.ModifiedUtc == default ||
             value.CreatedUtc.Offset != TimeSpan.Zero || value.ModifiedUtc.Offset != TimeSpan.Zero || value.ModifiedUtc < value.CreatedUtc)
-            throw new ArgumentException("La date, la révision ou les dates UTC du virement sont invalides.", nameof(details));
+            throw new ArgumentException(L.Get("TransferRules.TheDateRevisionOrUtcDatesOfThe"), nameof(details));
         if (value.Reference is null || value.Reference.Length > 120 || value.Notes is null || value.Notes.Length > 2000)
-            throw new ArgumentException("La référence est limitée à 120 caractères et les notes à 2 000 caractères.", nameof(details));
+            throw new ArgumentException(L.Get("TransferRules.TheReferenceIsLimitedTo120CharactersAnd"), nameof(details));
         if (value.Reference.Contains('\0') || value.Notes.Contains('\0') || value.RateSource?.Contains('\0') == true)
-            throw new ArgumentException("Les textes du virement ne peuvent pas contenir NUL.", nameof(details));
+            throw new ArgumentException(L.Get("TransferRules.TheTransferTextsCannotContainNul"), nameof(details));
         ValidateLeg(details.Debit, TransactionDirection.Debit, value, document);
         ValidateLeg(details.Credit, TransactionDirection.Credit, value, document);
         if (details.Debit.AccountId == details.Credit.AccountId || details.Debit.Amount <= 0 || details.Credit.Amount <= 0)
-            throw new ArgumentException("Choisissez deux comptes différents et des montants principaux strictement positifs.", nameof(details));
+            throw new ArgumentException(L.Get("TransferRules.ChooseTwoDifferentAccountsAndStrictlyPositivePrincipal"), nameof(details));
         if (details.Fee is { } fee) ValidateLeg(fee, TransactionDirection.Debit, value, document);
         if (details.IsCrossCurrency)
         {
             if (value.ExchangeDate is null || string.IsNullOrWhiteSpace(value.RateSource))
-                throw new ArgumentException("La date du change et sa source déclarée sont obligatoires.", nameof(details));
+                throw new ArgumentException(L.Get("TransferRules.TheDateOfTheExchangeAndItsDeclared"), nameof(details));
         }
         else if (details.Debit.Amount != details.Credit.Amount || value.ExchangeDate is not null || value.RateSource is not null)
-            throw new ArgumentException("Un virement de même devise conserve exactement le montant, sans métadonnées de change.", nameof(details));
+            throw new ArgumentException(L.Get("TransferRules.ATransferOfTheSameCurrencyRetainsExactly"), nameof(details));
     }
 
     private static void ValidateLeg(Transaction leg, TransactionDirection direction, Transfer value, FinancialDocument document)
     {
         FinancialRules.ValidateTransaction(leg, document);
         if (leg.Direction != direction || leg.Date != value.Date || leg.Details != value.Notes || leg.IsDeleted != value.IsDeleted)
-            throw new ArgumentException("Le sens, la date, les notes ou la suppression d'une jambe diffèrent du virement.");
+            throw new ArgumentException(L.Get("TransferRules.TheMeaningDateNotesOrRemovalOfA"));
     }
 
     public static string FormatEffectiveRate(TransferDetails details)
@@ -56,7 +56,7 @@ public static class TransferRules
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(destination);
         if (debited <= 0 || credited <= 0)
-            throw new ArgumentException("Les montants principaux doivent être strictement positifs.");
+            throw new ArgumentException(L.Get("TransferRules.TheMainAmountsMustBeStrictlyPositive"));
         var culture = CultureInfo.GetCultureInfo("fr-FR");
         var ratio = $"Rapport exact : {credited.ToString("G29", culture)} {destination.Code} / {debited.ToString("G29", culture)} {source.Code} (hors frais)";
         try

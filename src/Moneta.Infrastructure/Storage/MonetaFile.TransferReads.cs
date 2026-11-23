@@ -18,7 +18,7 @@ public sealed partial class MonetaFile
         {
             using var transaction = Connection.BeginTransaction(deferred: true);
             var result = FindTransfer(Connection, id, Snapshot, ledgerLookup, transaction)
-                ?? throw Error(DocumentError.InvalidData, "Virement introuvable.");
+                ?? throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TransferUnobtainable"));
             transaction.Commit();
             return result;
         }
@@ -64,7 +64,7 @@ public sealed partial class MonetaFile
         Transaction? debit = null, credit = null, fee = null;
         TransferDetails Complete()
         {
-            if (current is null || debit is null || credit is null) throw new ArgumentException("Virement incomplet : débit et crédit requis.");
+            if (current is null || debit is null || credit is null) throw new ArgumentException(L.Get("MonetaFile.IncompleteTransferDebitAndCreditRequired"));
             var details = new TransferDetails(current with { DebitTransactionId = debit.Id, CreditTransactionId = credit.Id, FeeTransactionId = fee?.Id }, debit, credit, fee);
             TransferRules.Validate(details, metadata);
             return details;
@@ -80,7 +80,7 @@ public sealed partial class MonetaFile
             current ??= new Transfer(id, Guid.Empty, Guid.Empty, null, ReadDate(reader.GetString(20)), reader.GetString(21), reader.GetString(22),
                 reader.IsDBNull(23) ? null : ReadDate(reader.GetString(23)), reader.IsDBNull(24) ? null : reader.GetString(24),
                 ReadTimestamp(reader.GetString(25)), ReadTimestamp(reader.GetString(26)), reader.GetInt64(27), ReadBoolean(reader, 28));
-            if (reader.IsDBNull(0) || reader.IsDBNull(29)) throw new ArgumentException("Jambe de virement absente ou orpheline.");
+            if (reader.IsDBNull(0) || reader.IsDBNull(29)) throw new ArgumentException(L.Get("MonetaFile.TransferLegAbsentOrOrphan"));
             var value = ReadTransaction(reader, lookup);
             FinancialRules.ValidateTransaction(value, metadata);
             switch (reader.GetInt64(29))
@@ -88,7 +88,7 @@ public sealed partial class MonetaFile
                 case 0 when debit is null: debit = value; break;
                 case 1 when credit is null: credit = value; break;
                 case 2 when fee is null: fee = value; break;
-                default: throw new ArgumentException("Rôle de virement inconnu ou dupliqué.");
+                default: throw new ArgumentException(L.Get("MonetaFile.UnknownOrDuplicatedTransferRole"));
             }
         }
         if (current is not null) yield return Complete();

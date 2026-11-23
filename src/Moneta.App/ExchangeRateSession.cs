@@ -3,8 +3,9 @@ using Moneta.Core;
 namespace Moneta.App;
 
 public sealed record RateSessionState(RateProvider Provider, DateOnly Date, OfficialRateSet? Rates,
-    bool IsRefreshing, bool FromCache, string Message)
+    bool IsRefreshing, bool FromCache, Func<string> Describe)
 {
+    public string Message => Describe();
     public bool IsPersistent { get; init; }
 }
 
@@ -29,7 +30,7 @@ public sealed class ExchangeRateSession : IDisposable
         _clock = clock ?? TimeProvider.System;
         _deadline = deadline ?? TimeSpan.FromSeconds(20);
         if (_deadline <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(deadline));
-        _state = new(RateProvider.Nbrb, Today, null, false, true, "Cours non chargés.");
+        _state = new(RateProvider.Nbrb, Today, null, false, true, () => L.Get("ExchangeRateSession.UnloadedRates"));
     }
 
     public DateOnly Today => DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
@@ -56,7 +57,7 @@ public sealed class ExchangeRateSession : IDisposable
     private Task Begin(RateProvider provider, DateOnly date, bool download, bool force, CancellationToken token)
     {
         _ = RateRules.ReferenceCurrency(provider);
-        if (date == default) throw new ArgumentException("Choisissez une date valide.", nameof(date));
+        if (date == default) throw new ArgumentException(L.Get("ExchangeRateSession.ChooseAValidDate"), nameof(date));
         CancellationTokenSource operation;
         long generation;
         OfficialRateSet? previous;
@@ -71,7 +72,7 @@ public sealed class ExchangeRateSession : IDisposable
             previous = _state.Provider == provider && _state.Date == date ? _state.Rates : null;
             previousPersistent = previous is not null && _state.IsPersistent;
         }
-        Publish(generation, new(provider, date, previous, true, true, "Lecture du cache local…") { IsPersistent = previousPersistent });
+        Publish(generation, new(provider, date, previous, true, true, () => L.Get("ExchangeRateSession.ReadingTheLocalCache")) { IsPersistent = previousPersistent });
         return RunAsync(generation, operation, provider, date, previous, previousPersistent, download, force);
     }
 
@@ -83,6 +84,9 @@ public sealed class ExchangeRateSession : IDisposable
         var cachedOnDisk = previousPersistent;
         var downloadedPersistent = false;
         var cacheWarning = string.Empty;
+        var storeFailed = false;
+        string CacheWarning() => (storeFailed ? L.Get("ExchangeRateSession.RatesReceivedButCacheNotRecorded") : string.Empty)
+            + L.Diagnostic(cacheWarning);
         try
         {
             try
@@ -103,60 +107,62 @@ public sealed class ExchangeRateSession : IDisposable
             if (!download || !force && fresh)
             {
                 Publish(generation, new(provider, date, cached, false, true,
-                    CacheMessage(cached, cacheWarning, cachedOnDisk)) { IsPersistent = cachedOnDisk });
+                    () => CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });
                 return;
             }
             Publish(generation, new(provider, date, cached, true, true,
-                "Actualisation HTTPS — aucun compte, solde ou mouvement n’est transmis.") { IsPersistent = cachedOnDisk });
+                () => L.Get("ExchangeRateSession.HttpsUpdateNoAccountBalanceOrTransactionIs")) { IsPersistent = cachedOnDisk });
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
             deadline.CancelAfter(_deadline);
             RateDownload? response = null;
             try
             {
                 if (!_sources.TryGetValue(provider, out var source))
-                    throw new RateException(RateFailure.Unavailable, "Fournisseur non disponible.");
+                    throw new RateException(RateFailure.Unavailable, L.GetCanonical("ExchangeRateSession.SupplierNotAvailable"));
                 for (var days = 0; days <= 7 && date.DayNumber > days; days++)
                 {
                     try { response = await source.FetchAsync(date.AddDays(-days), deadline.Token); break; }
                     catch (RateException error) when (error.Failure == RateFailure.Unavailable && days < 7) { }
                 }
-                if (response is null) throw new RateException(RateFailure.Unavailable, "Aucune publication dans les huit dates interrogées.");
+                if (response is null) throw new RateException(RateFailure.Unavailable, L.GetCanonical("ExchangeRateSession.NoPublicationInTheEightDatesInterviewed"));
                 if (response.Rates.Provider != provider)
-                    throw new RateException(RateFailure.InvalidResponse, "Le fournisseur de la réponse ne correspond pas au choix explicite.");
+                    throw new RateException(RateFailure.InvalidResponse, L.GetCanonical("ExchangeRateSession.TheProviderOfTheAnswerDoesNotCorrespond"));
                 RateRules.Validate(response.Rates);
                 try
                 {
                     await Task.Run(() => _cache.Store(response, deadline.Token), deadline.Token);
                     downloadedPersistent = true;
                 }
-                catch (RateException error) { cacheWarning = "Cours reçus, mais cache non enregistré : " + error.Message; }
+                catch (RateException error) { cacheWarning = error.Message; storeFailed = true; }
                 deadline.Token.ThrowIfCancellationRequested();
             }
             catch (OperationCanceledException) when (!token.IsCancellationRequested)
             {
-                throw new RateException(RateFailure.Timeout, "Délai global d’actualisation dépassé.");
+                throw new RateException(RateFailure.Timeout, L.GetCanonical("ExchangeRateSession.OverallDiscountTimeExceeded"));
             }
             var rates = response.Rates;
             if (rates.EffectiveDate > date || date.DayNumber - rates.EffectiveDate.DayNumber > RateRules.MaximumAgeDays)
             {
                 Publish(generation, new(provider, date, cached, false, true,
-                    $"Publication reçue pour le {rates.EffectiveDate:dd/MM/yyyy}, non applicable au {date:dd/MM/yyyy}. " + CacheMessage(cached, cacheWarning, cachedOnDisk)) { IsPersistent = cachedOnDisk });
+                    () => L.Format("ExchangeRateSession.PublicationReceivedFor0MmDdYyyyNot", rates.EffectiveDate, date)
+                        + CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });
                 return;
             }
             Publish(generation, new(provider, date, rates, false, false,
-                "Réponse officielle reçue et validée. " + cacheWarning) { IsPersistent = downloadedPersistent });
+                () => L.Get("ExchangeRateSession.OfficialResponseReceivedAndValidated") + CacheWarning()) { IsPersistent = downloadedPersistent });
         }
         catch (OperationCanceledException)
         {
             Publish(generation, new(provider, date, cached, false, true,
-                "Actualisation annulée. " + CacheMessage(cached, cacheWarning, cachedOnDisk)) { IsPersistent = cachedOnDisk });
+                () => L.Get("ExchangeRateSession.UpdateCancelled") + CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });
         }
         catch (RateException error)
         {
-            var prefix = error.Failure is RateFailure.Network or RateFailure.Timeout
-                ? "Hors ligne ou fournisseur inaccessible. " : "Actualisation impossible. ";
+            var key = error.Failure is RateFailure.Network or RateFailure.Timeout
+                ? "ExchangeRateSession.OfflineOrInaccessibleSupplier" : "ExchangeRateSession.RefreshFailed";
+            var message = error.Message;
             Publish(generation, new(provider, date, cached, false, true,
-                prefix + error.Message + " " + CacheMessage(cached, cacheWarning, cachedOnDisk)) { IsPersistent = cachedOnDisk });
+                () => L.Get(key) + L.Diagnostic(message) + " " + CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });
         }
         finally
         {
@@ -166,9 +172,9 @@ public sealed class ExchangeRateSession : IDisposable
     }
 
     private static string CacheMessage(OfficialRateSet? rates, string warning, bool persistent) =>
-        (rates is null ? "Cours indisponible : aucun cache applicable dans les 31 jours précédents."
-            : persistent ? "Cache disque utilisé ; connexion non vérifiée. La date d’effet réelle est conservée."
-            : "Cours précédemment validés en mémoire uniquement ; persistance non confirmée pour le redémarrage.") +
+        (rates is null ? L.Get("ExchangeRateSession.RatesNotAvailableNoCacheApplicableInThe")
+            : persistent ? L.Get("ExchangeRateSession.DiskCacheUsedConnectionNotVerifiedTheActual")
+            : L.Get("ExchangeRateSession.RatesPreviouslyValidatedInMemoryOnlyPersistenceNot")) +
         (warning.Length == 0 ? string.Empty : " " + warning);
 
     private void Publish(long generation, RateSessionState state)

@@ -48,7 +48,7 @@ public partial class MainWindow
                 (!manual && OwnedWindows.Cast<Window>().Any(window => window.IsVisible && window.IsActive))) return;
             if (offer is null)
             {
-                if (manual) MessageBox.Show(this, "Aucune version plus récente publiée n’a été trouvée.", "Moneta — mises à jour");
+                if (manual) MessageBox.Show(this, L.Get("Updates.NoMoreRecentPublishedVersionWasFound"), L.Get("Updates.MonetaUpdates"));
                 return;
             }
 
@@ -62,7 +62,7 @@ public partial class MainWindow
         catch (Exception error) when (error is HttpRequestException or InvalidDataException or IOException or OperationCanceledException or UnauthorizedAccessException)
         {
             if (manual && !token.IsCancellationRequested)
-                MessageBox.Show(this, $"La recherche des mises à jour n’a pas abouti. {error.Message}", "Moneta — mises à jour",
+                MessageBox.Show(this, L.Format("Updates.TheSearchForUpdatesDidNotSucceed0", (error.Message)), L.Get("Updates.MonetaUpdates"),
                     MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally
@@ -80,16 +80,17 @@ public partial class MainWindow
             File.Copy(source, stage.Helper, overwrite: false);
             using var parent = Process.GetCurrentProcess();
             var launch = new ProcessStartInfo(stage.Helper) { UseShellExecute = false, CreateNoWindow = true };
+            launch.Environment[UpdateChannel.HelperLanguageVariable] = L.Culture.Name;
             launch.ArgumentList.Add(stage.Id);
             launch.ArgumentList.Add(Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
             launch.ArgumentList.Add(parent.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture));
             using var child = Process.Start(launch);
-            if (child is null) throw new InvalidOperationException("Processus de mise à jour indisponible.");
+            if (child is null) throw new InvalidOperationException(L.Get("Updates.UpdatingProcessUnavailable"));
             return true;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
         {
-            MessageBox.Show(this, $"L’installation n’a pas pu démarrer. {error.Message}", "Moneta — mise à jour",
+            MessageBox.Show(this, L.Format("Updates.InstallationCouldNotStart0", (error.Message)), L.Get("Updates.MonetaUpdate"),
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
@@ -105,7 +106,7 @@ public partial class MainWindow
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show(this, $"L’installation n’a pas été lancée. {error.Message}", "Moneta — mise à jour",
+            MessageBox.Show(this, L.Format("Updates.TheInstallationWasNotLaunched0", (error.Message)), L.Get("Updates.MonetaUpdate"),
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
@@ -125,13 +126,13 @@ public partial class MainWindow
         stage.Clean();
         var message = result switch
         {
-            "installed" => $"Moneta {ProductVersion.ToString(3)} a été installé.",
-            "invalid" => "Les contrôles de l’installateur ont échoué. La mise à jour a été refusée.",
-            "cancelled" => "L’installation a été annulée.",
-            "restart" => "Windows doit redémarrer pour terminer l’installation.",
-            _ => "L’installation n’a pas abouti. Vérifiez la version et réessayez depuis le menu d’aide."
+            "installed" => L.Format("Updates.Moneta0HasBeenInstalled", (ProductVersion.ToString(3))),
+            "invalid" => L.Get("Updates.TheInstallerControlsFailedTheUpdateWasRefused"),
+            "cancelled" => L.Get("Updates.TheInstallationHasBeenCancelled"),
+            "restart" => L.Get("Updates.WindowsMustRestartToCompleteTheInstallation"),
+            _ => L.Get("Updates.InstallationFailedCheckTheVersionAndTryAgain")
         };
-        MessageBox.Show(this, message, "Moneta — mise à jour", MessageBoxButton.OK,
+        MessageBox.Show(this, message, L.Get("Updates.MonetaUpdate"), MessageBoxButton.OK,
             result == "installed" ? MessageBoxImage.Information : MessageBoxImage.Warning);
     }
 }

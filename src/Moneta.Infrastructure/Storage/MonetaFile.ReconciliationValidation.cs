@@ -24,7 +24,7 @@ public sealed partial class MonetaFile
                 if (previous is not null && (previous.ValidatedUtc > session.ValidatedUtc ||
                     (previous.ReopenedUtc is { } previousEnd && (previousEnd < session.ValidatedUtc ||
                     session.ReopenedUtc is null || session.ReopenedUtc > previousEnd))))
-                    throw new ArgumentException("Chronologie ou ordre de réouverture des relevés invalide.");
+                    throw new ArgumentException(L.Get("MonetaFile.ChronologyOrOrderToReopenInvalidRecords"));
                 var calculated = session.OpeningBalance;
                 HashReader(digest, "session", reader);
                 foreach (var entry in StreamEntries(connection, session.Id, metadata, lookup, transaction, digest))
@@ -33,22 +33,22 @@ public sealed partial class MonetaFile
                     if (original.AccountId != session.AccountId || original.Date > session.StatementDate || original.IsDeleted ||
                         original.Status is not (ReconciliationStatus.Unmarked or ReconciliationStatus.Marked) || original.ReconciliationId is not null ||
                         original.ModifiedUtc > session.ValidatedUtc)
-                        throw new ArgumentException("Membre du relevé inéligible.");
+                        throw new ArgumentException(L.Get("MonetaFile.MemberOfTheIneligibleList"));
                     calculated = checked(calculated + FinancialRules.SignedAmount(original));
-                    var current = FindTransaction(connection, original.Id, lookup, transaction) ?? throw new ArgumentException("Membre du relevé absent.");
+                    var current = FindTransaction(connection, original.Id, lookup, transaction) ?? throw new ArgumentException(L.Get("MonetaFile.MemberOfTheMissingStatement"));
                     if (current.AccountId != session.AccountId || current.CreatedUtc != original.CreatedUtc ||
                         current.Revision <= original.Revision || current.ModifiedUtc < original.ModifiedUtc)
-                        throw new ArgumentException("Identité ou révision historique incohérente.");
+                        throw new ArgumentException(L.Get("MonetaFile.IncoherentIdentityOrHistoricalRevision"));
                     if (session.State == ReconciliationSessionState.Validated &&
                         (!ReconciliationRules.FinancialPayloadEquals(current, original) || current.Status != ReconciliationStatus.Reconciled ||
                         current.ReconciliationId != session.Id || current.Revision != checked(original.Revision + 1) || current.MarkedOn is null ||
                         (original.MarkedOn is not null && current.MarkedOn != original.MarkedOn)))
-                        throw new ArgumentException("Le contenu actif ne correspond pas à son instantané de rapprochement.");
+                        throw new ArgumentException(L.Get("MonetaFile.TheActiveContentDoesNotCorrespondToIts"));
                     if (session.State == ReconciliationSessionState.Reopened && current.Revision < checked(original.Revision + 2))
-                        throw new ArgumentException("Révision de réouverture absente.");
+                        throw new ArgumentException(L.Get("MonetaFile.ReviewOfReopeningAbsent"));
                 }
                 if (calculated != session.CalculatedBalance || calculated != session.ExpectedClosingBalance)
-                    throw new ArgumentException("Écart historique non nul.");
+                    throw new ArgumentException(L.Get("MonetaFile.NonZeroHistoricalDeviation"));
                 using var audits = connection.CreateCommand(); audits.Transaction = transaction;
                 audits.CommandText = "SELECT kind,COUNT(*) FROM ReconciliationHistory WHERE session_id=$id GROUP BY kind;";
                 audits.Parameters.AddWithValue("$id", session.Id.ToString("D"));
@@ -59,11 +59,11 @@ public sealed partial class MonetaFile
                     {
                         if (auditReader.GetInt64(0) == 0) validated = auditReader.GetInt64(1);
                         else if (auditReader.GetInt64(0) == 1) reopened = auditReader.GetInt64(1);
-                        else throw new ArgumentException("Audit de relevé incompatible.");
+                        else throw new ArgumentException(L.Get("MonetaFile.InconsistentSurveyAudit"));
                     }
                 }
                 if (validated != 1 || reopened != (session.State == ReconciliationSessionState.Reopened ? 1 : 0))
-                    throw new ArgumentException("Historique de validation ou de réouverture incomplet.");
+                    throw new ArgumentException(L.Get("MonetaFile.HistoryOfIncompleteValidationOrReopening"));
                 sessionCount++;
             }
         }
@@ -76,22 +76,22 @@ public sealed partial class MonetaFile
                 var audit = ReadEvent(reader, metadata, lookup); ValidateAuditShape(audit, metadata, lookup);
                 if (audit.SessionId is { } id)
                 {
-                    var session = FindSession(connection, id, lookup, transaction) ?? throw new ArgumentException("Relevé de l’audit absent.");
+                    var session = FindSession(connection, id, lookup, transaction) ?? throw new ArgumentException(L.Get("MonetaFile.AuditStatementMissing"));
                     if (audit.Kind == ReconciliationEventKind.Validated ? audit.OccurredUtc != session.ValidatedUtc :
                         session.State != ReconciliationSessionState.Reopened || audit.OccurredUtc != session.ReopenedUtc || audit.Reason != session.ReopenReason)
-                        throw new ArgumentException("Audit de relevé incohérent.");
+                        throw new ArgumentException(L.Get("MonetaFile.IncoherentSurveyAudit"));
                 }
                 else
                 {
                     var before = audit.OperationBefore!;
-                    var current = FindTransaction(connection, before.Id, lookup, transaction) ?? throw new ArgumentException("Opération libérée absente.");
+                    var current = FindTransaction(connection, before.Id, lookup, transaction) ?? throw new ArgumentException(L.Get("MonetaFile.ReleasedTransactionAbsent"));
                     if (current.AccountId != before.AccountId || current.CreatedUtc != before.CreatedUtc ||
                         current.Revision <= before.Revision || current.ModifiedUtc < audit.OccurredUtc)
-                        throw new ArgumentException("Audit de libération incohérent.");
+                        throw new ArgumentException(L.Get("MonetaFile.IncoherentReleaseAudit"));
                     using var duplicate = connection.CreateCommand(); duplicate.Transaction = transaction;
                     duplicate.CommandText = "SELECT COUNT(*) FROM ReconciliationHistory WHERE transaction_id=$id AND kind=2;";
                     duplicate.Parameters.AddWithValue("$id", before.Id.ToString("D"));
-                    if ((long)duplicate.ExecuteScalar()! != 1) throw new ArgumentException("Libération héritée dupliquée.");
+                    if ((long)duplicate.ExecuteScalar()! != 1) throw new ArgumentException(L.Get("MonetaFile.InheritedReleaseDuplicated"));
                 }
                 HashReader(digest, "event", reader); eventCount++;
             }
@@ -100,9 +100,9 @@ public sealed partial class MonetaFile
         {
             command.Transaction = transaction;
             command.CommandText = "SELECT 1 FROM Transactions t LEFT JOIN Reconciliations r ON r.session_id=t.reconciliation_id LEFT JOIN ReconciliationEntries e ON e.session_id=t.reconciliation_id AND e.transaction_id=t.transaction_id WHERE t.reconciliation_id IS NOT NULL AND (t.status<>2 OR t.is_deleted<>0 OR r.state<>0 OR r.account_id<>t.account_id OR e.transaction_id IS NULL) LIMIT 1;";
-            if (command.ExecuteScalar() is not null) throw new ArgumentException("Référence de rapprochement sans appartenance active valide.");
+            if (command.ExecuteScalar() is not null) throw new ArgumentException(L.Get("MonetaFile.ReconciliationReferenceWithoutValidActiveMembership"));
             command.CommandText = "SELECT 1 FROM Transactions t WHERE t.status=2 AND t.is_deleted=0 AND t.reconciliation_id IS NULL AND EXISTS(SELECT 1 FROM Reconciliations r WHERE r.account_id=t.account_id) LIMIT 1;";
-            if (command.ExecuteScalar() is not null) throw new ArgumentException("Rapprochement hérité actif incompatible avec un historique de relevés.");
+            if (command.ExecuteScalar() is not null) throw new ArgumentException(L.Get("MonetaFile.ActiveLegacyReconciliationIncompatibleWithSurveyHistory"));
         }
         // Stream sibling lifetimes in order; parent lifetime/date containment above then
         // proves a single active chain. Memory is constant even for repeated historical roots.
@@ -118,7 +118,7 @@ public sealed partial class MonetaFile
                 var account = reader.GetString(0); var previous = reader.IsDBNull(1) ? null : reader.GetString(1);
                 var start = ReadTimestamp(reader.GetString(2));
                 if (account == lastAccount && previous == lastPrevious && (lastEnd is null || start < lastEnd))
-                    throw new ArgumentException("Fourche dans la chaîne historique des relevés.");
+                    throw new ArgumentException(L.Get("MonetaFile.ForkInTheHistoricalSurveyChain"));
                 lastAccount = account; lastPrevious = previous;
                 lastEnd = reader.IsDBNull(3) ? null : ReadTimestamp(reader.GetString(3));
             }

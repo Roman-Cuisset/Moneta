@@ -2,6 +2,8 @@
 
 ## Statut et limites de cette étude
 
+La mission 20 centralise les textes d’interface dans `Moneta.Localization`. La culture d’affichage observable alimente les liaisons WPF. Les vues ouvertes actualisent les libellés de présentation à partir de leurs données en mémoire. La préférence est stockée dans les options locales. Les montants, dates, codes et preuves persistants conservent leurs représentations canoniques. [Langues et formats régionaux](LOCALIZATION.md)
+
 La mission 17 est confinée à la présentation WPF. `Themes/Controls.xaml` définit les styles et le focus communs. `ThemeController` substitue les dictionnaires de couleurs et donne la priorité au contraste élevé Windows. `WindowWorkArea` borne la taille des fenêtres selon la zone de travail du moniteur et les unités WPF, y compris lors d’un changement de DPI. Les tableaux conservent leur pagination et leur virtualisation. Le même ICO multirésolution alimente l’exécutable et la propriété `Window.Icon`. La persistance financière reste au schéma SQLite 8. [Identité visuelle et validation](VISUAL_IDENTITY.md)
 
 La mission 16 extrait les flux éligibles et les soldes dans un instantané SQLite en lecture seule. `FinancialReportEngine` valorise les lignes ensemble par fournisseur et date avec le moteur historique. `ReportContent` alimente les totaux, les budgets et les graphiques à partir des mêmes montants arrondis. `ReportForecast` consulte séparément l’échéancier. Le schéma 8 conserve les budgets bornés par UUID et les versions figées avec leurs preuves, contrôlées à l’ouverture et pendant la sauvegarde. [Budgets et rapports](BUDGETS_AND_REPORTS.md)

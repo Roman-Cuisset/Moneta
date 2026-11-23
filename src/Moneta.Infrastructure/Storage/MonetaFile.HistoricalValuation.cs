@@ -14,7 +14,7 @@ public sealed partial class MonetaFile
     {
         var entry = FindTransaction(connection, id, new LedgerLookup(snapshot), transaction);
         if (entry is null || entry.IsDeleted)
-            throw Error(DocumentError.InvalidData, "Cette opération n’existe pas dans le registre enregistré.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.ThisTransactionDoesNotExistInTheRegistered"));
         FinancialRules.ValidateTransaction(entry, snapshot);
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -24,16 +24,16 @@ public sealed partial class MonetaFile
         if (!reader.Read()) return new HistoricalFlow(entry);
         var role = (LedgerTransferLeg)reader.GetInt32(1);
         if (!Enum.IsDefined(role) || ReadBoolean(reader, 2))
-            throw Error(DocumentError.Corrupt, "Lien du virement invalide.");
+            throw Error(DocumentError.Corrupt, L.Get("MonetaFile.LinkToInvalidTransfer"));
         return new HistoricalFlow(entry, ReadGuid(reader.GetString(0)), role);
     }, cancellationToken);
 
     public static HistoricalBalance ReadHistoricalBalance(string path, FinancialDocument snapshot, Guid accountId, DateOnly cutoff,
         CancellationToken cancellationToken = default)
     {
-        if (cutoff == default) throw new ArgumentException("Choisissez une date d’arrêté valide.", nameof(cutoff));
+        if (cutoff == default) throw new ArgumentException(L.Get("MonetaFile.ChooseAValidOrderDate"), nameof(cutoff));
         var account = snapshot.Accounts.SingleOrDefault(item => item.Id == accountId)
-            ?? throw Error(DocumentError.InvalidData, "Ce compte n’existe pas dans le dossier enregistré.");
+            ?? throw Error(DocumentError.InvalidData, L.Get("MonetaFile.ThisAccountDoesNotExistInTheRegistered"));
         return ReadHistorical(path, snapshot.Id, (connection, transaction) =>
             ReadHistoricalBalance(connection, transaction, snapshot.Id, account, cutoff, cancellationToken), cancellationToken);
     }
@@ -49,7 +49,7 @@ public sealed partial class MonetaFile
         using (var header = command.ExecuteReader())
         {
             if (!header.Read() || header.GetString(1) != account.Currency.Code || header.GetInt32(2) != account.Currency.DecimalPlaces)
-                throw Error(DocumentError.InvalidData, "Le compte enregistré a changé. Rouvrez le dossier avant de calculer.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheRegisteredAccountHasChangedReopenTheFile"));
             opening = header.GetInt64(0);
         }
 
@@ -77,7 +77,7 @@ public sealed partial class MonetaFile
             var direction = (TransactionDirection)reader.GetInt32(3);
             var amount = reader.GetInt64(4);
             if (!Enum.IsDefined(direction) || amount < 0 || reader.GetString(5) != account.Currency.Code)
-                throw Error(DocumentError.Corrupt, "Une écriture enregistrée a une devise, un montant ou un sens invalide.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.ARecordedEntryHasAnInvalidCurrencyAmount"));
             var signed = direction == TransactionDirection.Debit ? -amount : amount;
             total += signed;
             count++;
@@ -104,7 +104,7 @@ public sealed partial class MonetaFile
             check.CommandText = "SELECT document_id FROM Document WHERE singleton=1 AND format='Moneta' AND schema_version=$version;";
             check.Parameters.AddWithValue("$version", CurrentSchemaVersion);
             if (check.ExecuteScalar() is not string id || id != documentId.ToString("D"))
-                throw Error(DocumentError.InvalidData, "Le dossier enregistré ne correspond plus au dossier ouvert.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheSavedDocumentNoLongerCorrespondsToThe"));
             var result = read(connection, transaction);
             cancellationToken.ThrowIfCancellationRequested();
             transaction.Commit();

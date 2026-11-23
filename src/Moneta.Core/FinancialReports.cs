@@ -15,7 +15,7 @@ public sealed record BudgetPlan(Guid Id, string Name, DateOnly Month, string Cur
             Accounts.Distinct().Count() != Accounts.Count || Categories.Distinct().Count() != Categories.Count ||
             Accounts.Except(document.Accounts.Select(item => item.Id)).Any() ||
             Categories.Except(document.Categories.Select(item => item.Id)).Any())
-            throw new ArgumentException("Vérifiez le nom, le mois, la devise, les comptes et les catégories du budget.");
+            throw new ArgumentException(L.Get("FinancialReports.CheckTheNameMonthCurrencyAccountsAndCategories"));
     }
 }
 
@@ -30,7 +30,7 @@ public sealed record ReportCriteria(DateOnly From, DateOnly Through, IReadOnlyLi
             Accounts.Count == 0 || Accounts.Contains(Guid.Empty) || Accounts.Distinct().Count() != Accounts.Count ||
             CategoryId == Guid.Empty || Target is null || !RateRules.IsCurrencyCode(Target.Code) || Target.DecimalPlaces is < 0 or > 28 ||
             !Enum.IsDefined(Provider) || ObservedThrough == default(DateOnly))
-            throw new ArgumentException("Choisissez des comptes, une devise et une période de dix ans maximum.");
+            throw new ArgumentException(L.Get("FinancialReports.ChooseAccountsACurrencyAndAMaximumPeriod"));
     }
 }
 
@@ -107,7 +107,7 @@ public sealed record ReportContent(int Version, ReportCriteria Criteria, IReadOn
     {
         if (plan.Month != Criteria.From || Criteria.Through != plan.End || Criteria.Target.Code != plan.CurrencyCode ||
             !plan.Accounts.Order().SequenceEqual(Criteria.Accounts.Order()) || Criteria.CategoryId is not null)
-            throw new ArgumentException("Le périmètre du rapport doit couvrir exactement le budget.");
+            throw new ArgumentException(L.Get("FinancialReports.TheScopeOfTheReportShouldCoverExactly"));
         var categories = plan.Categories.ToHashSet();
         var costs = Flows.Where(row => row.Input.Date <= asOf && row.Input.FlowKind != HistoricalFlowKind.Income &&
             ((row.Subject.CategoryId is { } root && categories.Contains(root)) ||
@@ -121,7 +121,7 @@ public sealed record ReportContent(int Version, ReportCriteria Criteria, IReadOn
         Criteria.Validate();
         if (Version != CurrentVersion || Flows.Count > HistoricalValuation.MaximumBatchSize || Balances.Count > MaximumBalanceAccounts ||
             Quotations.Count > Flows.Count + Balances.Count)
-            throw new ArgumentException("Version ou dimensions du rapport figé invalides.");
+            throw new ArgumentException(L.Get("FinancialReports.VersionOrDimensionsOfTheFixedInvalidRatio"));
         var accounts = Criteria.Accounts.ToHashSet();
         var ids = new HashSet<Guid>();
         var balanceIds = new HashSet<Guid>();
@@ -137,24 +137,24 @@ public sealed record ReportContent(int Version, ReportCriteria Criteria, IReadOn
                     input.FlowKind is HistoricalFlowKind.TransferDebit or HistoricalFlowKind.TransferCredit ||
                     (Criteria.CategoryId is { } filter && line.Subject.CategoryId != filter && line.Subject.SubcategoryId != filter)
                     : input.Use != HistoricalUse.BalanceAtDate || id != line.Subject.AccountId || !balanceIds.Add(id) || input.Date != Criteria.Through))
-                throw new ArgumentException("Une ligne du rapport ne correspond pas au périmètre figé.");
+                throw new ArgumentException(L.Get("FinancialReports.ALineInTheReportDoesNotMatch"));
             if (line.Converted is { } value)
             {
                 if (line.Failure is not null || line.Quotation is { } index && (index < 0 || index >= Quotations.Count))
-                    throw new ArgumentException("Résultat ou référence de cotation invalide.");
+                    throw new ArgumentException(L.Get("FinancialReports.InvalidRatingResultOrReference"));
                 var quote = QuoteFor(line);
-                if (quote is not null && quote.Provider != Criteria.Provider) throw new ArgumentException("Fournisseur incompatible.");
+                if (quote is not null && quote.Provider != Criteria.Provider) throw new ArgumentException(L.Get("FinancialReports.IncompatibleSupplier"));
                 if (line.Quotation is { } key) used.Add(key);
                 var proof = new HistoricalProof(HistoricalProof.CurrentRules, input, Criteria.Target.Code, Criteria.Target.DecimalPlaces,
                     HistoricalValuation.Method(quote), MidpointRounding.ToEven, quote, value);
                 _ = proof.Reproduce();
             }
             else if (line.Quotation is not null || line.Failure is not { } failure || !Enum.IsDefined(failure) || string.IsNullOrWhiteSpace(line.Detail))
-                throw new ArgumentException("Une ligne sans montant doit conserver le motif.");
+                throw new ArgumentException(L.Get("FinancialReports.ALineWithoutAnAmountMustRetainThe"));
         }
         if (Flows.Any(value => value.Input.Use != HistoricalUse.Flow) || Balances.Any(value => value.Input.Use != HistoricalUse.BalanceAtDate) ||
             used.Count != Quotations.Count || (Balances.Count != 0 && !balanceIds.SetEquals(accounts)))
-            throw new ArgumentException("Le rapport contient des données étrangères à son périmètre.");
+            throw new ArgumentException(L.Get("FinancialReports.TheReportContainsDataOutsideItsScope"));
         _ = Totals().Net;
         _ = ConsolidatedBalance();
     }
@@ -210,7 +210,7 @@ public sealed class FinancialReportEngine(HistoricalValuation valuation)
         var quotes = new List<HistoricalQuotation>();
         var indexes = new Dictionary<HistoricalQuotation, int>();
         if (source.Flows.Count > HistoricalValuation.MaximumBatchSize || source.Balances.Count > ReportContent.MaximumBalanceAccounts)
-            throw new ArgumentException("Le rapport dépasse 50 000 flux ou 1 000 comptes. Réduisez son périmètre.");
+            throw new ArgumentException(L.Get("FinancialReports.TheReportExceeds50000FlowsOr1"));
         ReportLine[] Build(IReadOnlyList<ReportInput> rows, IReadOnlyList<HistoricalResult> values) => rows.Select((row, index) =>
         {
             var value = values[index];

@@ -9,7 +9,7 @@ public sealed partial class MonetaFile
     internal static void UpgradeV5(SqliteConnection connection)
     {
         var original = ReadValidated(connection, true);
-        if (original.SchemaVersion != 5) throw Error(DocumentError.UnsupportedVersion, "Le dossier source doit être en version 5.");
+        if (original.SchemaVersion != 5) throw Error(DocumentError.UnsupportedVersion, L.Get("MonetaFile.TheSourceDocumentMustBeInVersion5"));
         using var transaction = connection.BeginTransaction();
         Execute(connection, """
             ALTER TABLE Accounts ADD COLUMN bank_name TEXT;
@@ -29,7 +29,7 @@ public sealed partial class MonetaFile
         ObjectDisposedException.ThrowIf(closed, this);
         using var transaction = Connection.BeginTransaction(deferred: true);
         var account = Snapshot.Accounts.SingleOrDefault(account => account.Id == accountId)
-            ?? throw Error(DocumentError.InvalidData, "Compte absent du dossier enregistré.");
+            ?? throw Error(DocumentError.InvalidData, L.Get("MonetaFile.AccountMissingFromRegisteredFile"));
         var result = account.OpeningBalance != 0 || HasLedgerHistory(accountId, transaction) ||
             ImportedAccountIds(Snapshot, transaction).Contains(accountId);
         transaction.Commit();
@@ -78,14 +78,14 @@ public sealed partial class MonetaFile
                 changes.Any(change => change.Value.AccountId == previous.Id) ||
                 reconciliation.Sessions.Any(change => change.Value.AccountId == previous.Id) ||
                 reconciliation.Events.Any(change => change.OperationBefore?.AccountId == previous.Id))
-                throw Error(DocumentError.InvalidData, "Le compte a un solde initial ou un historique. Archivez-le pour le conserver.");
+                throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheAccountHasAnInitialBalanceOrHistory"));
 
             using var command = Connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = "DELETE FROM Accounts WHERE account_id=$id;";
             command.Parameters.AddWithValue("$id", previous.Id.ToString("D"));
             if (command.ExecuteNonQuery() != 1)
-                throw Error(DocumentError.VerificationFailed, "Le compte à supprimer a changé.");
+                throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.TheAccountToBeDeletedHasChanged"));
         }
     }
 
@@ -106,7 +106,7 @@ public sealed partial class MonetaFile
     {
         if (persisted.BankPerfectProvenanceHash is not { } expected) return [];
         if (VerifyBankPerfectProvenance(Connection, transaction) != expected)
-            throw Error(DocumentError.VerificationFailed, "Le rapport d’import a changé.");
+            throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.TheImportReportHasChanged"));
         using var command = Connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = "SELECT payload FROM BankPerfectProvenance WHERE singleton=1;";
@@ -125,7 +125,7 @@ public sealed partial class MonetaFile
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException or KeyNotFoundException)
         {
-            throw new DocumentException(DocumentError.VerificationFailed, "Les comptes protégés par la provenance ne peuvent pas être déterminés.", error);
+            throw new DocumentException(DocumentError.VerificationFailed, L.Get("MonetaFile.AccountsProtectedByProvenanceCannotBeDetermined"), error);
         }
     }
 }

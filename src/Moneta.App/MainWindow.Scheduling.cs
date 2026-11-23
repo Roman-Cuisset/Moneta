@@ -25,9 +25,9 @@ public partial class MainWindow
         var due = _workspace.Model?.ScheduleCalendar().Count(DateOnly.MinValue, DateOnly.FromDateTime(DateTime.Today)) ?? 0;
         ScheduleReminder.Content = due switch
         {
-            0 => "Échéancier",
-            1 => "1 échéance à traiter",
-            _ => $"{due:N0} échéances à traiter"
+            0 => L.Get("Common.ScheduledTransactions"),
+            1 => L.Get("Scheduling.1ScheduledTransactionDue"),
+            _ => L.Format("Scheduling.0N0ScheduledTransactionsDue", (due))
         };
     }
 }

@@ -10,7 +10,7 @@ public partial class ScheduleEditorWindow : Window
 {
     private sealed record Choice<T>(T Value, string Name);
     private sealed record AccountChoice(Account? Account, string Name);
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly Dictionary<Guid, Account> _accounts;
     private readonly bool _posting;
 
@@ -26,22 +26,22 @@ public partial class ScheduleEditorWindow : Window
         _accounts = model.Accounts.ToDictionary(item => item.Account.Id, item => item.Account);
         InitializeComponent();
         Heading.Text = _posting ? "Cette occurrence · confirmation avant Ctrl+S" :
-            plan is null ? "Nouvelle programmation" : "Modifier les échéances futures";
+            plan is null ? L.Get("ScheduleEditorWindow.NewSchedule") : L.Get("ScheduleEditorWindow.EditUpcomingTransactions");
         var terms = occurrence?.Terms ?? plan?.Terms;
-        Kind.ItemsSource = new Choice<ScheduleKind>[] { new(ScheduleKind.Expense, "Dépense"), new(ScheduleKind.Income, "Recette"), new(ScheduleKind.Transfer, "Virement") };
-        Unit.ItemsSource = new Choice<ScheduleUnit>[] { new(ScheduleUnit.Once, "Une seule fois"), new(ScheduleUnit.Day, "Tous les N jours"),
-            new(ScheduleUnit.Week, "Toutes les N semaines"), new(ScheduleUnit.Month, "Tous les N mois"), new(ScheduleUnit.Year, "Tous les N ans") };
+        Kind.ItemsSource = new Choice<ScheduleKind>[] { new(ScheduleKind.Expense, L.Get("Common.Expense")), new(ScheduleKind.Income, L.Get("Common.Income2")), new(ScheduleKind.Transfer, L.Get("Common.Transfer")) };
+        Unit.ItemsSource = new Choice<ScheduleUnit>[] { new(ScheduleUnit.Once, L.Get("ScheduleEditorWindow.OnlyOnce")), new(ScheduleUnit.Day, L.Get("ScheduleEditorWindow.EveryDay")),
+            new(ScheduleUnit.Week, L.Get("ScheduleEditorWindow.EveryNWeeks")), new(ScheduleUnit.Month, L.Get("ScheduleEditorWindow.EveryNMonths")), new(ScheduleUnit.Year, L.Get("ScheduleEditorWindow.EveryNYears")) };
         Kind.SelectedIndex = (int)(terms?.Kind ?? ScheduleKind.Expense);
         Unit.SelectedIndex = (int)(plan?.Rule.Unit ?? ScheduleUnit.Month);
-        Interval.Text = (plan?.Rule.Interval ?? 1).ToString(French);
+        Interval.Text = (plan?.Rule.Interval ?? 1).ToString(DisplayCulture);
         LastDay.IsChecked = plan?.Rule.EndOfMonth == true;
         Date = occurrence?.Date ?? plan?.Next ?? DateOnly.FromDateTime(DateTime.Today);
-        Start.Text = Date.ToString("dd/MM/yyyy", French);
-        End.Text = plan?.End?.ToString("dd/MM/yyyy", French) ?? "";
+        Start.Text = Date.ToString(L.DatePattern, DisplayCulture);
+        End.Text = plan?.End?.ToString(L.DatePattern, DisplayCulture) ?? "";
         var options = model.Accounts.Where(item => !item.Account.IsArchived || terms?.Uses(item.Account.Id) == true)
             .Select(item => new AccountChoice(item.Account, item.DisplayName)).ToArray();
         Source.ItemsSource = Destination.ItemsSource = options;
-        FeeAccount.ItemsSource = new[] { new AccountChoice(null, "Sans frais") }.Concat(options).ToArray();
+        FeeAccount.ItemsSource = new[] { new AccountChoice(null, L.Get("ScheduleEditorWindow.FreeOfCharge")) }.Concat(options).ToArray();
         Source.SelectedItem = options.FirstOrDefault(item => item.Account?.Id == (terms?.AccountId ?? model.SelectedAccountId)) ?? options.FirstOrDefault();
         Destination.SelectedItem = options.FirstOrDefault(item => item.Account?.Id == terms?.DestinationId && terms?.DestinationId is not null);
         FeeAccount.SelectedIndex = 0;
@@ -68,10 +68,10 @@ public partial class ScheduleEditorWindow : Window
         {
             Kind.IsEnabled = Source.IsEnabled = Destination.IsEnabled = false;
             EndFields.Visibility = FrequencyFields.Visibility = Visibility.Collapsed;
-            Accept.Content = "Préparer l’écriture";
-            StartLabel.Content = "Date à comptabiliser (jj/mm/aaaa)";
+            Accept.Content = L.Get("ScheduleEditorWindow.StageTransaction");
+            StartLabel.Content = L.Get("ScheduleEditorWindow.DateToBeRecordedMmDdYyyy");
         }
-        else if (plan is not null) StartLabel.Content = "Prochaine date (jj/mm/aaaa)";
+        else if (plan is not null) StartLabel.Content = L.Get("ScheduleEditorWindow.NextDateMmDdYyyy");
         RefreshFields();
         Loaded += (_, _) => { LabelText.Focus(); LabelText.SelectAll(); };
     }
@@ -89,14 +89,14 @@ public partial class ScheduleEditorWindow : Window
         var source = Selected(Source)?.Currency.Code;
         var destination = Selected(Destination)?.Currency.Code;
         var cross = source is not null && destination is not null && source != destination;
-        SourceLabel.Content = source is null ? "Montant" : $"Montant ({source})";
-        ReceivedLabel.Content = destination is null ? "Montant reçu" : $"Montant reçu ({destination})";
-        FeeLabel.Content = Selected(FeeAccount) is { } fee ? $"Montant des frais ({fee.Currency.Code})" : "Montant des frais";
+        SourceLabel.Content = source is null ? L.Get("Common.Amount") : L.Format("ScheduleEditorWindow.Amount0", (source));
+        ReceivedLabel.Content = destination is null ? L.Get("ScheduleEditorWindow.AmountReceived") : L.Format("ScheduleEditorWindow.AmountReceived0", (destination));
+        FeeLabel.Content = Selected(FeeAccount) is { } fee ? L.Format("ScheduleEditorWindow.FeeAmount0", (fee.Currency.Code)) : L.Get("ScheduleEditorWindow.FeeAmount");
         Fee.IsEnabled = Selected(FeeAccount) is not null;
         RateNotice.Text = cross
-            ? (_posting ? "Confirmez les deux montants réels. Le rapport exact est conservé avec le virement."
-                : "Le montant reçu peut rester vide jusqu’à la confirmation. Aucun taux futur n’est appliqué.")
-            : "Pour deux comptes dans la même devise, les montants sont égaux.";
+            ? (_posting ? L.Get("ScheduleEditorWindow.ConfirmTheTwoActualAmountsTheExactReport")
+                : L.Get("ScheduleEditorWindow.TheAmountReceivedMayRemainEmptyUntilConfirmation"))
+            : L.Get("ScheduleEditorWindow.ForTwoAccountsInTheSameCurrencyThe");
         RateFields.Visibility = _posting && cross ? Visibility.Visible : Visibility.Collapsed;
         var unit = (Unit.SelectedItem as Choice<ScheduleUnit>)?.Value ?? ScheduleUnit.Once;
         Interval.IsEnabled = unit != ScheduleUnit.Once;
@@ -107,15 +107,15 @@ public partial class ScheduleEditorWindow : Window
     {
         try
         {
-            var source = Selected(Source) ?? throw new ArgumentException("Choisissez le compte.");
+            var source = Selected(Source) ?? throw new ArgumentException(L.Get("ScheduleEditorWindow.ChooseTheAccount"));
             var kind = ((Choice<ScheduleKind>)Kind.SelectedItem).Value;
             var date = ReadDate(Start.Text);
             var end = _posting || string.IsNullOrWhiteSpace(End.Text) ? (DateOnly?)null : ReadDate(End.Text);
-            if (end < date) throw new ArgumentException("La date de fin doit être postérieure ou égale à la première date.");
+            if (end < date) throw new ArgumentException(L.Get("ScheduleEditorWindow.TheEndDateMustBeAfterOrEqual"));
             var unit = ((Choice<ScheduleUnit>)Unit.SelectedItem).Value;
             var interval = 1;
-            if (!_posting && unit != ScheduleUnit.Once && !int.TryParse(Interval.Text, NumberStyles.None, French, out interval))
-                throw new ArgumentException("Saisissez un intervalle entier entre 1 et 366.");
+            if (!_posting && unit != ScheduleUnit.Once && !int.TryParse(Interval.Text, NumberStyles.None, DisplayCulture, out interval))
+                throw new ArgumentException(L.Get("ScheduleEditorWindow.EnterAnEntireIntervalBetween1And366"));
             var rule = new ScheduleRule(unit, interval, LastDay.IsEnabled && LastDay.IsChecked == true);
             rule.Validate();
             var amount = Parse(Amount.Text, source);
@@ -137,7 +137,7 @@ public partial class ScheduleEditorWindow : Window
 
     private ScheduleTerms ReadTransfer(Account source, long amount)
     {
-        var destination = Selected(Destination) ?? throw new ArgumentException("Choisissez le compte destinataire.");
+        var destination = Selected(Destination) ?? throw new ArgumentException(L.Get("ScheduleEditorWindow.ChooseTheRecipientAccount"));
         var fee = Selected(FeeAccount);
         long? received = string.IsNullOrWhiteSpace(Received.Text) ? null : Parse(Received.Text, destination);
         return new(ScheduleKind.Transfer, source.Id, amount, LabelText.Text.Trim(), Notes.Text,
@@ -146,9 +146,9 @@ public partial class ScheduleEditorWindow : Window
     }
 
     private static Account? Selected(ComboBox control) => (control.SelectedItem as AccountChoice)?.Account;
-    private static long Parse(string value, Account account) => ExactMoney.ToMinorUnits(MoneyInput.ParseFrench(value, account.Currency), account.Currency);
-    private static string Format(long value, Currency currency) => ExactMoney.FromMinorUnits(value, currency).ToString($"F{currency.DecimalPlaces}", French);
+    private static long Parse(string value, Account account) => ExactMoney.ToMinorUnits(MoneyInput.ParseLocalized(value, account.Currency), account.Currency);
+    private static string Format(long value, Currency currency) => ExactMoney.FromMinorUnits(value, currency).ToString($"F{currency.DecimalPlaces}", DisplayCulture);
     private static string? Optional(TextBox control) => string.IsNullOrWhiteSpace(control.Text) ? null : control.Text.Trim();
-    internal static DateOnly ReadDate(string value) => DateOnly.TryParseExact(value.Trim(), "dd/MM/yyyy", French, DateTimeStyles.None, out var date) && date != default
-        ? date : throw new ArgumentException("Saisissez une date au format jj/mm/aaaa.");
+    internal static DateOnly ReadDate(string value) => DateOnly.TryParseExact(value.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date) && date != default
+        ? date : throw new ArgumentException(L.Get("ScheduleEditorWindow.EnterADateInMmDdYyyyFormat"));
 }

@@ -1,8 +1,8 @@
-<Window x:Class="Moneta.App.HistoricalValuationWindow"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.HistoricalValuationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Valorisation historique — Moneta" Width="760" MinWidth="575" Height="620" MinHeight="440"
-        ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Language="fr-FR"
+        Title="{loc:LocalizedText HistoricalValuationWindow.HistoricalValuationMoneta}" Width="760" MinWidth="575" Height="620" MinHeight="440"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Language="{loc:LocalizedLanguage}"
         Style="{StaticResource {x:Type Window}}" AutomationProperties.AutomationId="HistoricalFxWindow">
     <Grid Margin="18">
         <Grid.RowDefinitions>
@@ -13,45 +13,45 @@
             <TextBlock x:Name="Scope" TextWrapping="Wrap" Margin="0,5,0,8" Foreground="{DynamicResource MutedBrush}" />
             <WrapPanel x:Name="Inputs">
                 <StackPanel x:Name="AmountFields" Margin="0,0,12,8">
-                    <Label Content="_Montant natif" Target="{Binding ElementName=AmountInput}" />
-                    <TextBox x:Name="AmountInput" MinWidth="115" MaxLength="80" Text="100" AutomationProperties.Name="Montant natif" />
+                    <Label Content="{loc:LocalizedText HistoricalValuationWindow.NativeAmountAccessKey}" Target="{Binding ElementName=AmountInput}" />
+                    <TextBox x:Name="AmountInput" MinWidth="115" MaxLength="80" Text="100" AutomationProperties.Name="{loc:LocalizedText Common.NativeAmount}" />
                 </StackPanel>
                 <StackPanel x:Name="SourceFields" Margin="0,0,12,8">
-                    <Label Content="_Depuis" Target="{Binding ElementName=SourceChoice}" />
-                    <ComboBox x:Name="SourceChoice" MinWidth="75" DisplayMemberPath="Code" AutomationProperties.Name="Devise source" />
+                    <Label Content="{loc:LocalizedText HistoricalValuationWindow.FromAccessKey}" Target="{Binding ElementName=SourceChoice}" />
+                    <ComboBox x:Name="SourceChoice" MinWidth="75" DisplayMemberPath="Code" AutomationProperties.Name="{loc:LocalizedText Common.SourceCurrency}" />
                 </StackPanel>
                 <StackPanel Margin="0,0,12,8">
-                    <Label Content="_Vers" Target="{Binding ElementName=TargetChoice}" />
-                    <ComboBox x:Name="TargetChoice" MinWidth="75" DisplayMemberPath="Code" AutomationProperties.Name="Devise cible" />
+                    <Label Content="{loc:LocalizedText HistoricalValuationWindow.ToAccessKey}" Target="{Binding ElementName=TargetChoice}" />
+                    <ComboBox x:Name="TargetChoice" MinWidth="75" DisplayMemberPath="Code" AutomationProperties.Name="{loc:LocalizedText HistoricalValuationWindow.TargetCurrency}" />
                 </StackPanel>
                 <StackPanel x:Name="DateFields" Margin="0,0,12,8">
-                    <Label Content="Date (jj/mm/aaaa)" Target="{Binding ElementName=DateInput}" />
-                    <TextBox x:Name="DateInput" MinWidth="115" MaxLength="10" AutomationProperties.Name="Date historique, jour mois année" />
+                    <Label Content="{loc:LocalizedText Dates.Field}" Target="{Binding ElementName=DateInput}" />
+                    <TextBox x:Name="DateInput" MinWidth="115" MaxLength="10" AutomationProperties.Name="{loc:LocalizedText HistoricalValuationWindow.HistoricalDateDayMonthYear}" />
                 </StackPanel>
                 <StackPanel Margin="0,0,0,8">
-                    <Label Content="_Source officielle" Target="{Binding ElementName=ProviderChoice}" />
-                    <ComboBox x:Name="ProviderChoice" MinWidth="155" AutomationProperties.Name="Source officielle">
-                        <ComboBoxItem Content="NBRB · référence BYN" /><ComboBoxItem Content="CBR · référence RUB" />
+                    <Label Content="{loc:LocalizedText Common.OfficialSourceAccessKey}" Target="{Binding ElementName=ProviderChoice}" />
+                    <ComboBox x:Name="ProviderChoice" MinWidth="155" AutomationProperties.Name="{loc:LocalizedText HistoricalValuationWindow.OfficialSource}">
+                        <ComboBoxItem Content="{loc:LocalizedText HistoricalValuationWindow.NbrbBynReference}" /><ComboBoxItem Content="{loc:LocalizedText HistoricalValuationWindow.CbrRubReference}" />
                     </ComboBox>
                 </StackPanel>
             </WrapPanel>
-            <CheckBox x:Name="Offline" Content="Utiliser uniquement le cache local" Checked="Offline_Changed" Unchecked="Offline_Changed" Margin="0,3,0,9" />
+            <CheckBox x:Name="Offline" Content="{loc:LocalizedText HistoricalValuationWindow.UseOnlyTheLocalCache}" Checked="Offline_Changed" Unchecked="Offline_Changed" Margin="0,3,0,9" />
             <WrapPanel Margin="0,0,0,10">
-                <Button x:Name="Calculate" Content="_Calculer" Click="Calculate_Click" Style="{StaticResource PrimaryButton}" IsDefault="True" Margin="0,0,7,0" />
-                <Button x:Name="Refresh" Content="Recalculer avec un nouveau cours" Click="Calculate_Click" Margin="0,0,7,0" />
-                <Button x:Name="Cancel" Content="Annuler le calcul" Click="Cancel_Click" IsEnabled="False" />
+                <Button x:Name="Calculate" Content="{loc:LocalizedText HistoricalValuationWindow.CalculateAccessKey}" Click="Calculate_Click" Style="{StaticResource PrimaryButton}" IsDefault="True" Margin="0,0,7,0" />
+                <Button x:Name="Refresh" Content="{loc:LocalizedText HistoricalValuationWindow.RecalculateWithANewRate}" Click="Calculate_Click" Margin="0,0,7,0" />
+                <Button x:Name="Cancel" Content="{loc:LocalizedText Common.CancelCalculation}" Click="Cancel_Click" IsEnabled="False" />
             </WrapPanel>
             <TextBlock x:Name="Status" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
         </StackPanel>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,8">
             <StackPanel>
-                <TextBlock x:Name="ValueText" Style="{StaticResource WindowHeading}" TextWrapping="Wrap" AutomationProperties.Name="Montant valorisé" />
+                <TextBlock x:Name="ValueText" Style="{StaticResource WindowHeading}" TextWrapping="Wrap" AutomationProperties.Name="{loc:LocalizedText HistoricalValuationWindow.ConvertedAmount}" />
                 <TextBlock x:Name="Evidence" TextWrapping="Wrap" Margin="0,8,0,0" />
             </StackPanel>
         </ScrollViewer>
         <WrapPanel Grid.Row="2">
-            <Button x:Name="Export" Content="Enregistrer la preuve…" Click="Export_Click" IsEnabled="False" Margin="0,0,7,0" />
-            <Button x:Name="Replay" Content="Reproduire depuis une preuve…" Click="Replay_Click" Margin="0,0,7,0" />
+            <Button x:Name="Export" Content="{loc:LocalizedText HistoricalValuationWindow.SaveTheEvidence}" Click="Export_Click" IsEnabled="False" Margin="0,0,7,0" />
+            <Button x:Name="Replay" Content="{loc:LocalizedText HistoricalValuationWindow.ReproduceFromEvidence}" Click="Replay_Click" Margin="0,0,7,0" />
             <Button Content="Fermer" IsCancel="True" />
         </WrapPanel>
     </Grid>

@@ -6,7 +6,7 @@ namespace Moneta.App;
 
 public partial class BudgetEditorWindow : Window
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly FinancialDocument _document;
     private readonly Guid _id;
     internal sealed record Choice(Guid Id, string Label);
@@ -18,13 +18,13 @@ public partial class BudgetEditorWindow : Window
         _document = document;
         _id = original is null || duplicate ? Guid.NewGuid() : original.Id;
         InitializeComponent();
-        Heading.Text = duplicate ? "Dupliquer le budget" : original is null ? "Nouveau budget" : "Modifier le budget";
+        Heading.Text = duplicate ? L.Get("BudgetEditorWindow.DuplicateBudget") : original is null ? L.Get("BudgetEditorWindow.NewBudget") : L.Get("BudgetEditorWindow.ChangeBudget");
         NameInput.Text = original?.Name ?? "";
-        MonthInput.Text = month.ToString("MM/yyyy", French);
+        MonthInput.Text = month.ToString("MM/yyyy", DisplayCulture);
         CurrencyInput.ItemsSource = document.Currencies;
         var currency = document.Currencies.FirstOrDefault(item => item.Code == (original?.CurrencyCode ?? "EUR")) ?? document.Currencies[0];
         CurrencyInput.SelectedItem = currency;
-        AmountInput.Text = original is null ? "" : ExactMoney.FromMinorUnits(original.PlannedMinor, currency).ToString(French);
+        AmountInput.Text = original is null ? "" : ExactMoney.FromMinorUnits(original.PlannedMinor, currency).ToString(DisplayCulture);
         AccountsInput.ItemsSource = AccountChoices(document);
         CategoriesInput.ItemsSource = CategoryChoices(document);
         if (original is not null)
@@ -36,7 +36,7 @@ public partial class BudgetEditorWindow : Window
     }
 
     internal static Choice[] AccountChoices(FinancialDocument document) => document.Accounts.Select((item, index) =>
-        new Choice(item.Id, $"{index + 1}. {item.Name} · {item.Currency.Code}" + (item.IsArchived ? " · archivé" : ""))).ToArray();
+        new Choice(item.Id, $"{index + 1}. {item.Name} · {item.Currency.Code}" + (item.IsArchived ? L.Get("BudgetEditorWindow.Archived") : ""))).ToArray();
 
     internal static Choice[] CategoryChoices(FinancialDocument document)
     {
@@ -50,7 +50,7 @@ public partial class BudgetEditorWindow : Window
         try
         {
             var currency = (Currency)CurrencyInput.SelectedItem;
-            var amount = MoneyInput.ParseFrench(AmountInput.Text, currency);
+            var amount = MoneyInput.ParseLocalized(AmountInput.Text, currency);
             var result = new BudgetPlan(_id, NameInput.Text.Trim(), ReadMonth(MonthInput.Text), currency.Code, ExactMoney.ToMinorUnits(amount, currency),
                 AccountsInput.SelectedItems.Cast<Choice>().Select(item => item.Id).ToArray(), CategoriesInput.SelectedItems.Cast<Choice>().Select(item => item.Id).ToArray());
             result.Validate(_document);
@@ -60,6 +60,6 @@ public partial class BudgetEditorWindow : Window
         catch (ArgumentException error) { ErrorText.Text = error.Message; }
     }
 
-    internal static DateOnly ReadMonth(string text) => DateOnly.TryParseExact("01/" + text.Trim(), "dd/MM/yyyy", French,
-        DateTimeStyles.None, out var month) && month != default ? month : throw new ArgumentException("Saisissez le mois au format mm/aaaa.");
+    internal static DateOnly ReadMonth(string text) => DateOnly.TryParseExact("01/" + text.Trim(), "dd/MM/yyyy", CultureInfo.InvariantCulture,
+        DateTimeStyles.None, out var month) && month != default ? month : throw new ArgumentException(L.Get("BudgetEditorWindow.EnterTheMonthInMmYyyyFormat"));
 }

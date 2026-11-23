@@ -1,8 +1,8 @@
-<Window x:Class="Moneta.App.ScheduleWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.ScheduleWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Échéancier — Moneta" Width="1050" Height="610" MinWidth="640" MinHeight="420"
+        Title="{loc:LocalizedText ScheduleWindow.ScheduleMoneta}" Width="1050" Height="610" MinWidth="640" MinHeight="420"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}"
-        PreviewKeyDown="Window_KeyDown">
+        PreviewKeyDown="Window_KeyDown" Language="{loc:LocalizedLanguage}">
     <Window.Resources>
         <Style x:Key="MoneyCell" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="TextAlignment" Value="Right"/>
@@ -11,90 +11,90 @@
     </Window.Resources>
     <Grid Margin="18">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <TextBlock Text="Échéancier" Style="{StaticResource WindowHeading}" Margin="0,0,0,10" />
+        <TextBlock Text="{loc:LocalizedText Common.ScheduledTransactions}" Style="{StaticResource WindowHeading}" Margin="0,0,0,10" />
         <TabControl x:Name="Tabs" Grid.Row="1">
-            <TabItem Header="_Occurrences">
+            <TabItem Header="{loc:LocalizedText ScheduleWindow.OccurrencesAccessKey}">
                 <Grid Margin="8">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
                         <ComboBox x:Name="Filter" SelectedIndex="0" Width="180" DockPanel.Dock="Left"
-                                  SelectionChanged="Filter_Changed" AutomationProperties.Name="Filtre des occurrences">
-                            <ComboBoxItem Content="Toutes les échéances"/><ComboBoxItem Content="À venir"/><ComboBoxItem Content="En retard"/>
-                            <ComboBoxItem Content="Aujourd’hui"/><ComboBoxItem Content="Ce mois"/>
+                                  SelectionChanged="Filter_Changed" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.OccurrenceFilter}">
+                            <ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.AllDueDates}"/><ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.Forthcoming}"/><ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.Late}"/>
+                            <ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.Today}"/><ComboBoxItem Content="{loc:LocalizedText Common.ThisMonth}"/>
                         </ComboBox>
                         <TextBlock x:Name="PageText" Margin="10,0,0,0" VerticalAlignment="Center"
                                    AutomationProperties.LiveSetting="Polite"/>
                     </DockPanel>
                     <DataGrid x:Name="Occurrences" Grid.Row="1" IsReadOnly="True" AutoGenerateColumns="False"
                               SelectionMode="Single" CanUserAddRows="False" CanUserSortColumns="False" SelectionChanged="Selection_Changed"
-                              EnableRowVirtualization="True" AutomationProperties.Name="Occurrences prévues">
+                              EnableRowVirtualization="True" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.ExpectedOccurrences}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Date prévue" Binding="{Binding Date}" Width="100"/>
-                            <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="2*" MinWidth="125"/>
-                            <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="85"/>
-                            <DataGridTextColumn Header="Compte" Binding="{Binding Accounts}" Width="2*" MinWidth="125"/>
-                            <DataGridTextColumn Header="Montant natif" Binding="{Binding Amount}" Width="155" ElementStyle="{StaticResource MoneyCell}"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.ExpectedDate}" Binding="{Binding Date}" Width="100"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Description}" Binding="{Binding Label}" Width="2*" MinWidth="125"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Type}" Binding="{Binding Kind}" Width="85"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Accounts}" Width="2*" MinWidth="125"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.NativeAmount}" Binding="{Binding Amount}" Width="155" ElementStyle="{StaticResource MoneyCell}"/>
                             <DataGridTextColumn Header="Fréquence" Binding="{Binding Frequency}" Width="120"/>
-                            <DataGridTextColumn Header="État" Binding="{Binding State}" Width="120"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.State}" Binding="{Binding State}" Width="120"/>
                         </DataGrid.Columns>
                     </DataGrid>
                     <WrapPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Button x:Name="PreviousPage" Content="‹" Click="Previous_Click" AutomationProperties.Name="Page précédente" Margin="0,0,4,4"/>
-                        <Button x:Name="NextPage" Content="›" Click="Next_Click" AutomationProperties.Name="Page suivante" Margin="0,0,12,4"/>
-                        <Button x:Name="Post" Content="_Confirmer l’occurrence…" Style="{StaticResource PrimaryButton}" Click="Post_Click" Margin="0,0,6,4"/>
-                        <Button x:Name="Defer" Content="_Reporter…" Click="Defer_Click" Margin="0,0,6,4"/>
-                        <Button x:Name="Skip" Content="_Ignorer…" Click="Skip_Click" Margin="0,0,6,4"/>
+                        <Button x:Name="PreviousPage" Content="‹" Click="Previous_Click" AutomationProperties.Name="{loc:LocalizedText Common.PreviousPage}" Margin="0,0,4,4"/>
+                        <Button x:Name="NextPage" Content="›" Click="Next_Click" AutomationProperties.Name="{loc:LocalizedText Common.NextPage}" Margin="0,0,12,4"/>
+                        <Button x:Name="Post" Content="{loc:LocalizedText ScheduleWindow.ConfirmOccurrenceAccessKey}" Style="{StaticResource PrimaryButton}" Click="Post_Click" Margin="0,0,6,4"/>
+                        <Button x:Name="Defer" Content="{loc:LocalizedText ScheduleWindow.ReportAccessKey}" Click="Defer_Click" Margin="0,0,6,4"/>
+                        <Button x:Name="Skip" Content="{loc:LocalizedText ScheduleWindow.IgnoreAccessKey}" Click="Skip_Click" Margin="0,0,6,4"/>
                     </WrapPanel>
                 </Grid>
             </TabItem>
-            <TabItem Header="_Programmations">
+            <TabItem Header="{loc:LocalizedText ScheduleWindow.ProgrammingAccessKey}">
                 <Grid Margin="8">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <ComboBox x:Name="PlanFilter" HorizontalAlignment="Left" Width="180" SelectedIndex="0" Margin="0,0,0,8"
-                              SelectionChanged="PlanFilter_Changed" AutomationProperties.Name="Filtre des programmations">
-                        <ComboBoxItem Content="Toutes"/><ComboBoxItem Content="Suspendues"/><ComboBoxItem Content="Supprimées"/>
+                              SelectionChanged="PlanFilter_Changed" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.ProgrammingFilter}">
+                        <ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.All}"/><ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.Paused}"/><ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.Deleted2}"/>
                     </ComboBox>
                     <DataGrid x:Name="Plans" Grid.Row="1" IsReadOnly="True" AutoGenerateColumns="False"
                               CanUserAddRows="False" SelectionMode="Single" SelectionChanged="Selection_Changed"
-                              EnableRowVirtualization="True" AutomationProperties.Name="Programmations">
+                              EnableRowVirtualization="True" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.Programming}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Prochaine date" Binding="{Binding Next}" Width="110"/>
-                            <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="2*" MinWidth="120"/>
-                            <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="85"/>
-                            <DataGridTextColumn Header="Compte" Binding="{Binding Accounts}" Width="2*" MinWidth="125"/>
-                            <DataGridTextColumn Header="Montant natif" Binding="{Binding Amount}" Width="155" ElementStyle="{StaticResource MoneyCell}"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText ScheduleWindow.NextDate}" Binding="{Binding Next}" Width="110"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Description}" Binding="{Binding Label}" Width="2*" MinWidth="120"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Type}" Binding="{Binding Kind}" Width="85"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Accounts}" Width="2*" MinWidth="125"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.NativeAmount}" Binding="{Binding Amount}" Width="155" ElementStyle="{StaticResource MoneyCell}"/>
                             <DataGridTextColumn Header="Fréquence" Binding="{Binding Frequency}" Width="115"/>
-                            <DataGridTextColumn Header="État" Binding="{Binding State}" Width="90"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.State}" Binding="{Binding State}" Width="90"/>
                         </DataGrid.Columns>
                     </DataGrid>
                     <WrapPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Button x:Name="Edit" Content="_Modifier…" Click="Edit_Click" Margin="0,0,6,4"/>
-                        <Button x:Name="Suspend" Content="_Suspendre" Click="Suspend_Click" Margin="0,0,6,4"/>
-                        <Button x:Name="Retire" Content="_Supprimer la programmation…" Style="{StaticResource DangerButton}" Click="Retire_Click" Margin="0,0,6,4"/>
+                        <Button x:Name="Edit" Content="{loc:LocalizedText Common.EditAccessKey}" Click="Edit_Click" Margin="0,0,6,4"/>
+                        <Button x:Name="Suspend" Content="{loc:LocalizedText ScheduleWindow.PauseAccessKey}" Click="Suspend_Click" Margin="0,0,6,4"/>
+                        <Button x:Name="Retire" Content="{loc:LocalizedText ScheduleWindow.DeleteProgrammingAccessKey}" Style="{StaticResource DangerButton}" Click="Retire_Click" Margin="0,0,6,4"/>
                     </WrapPanel>
                 </Grid>
             </TabItem>
-            <TabItem Header="_Historique">
+            <TabItem Header="{loc:LocalizedText ScheduleWindow.BackgroundAccessKey}">
                 <Grid Margin="8">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <ComboBox x:Name="HistoryFilter" HorizontalAlignment="Left" Width="205" SelectedIndex="0" Margin="0,0,0,8"
-                              SelectionChanged="HistoryFilter_Changed" AutomationProperties.Name="Filtre de l’historique">
-                        <ComboBoxItem Content="Toutes les décisions"/><ComboBoxItem Content="Écritures comptabilisées"/>
+                              SelectionChanged="HistoryFilter_Changed" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.HistoryFilter}">
+                        <ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.AllDecisions}"/><ComboBoxItem Content="{loc:LocalizedText ScheduleWindow.RecordsRecorded}"/>
                     </ComboBox>
                     <DataGrid x:Name="History" Grid.Row="1" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False"
-                              EnableRowVirtualization="True" AutomationProperties.Name="Historique des décisions">
+                              EnableRowVirtualization="True" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.BackgroundOfDecisions}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Date d’origine" Binding="{Binding Original}" Width="105"/>
-                            <DataGridTextColumn Header="Date retenue" Binding="{Binding Date}" Width="105"/>
-                            <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="2*" MinWidth="130"/>
-                            <DataGridTextColumn Header="Compte" Binding="{Binding Accounts}" Width="*" MinWidth="125"/>
-                            <DataGridTextColumn Header="Montant natif" Binding="{Binding Amount}" Width="155" ElementStyle="{StaticResource MoneyCell}"/>
-                            <DataGridTextColumn Header="Décision" Binding="{Binding State}" Width="160"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText ScheduleWindow.DateOfOrigin}" Binding="{Binding Original}" Width="105"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText ScheduleWindow.DateSelected}" Binding="{Binding Date}" Width="105"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Description}" Binding="{Binding Label}" Width="2*" MinWidth="130"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Accounts}" Width="*" MinWidth="125"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText Common.NativeAmount}" Binding="{Binding Amount}" Width="155" ElementStyle="{StaticResource MoneyCell}"/>
+                            <DataGridTextColumn Header="{loc:LocalizedText ScheduleWindow.Decision}" Binding="{Binding State}" Width="160"/>
                         </DataGrid.Columns>
                     </DataGrid>
                     <WrapPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Button x:Name="PreviousHistory" Content="‹" Click="PreviousHistory_Click" AutomationProperties.Name="Page précédente de l’historique" Margin="0,0,4,4"/>
-                        <Button x:Name="NextHistory" Content="›" Click="NextHistory_Click" AutomationProperties.Name="Page suivante de l’historique" Margin="0,0,8,4"/>
+                        <Button x:Name="PreviousHistory" Content="‹" Click="PreviousHistory_Click" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.PreviousPageOfHistory}" Margin="0,0,4,4"/>
+                        <Button x:Name="NextHistory" Content="›" Click="NextHistory_Click" AutomationProperties.Name="{loc:LocalizedText ScheduleWindow.NextPageFromHistory}" Margin="0,0,8,4"/>
                         <TextBlock x:Name="HistoryPageText" VerticalAlignment="Center"/>
                     </WrapPanel>
                 </Grid>
@@ -102,8 +102,8 @@
         </TabControl>
         <TextBlock Grid.Row="2" x:Name="Status" TextWrapping="Wrap" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
         <WrapPanel Grid.Row="3" Margin="0,8,0,0">
-            <Button x:Name="NewPlan" Content="_Nouvelle échéance…" Style="{StaticResource PrimaryButton}" Click="New_Click" Margin="0,0,6,4"/>
-            <Button x:Name="SaveDraft" Content="_Enregistrer le dossier (Ctrl+S)" Click="Save_Click" Margin="0,0,6,4"/>
+            <Button x:Name="NewPlan" Content="{loc:LocalizedText ScheduleWindow.NewScheduledTransactionAccessKey}" Style="{StaticResource PrimaryButton}" Click="New_Click" Margin="0,0,6,4"/>
+            <Button x:Name="SaveDraft" Content="{loc:LocalizedText ScheduleWindow.SaveDocumentCtrlSAccessKey}" Click="Save_Click" Margin="0,0,6,4"/>
             <Button Content="_Fermer" IsCancel="True" Margin="0,0,6,4"/>
         </WrapPanel>
     </Grid>

@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Moneta.Core/Moneta.Core.csproj" />
+    <Using Include="Moneta.Localization" />
     <InternalsVisibleTo Include="Moneta.Tests" />
   </ItemGroup>
 </Project>

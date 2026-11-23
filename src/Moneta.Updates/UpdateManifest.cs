@@ -26,19 +26,19 @@ public sealed record UpdateManifest(
     public static UpdateManifest Verify(ReadOnlySpan<byte> bytes, ReadOnlySpan<byte> publicKey)
     {
         if (bytes.IsEmpty || bytes.Length > MaximumEnvelopeBytes)
-            throw new InvalidDataException("Taille des métadonnées de mise à jour invalide.");
+            throw new InvalidDataException(L.Get("UpdateManifest.SizeOfInvalidUpdateMetadata"));
 
         try
         {
             var envelope = JsonSerializer.Deserialize(bytes, UpdateJson.Default.UpdateEnvelope);
             if (envelope is not { Payload.Length: > 0, Signature.Length: 64 })
-                throw new InvalidDataException("Signature de mise à jour absente ou invalide.");
+                throw new InvalidDataException(L.Get("UpdateManifest.SignatureOfUpdateAbsentOrInvalid"));
 
             using var verifier = ECDsa.Create();
             verifier.ImportSubjectPublicKeyInfo(publicKey, out var consumed);
             if (consumed != publicKey.Length || verifier.KeySize != 256 ||
                 !verifier.VerifyData(envelope.Payload, envelope.Signature, HashAlgorithmName.SHA256))
-                throw new InvalidDataException("La signature des métadonnées ne correspond pas à la clé Moneta.");
+                throw new InvalidDataException(L.Get("UpdateManifest.TheMetadataSignatureDoesNotMatchTheMoneta"));
 
             var manifest = JsonSerializer.Deserialize(envelope.Payload, UpdateJson.Default.UpdateManifest);
             if (manifest is null || manifest.Format != 1 || manifest.Architecture != Target ||
@@ -48,12 +48,12 @@ public sealed record UpdateManifest(
                 manifest.Sha256 is not { Length: 64 } || !manifest.Sha256.All(Uri.IsHexDigit) ||
                 manifest.ReleaseNotes is not { Length: > 0 and <= MaximumNoteLength } ||
                 string.IsNullOrWhiteSpace(manifest.ReleaseNotes))
-                throw new InvalidDataException("Le catalogue signé ne décrit pas un installateur Moneta compatible.");
+                throw new InvalidDataException(L.Get("UpdateManifest.TheSignedCatalogueDoesNotDescribeACompatible"));
             return manifest;
         }
         catch (Exception error) when (error is JsonException or CryptographicException or FormatException)
         {
-            throw new InvalidDataException("Métadonnées de mise à jour invalides.", error);
+            throw new InvalidDataException(L.Get("UpdateManifest.InvalidUpdateMetadata"), error);
         }
     }
 

@@ -20,10 +20,10 @@ public partial class UpdateWindow : Window
         _offer = offer;
         _installed = installed;
         InitializeComponent();
-        Versions.Text = $"Version installée : {installed.ToString(3)} · Nouvelle version : {offer.Manifest.Version}";
+        Versions.Text = L.Format("UpdateWindow.InstalledVersion0NewVersion1", (installed.ToString(3)), (offer.Manifest.Version));
         Notes.Text = offer.Manifest.ReleaseNotes;
         Install.IsEnabled = UpdateChannel.SupportsInstall;
-        if (!Install.IsEnabled) Status.Text = "L’installation intégrée est disponible depuis Moneta installé sur Windows x64.";
+        if (!Install.IsEnabled) Status.Text = L.Get("UpdateWindow.InAppInstallationIsAvailableInTheInstalled");
         Loaded += (_, _) => Later.Focus();
     }
 
@@ -33,10 +33,10 @@ public partial class UpdateWindow : Window
         using var cancellation = new CancellationTokenSource();
         _download = cancellation;
         Install.IsEnabled = false;
-        Later.Content = "_Annuler le téléchargement";
+        Later.Content = L.Get("UpdateWindow.CancelDownloadAccessKey");
         DownloadProgress.Value = 0;
         DownloadProgress.Visibility = Visibility.Visible;
-        Status.Text = "Téléchargement et vérification…";
+        Status.Text = L.Get("UpdateWindow.DownloadingAndChecking");
         try
         {
             Stage = await _client.DownloadAsync(_offer, _installed,
@@ -44,11 +44,11 @@ public partial class UpdateWindow : Window
         }
         catch (OperationCanceledException)
         {
-            Status.Text = "Le téléchargement a été annulé ou le délai a expiré.";
+            Status.Text = L.Get("UpdateWindow.TheDownloadHasBeenCancelledOrTheDeadline");
         }
         catch (Exception error) when (error is HttpRequestException or InvalidDataException or IOException or UnauthorizedAccessException)
         {
-            Status.Text = $"Mise à jour non préparée. {error.Message}";
+            Status.Text = L.Format("UpdateWindow.TheUpdateCouldNotBePrepared0", (error.Message));
         }
         finally
         {

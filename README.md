@@ -103,6 +103,10 @@ Moneta is usable, but still early. **Windows 11 x64** is the only qualified targ
 
 Try Moneta with a fictional document first, keep independent backups, and verify a restore before using it with important data.
 
+## French and English in development builds
+
+The code under development for 0.2.0 supports French and US English. Choose **Tools → Options → Language** in English or **Outils → Options → Langue** in French. The interface previews your choice immediately. Save to use it on your next launch. [Language and regional formats](docs/LOCALIZATION.md)
+
 ## Documentation and feedback
 
 - [Alpha guide](docs/ALPHA_GUIDE.md) — installation, first steps, and recovery (French).

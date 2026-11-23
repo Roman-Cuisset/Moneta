@@ -9,7 +9,7 @@ namespace Moneta.App;
 public partial class TransferWindow : Window
 {
     private const string DefaultRateSource = "Montants saisis par l’utilisateur";
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly MainViewModel _model;
     private readonly TransferDetails? _editing;
     private readonly bool _readOnly;
@@ -24,25 +24,25 @@ public partial class TransferWindow : Window
     {
         ArgumentNullException.ThrowIfNull(model);
         if (model.IsDemo)
-            throw new InvalidOperationException("Les virements ne sont pas disponibles dans la démonstration.");
+            throw new InvalidOperationException(L.Get("TransferWindow.TransfersAreNotAvailableInTheDemonstration"));
         var archived = editing is not null && model.HasArchivedTransferAccount(editing);
         var consultation = editing is not null && (readOnly || archived || editing.HasReconciledLeg || !model.PendingReconciliations.IsEmpty);
         if (!consultation && !model.PendingReconciliations.IsEmpty)
-            throw new InvalidOperationException("Enregistrez le rapprochement ou sa réouverture (Ctrl+S) avant de modifier un virement.");
+            throw new InvalidOperationException(L.Get("TransferWindow.RecordTheReconciliationOrReopeningCtrlSBefore"));
         if (editing?.Value.IsDeleted == true)
-            throw new ArgumentException("Un virement annulé ne peut pas être modifié.", nameof(editing));
+            throw new ArgumentException(L.Get("TransferWindow.ACancelledTransferCannotBeChanged"), nameof(editing));
         if (readOnly && editing is null)
-            throw new ArgumentException("La consultation nécessite un virement existant.", nameof(editing));
+            throw new ArgumentException(L.Get("TransferWindow.ConsultationRequiresAnExistingTransfer"), nameof(editing));
 
         _model = model;
         _editing = editing;
         _readOnly = consultation;
         var accounts = model.Accounts.Where(item => consultation || !item.Account.IsArchived).ToArray();
         if (accounts.Length < 2)
-            throw new InvalidOperationException("Créez au moins deux comptes actifs dans le dossier pour effectuer un virement.");
+            throw new InvalidOperationException(L.Get("TransferWindow.CreateAtLeastTwoActiveAccountsInThe"));
 
         InitializeComponent();
-        Title = consultation ? "Consulter le virement" : editing is null ? "Nouveau virement" : "Modifier le virement";
+        Title = consultation ? L.Get("TransferWindow.SeeTheTransfer") : editing is null ? L.Get("TransferWindow.NewTransfer") : L.Get("TransferWindow.ChangeTheTransfer");
         Heading.Text = Title;
         SourceAccount.ItemsSource = accounts;
         DestinationAccount.ItemsSource = accounts;
@@ -67,24 +67,24 @@ public partial class TransferWindow : Window
         EntryReference.Text = editing?.Value.Reference ?? string.Empty;
         EntryNotes.Text = editing?.Value.Notes ?? string.Empty;
         AccountNotice.Text = editing is null
-            ? "Deux mouvements distincts : débit et crédit. Leur état NP / P / R reste indépendant."
-            : "Comptes source, destinataire et frais existants fixes. Pour corriger un compte, annulez tout le virement puis recréez-le. Les états NP / P / R restent indépendants.";
+            ? L.Get("TransferWindow.TwoSeparateTransactionsDebitAndCreditTheirNp")
+            : L.Get("TransferWindow.SourceAccountsRecipientAndExistingFixedFeesTo");
         _ready = true;
         RefreshAccounts();
         RefreshFee();
         if (consultation)
         {
-            DraftNotice.Text = "Consultation — aucun mouvement n’est modifié depuis cette fenêtre.";
+            DraftNotice.Text = L.Get("TransferWindow.ConsultationNoMovementIsChangedFromThisWindow");
             SourceAccount.IsEnabled = DestinationAccount.IsEnabled = FeeAccount.IsEnabled = HasFee.IsEnabled = false;
             foreach (var field in new[] { EntryDate, DebitAmount, CreditAmount, ExchangeDate, RateSource, FeeAmount, EntryReference, EntryNotes })
                 field.IsReadOnly = true;
             ConfirmTransfer.IsEnabled = false;
             CancelTransfer.Content = "Fermer";
-            ErrorText.Text = archived ? "Réactivez les comptes du virement, frais compris, pour retrouver ses commandes de modification."
+            ErrorText.Text = archived ? L.Get("TransferWindow.ReactivateTheTransferAccountsIncludingFeesToFind")
                 : editing!.HasReconciledLeg ? ReconciledMessage
                 : !model.PendingReconciliations.IsEmpty
-                    ? "Consultation seule : enregistrez le rapprochement ou sa réouverture (Ctrl+S) avant de modifier ce virement."
-                    : "Consultation seule : la modification du virement est indisponible dans ce contexte.";
+                    ? L.Get("TransferWindow.ConsultationAloneSaveTheReconciliationOrItsReopening")
+                    : L.Get("TransferWindow.ConsultationAloneTheChangeInTheTransferIs");
         }
         Loaded += (_, _) =>
         {
@@ -93,11 +93,11 @@ public partial class TransferWindow : Window
         };
     }
 
-    private const string ReconciledMessage = "Une jambe du virement (débit, crédit ou frais) est rapprochée R. Rouvrez le rapprochement ou libérez le rapprochement hérité, puis enregistrez (Ctrl+S) avant de modifier le virement entier.";
+    private static string ReconciledMessage => L.Get("TransferWindow.ReconciledTransfer");
 
-    private static string FormatDate(DateOnly date) => date.ToString("dd/MM/yyyy", French);
-    private static string FormatAmount(Transaction value) => value.Amount.ToString($"F{value.Currency.DecimalPlaces}", French);
-    private static bool TryDate(string text, out DateOnly date) => DateOnly.TryParseExact(text.Trim(), "dd/MM/yyyy", French, DateTimeStyles.None, out date) && date != default;
+    private static string FormatDate(DateOnly date) => date.ToString(L.DatePattern, DisplayCulture);
+    private static string FormatAmount(Transaction value) => value.Amount.ToString($"F{value.Currency.DecimalPlaces}", DisplayCulture);
+    private static bool TryDate(string text, out DateOnly date) => DateOnly.TryParseExact(text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out date) && date != default;
 
     private void Account_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -117,14 +117,14 @@ public partial class TransferWindow : Window
             _sameCurrency = same;
             CreditAmount.IsReadOnly = same;
             if (same) CreditAmount.Text = DebitAmount.Text;
-            DebitCurrency.Text = source?.Currency.Code ?? "Devise source";
-            CreditCurrency.Text = destination?.Currency.Code ?? "Devise destinataire";
+            DebitCurrency.Text = source?.Currency.Code ?? L.Get("Common.SourceCurrency");
+            CreditCurrency.Text = destination?.Currency.Code ?? L.Get("TransferWindow.DestinationCurrency");
             ExchangeFields.Visibility = same ? Visibility.Collapsed : Visibility.Visible;
             AmountHint.Text = same
-                ? "Même devise : le crédit recopie exactement le débit et n’est pas modifiable. Les frais sont séparés."
-                : "Devises différentes : saisissez librement les deux montants natifs, sans conversion automatique. Aucun cours réseau.";
+                ? L.Get("TransferWindow.TheSameCurrencyTheCreditCopyExactlyThe")
+                : L.Get("TransferWindow.DifferentCurrenciesFreelyEnterBothNativeAmountsWithout");
             if (source is not null && destination is not null)
-                AmountHint.Text += $" Précision : {source.Currency.Code} {source.Currency.DecimalPlaces}, {destination.Currency.Code} {destination.Currency.DecimalPlaces} décimale(s), sans arrondi.";
+                AmountHint.Text += L.Format("TransferWindow.Accuracy0123DecimalsWithoutRounding", (source.Currency.Code), (source.Currency.DecimalPlaces), (destination.Currency.Code), (destination.Currency.DecimalPlaces));
         }
         finally { _updating = false; }
         RefreshPreview();
@@ -184,12 +184,12 @@ public partial class TransferWindow : Window
         FeeFields.IsEnabled = included;
         FeeAccount.IsEnabled = included && _editing?.Fee is null;
         var account = (FeeAccount.SelectedItem as AccountSummary)?.Account;
-        FeeCurrency.Text = account?.Currency.Code ?? "Devise du compte de frais";
+        FeeCurrency.Text = account?.Currency.Code ?? L.Get("TransferWindow.FeeAccountCurrency");
         FeeHint.Text = _editing?.Fee is not null
-            ? "Frais existants : compte fixe et mouvement conservé. Saisissez explicitement 0 pour annuler ces frais."
-            : "Frais facultatifs, strictement positifs à l’ajout. Choisissez le compte débité dans ce dossier ; sa devise native s’applique.";
+            ? L.Get("TransferWindow.ExistingFeesFixedAccountAndRetainedTransactionPlease")
+            : L.Get("TransferWindow.OptionalFeesStrictlyPositiveToTheAdditionChoose");
         if (included && account is not null)
-            FeeHint.Text += $" Précision : {account.Currency.DecimalPlaces} décimale(s), sans arrondi. Frais exclus du rapport de change.";
+            FeeHint.Text += L.Format("TransferWindow.Accuracy0DecimalPlaceSWithoutRoundingExpenses", (account.Currency.DecimalPlaces));
     }
 
     private void RefreshPreview()
@@ -197,26 +197,26 @@ public partial class TransferWindow : Window
         if (SourceAccount.SelectedItem is not AccountSummary { Account: var source } ||
             DestinationAccount.SelectedItem is not AccountSummary { Account: var destination })
         {
-            RateDescription.Text = "Choisissez les deux comptes pour afficher le rapport de change.";
+            RateDescription.Text = L.Get("TransferWindow.ChooseBothAccountsToViewTheExchangeReport");
             return;
         }
         if (source.Id == destination.Id)
         {
-            RateDescription.Text = "Le compte source et le compte destinataire doivent être distincts.";
+            RateDescription.Text = L.Get("TransferWindow.TheSourceAndRecipientAccountsMustBeSeparate");
             return;
         }
         try
         {
-            var debit = MoneyInput.ParseFrench(DebitAmount.Text, source.Currency);
-            var credit = MoneyInput.ParseFrench(CreditAmount.Text, destination.Currency);
+            var debit = MoneyInput.ParseLocalized(DebitAmount.Text, source.Currency);
+            var credit = MoneyInput.ParseLocalized(CreditAmount.Text, destination.Currency);
             if (debit <= 0 || credit <= 0)
             {
-                RateDescription.Text = "Les deux montants doivent être strictement positifs pour afficher le rapport exact.";
+                RateDescription.Text = L.Get("TransferWindow.BothAmountsMustBeStrictlyPositiveToDisplay");
                 return;
             }
             if (!TryDate(EntryDate.Text, out var date))
             {
-                RateDescription.Text = "Saisissez une date de virement valide (jj/mm/aaaa).";
+                RateDescription.Text = L.Get("TransferWindow.EnterAValidTransferDateMmDdYyyy");
                 return;
             }
             DateOnly? exchangeDate = null;
@@ -226,17 +226,17 @@ public partial class TransferWindow : Window
                 else if (TryDate(ExchangeDate.Text, out var entered)) exchangeDate = entered;
                 else
                 {
-                    RateDescription.Text = "Saisissez une date du change valide (jj/mm/aaaa).";
+                    RateDescription.Text = L.Get("TransferWindow.EnterAValidCurrencyExchangeDateMmDd");
                     return;
                 }
             }
             RateDescription.Text = TransferRules.FormatEffectiveRate(debit, source.Currency, credit, destination.Currency)
-                + (_sameCurrency ? "\nFrais séparés, exclus du rapport."
-                    : $"\nDate du change : {FormatDate(exchangeDate!.Value)}. Source déclarée / non vérifiée : {ReadRateSource()}. Frais exclus. Aucun cours réseau.");
+                + (_sameCurrency ? L.Get("TransferWindow.SeparateCostsExcludedFromTheReport")
+                    : L.Format("TransferWindow.DateOfExchange0SourceDeclaredNotVerified", (FormatDate(exchangeDate!.Value)), (ReadRateSource())));
         }
         catch (ArgumentException error)
         {
-            RateDescription.Text = "Aperçu en attente : " + error.Message;
+            RateDescription.Text = L.Get("TransferWindow.PendingReview") + error.Message;
         }
     }
 
@@ -252,14 +252,14 @@ public partial class TransferWindow : Window
         try
         {
             if (!_model.PendingReconciliations.IsEmpty)
-                throw new InvalidOperationException("Enregistrez le rapprochement ou sa réouverture (Ctrl+S) avant de modifier un virement.");
+                throw new InvalidOperationException(L.Get("TransferWindow.RecordTheReconciliationOrReopeningCtrlSBefore"));
             var current = _editing is null ? null : _model.GetTransfer(_editing.Value.Id);
             if (current?.HasReconciledLeg == true) throw new InvalidOperationException(ReconciledMessage);
             if (!TryBuildDraft(out var draft)) return;
             if (current is not null && ChangesMarkedFinancialData(current, draft)
                 && MessageBox.Show(this,
-                    "Une jambe pointée P va changer de date ou de montant. Ses état et date de pointage seront conservés ; les soldes pointés seront recalculés. Les autres jambes ne seront pas pointées automatiquement. Confirmer la correction du virement ?",
-                    "Moneta — corriger un virement pointé", MessageBoxButton.YesNo,
+                    L.Get("TransferWindow.APClearedLegWillChangeDateOr"),
+                    L.Get("TransferWindow.MonetaCorrectAClearedTransfer"), MessageBoxButton.YesNo,
                     MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
             if (_editing is null) _model.CreateTransfer(draft);
             else _model.EditTransfer(_editing.Value.Id, _editing.Value.Revision, draft);
@@ -268,7 +268,7 @@ public partial class TransferWindow : Window
         }
         catch (Exception error)
         {
-            ErrorText.Text = "Le brouillon n’a pas pu être validé. Vos champs sont conservés.\n" + error.Message;
+            ErrorText.Text = L.Get("Common.TheDraftCouldNotBeValidatedYourFields") + error.Message;
             ErrorText.BringIntoView();
         }
         finally
@@ -290,37 +290,37 @@ public partial class TransferWindow : Window
     {
         draft = null!;
         if (SourceAccount.SelectedItem is not AccountSummary { Account: var source })
-            return ShowError("Choisissez un compte source actif.", SourceAccount);
+            return ShowError(L.Get("TransferWindow.ChooseAnActiveSourceAccount"), SourceAccount);
         if (DestinationAccount.SelectedItem is not AccountSummary { Account: var destination })
-            return ShowError("Choisissez un compte destinataire actif.", DestinationAccount);
+            return ShowError(L.Get("TransferWindow.ChooseAnActiveRecipientAccount"), DestinationAccount);
         if (source.Id == destination.Id)
-            return ShowError("Le compte source et le compte destinataire doivent être distincts.", DestinationAccount);
+            return ShowError(L.Get("TransferWindow.TheSourceAndRecipientAccountsMustBeSeparate"), DestinationAccount);
         if (!TryDate(EntryDate.Text, out var date))
-            return ShowError("Date invalide : saisissez une date au format jj/mm/aaaa.", EntryDate);
+            return ShowError(L.Get("TransferWindow.InvalidDateEnterADateInMmDd"), EntryDate);
         if (!TryAmount(DebitAmount, source.Currency, false, out var debit)) return false;
         if (!TryAmount(CreditAmount, destination.Currency, false, out var credit)) return false;
         if (_sameCurrency && debit != credit)
-            return ShowError("Dans une même devise, le crédit doit être exactement égal au débit, hors frais.", DebitAmount);
+            return ShowError(L.Get("TransferWindow.InTheSameCurrencyTheCreditMustBe"), DebitAmount);
         DateOnly? exchangeDate = null;
         if (!_sameCurrency)
         {
             if (string.IsNullOrWhiteSpace(ExchangeDate.Text)) exchangeDate = date;
             else if (TryDate(ExchangeDate.Text, out var entered)) exchangeDate = entered;
-            else return ShowError("Date du change invalide : utilisez jj/mm/aaaa.", ExchangeDate);
+            else return ShowError(L.Get("TransferWindow.InvalidExchangeDateUseMmDdYyyy"), ExchangeDate);
         }
         Guid? feeAccountId = null;
         decimal feeAmount = 0;
         if (HasFee.IsChecked == true)
         {
             if (FeeAccount.SelectedItem is not AccountSummary { Account: var feeAccount })
-                return ShowError("Choisissez explicitement le compte actif débité pour les frais.", FeeAccount);
+                return ShowError(L.Get("TransferWindow.ChooseExplicitlyTheActiveAccountChargedForFees"), FeeAccount);
             feeAccountId = feeAccount.Id;
             if (!TryAmount(FeeAmount, feeAccount.Currency, _editing?.Fee is not null, out feeAmount)) return false;
         }
         if (EntryReference.Text.Length > 120)
-            return ShowError("La référence ne doit pas dépasser 120 caractères.", EntryReference);
+            return ShowError(L.Get("TransferWindow.TheReferenceShallNotExceed120Characters"), EntryReference);
         if (EntryNotes.Text.Length > 2000)
-            return ShowError("Les notes ne doivent pas dépasser 2 000 caractères.", EntryNotes);
+            return ShowError(L.Get("TransferWindow.NotesMustNotExceed2000Characters"), EntryNotes);
         draft = new TransferDraft(source.Id, destination.Id, date, debit, credit,
             EntryReference.Text.Trim(), EntryNotes.Text, exchangeDate, _sameCurrency ? null : ReadRateSource(), feeAccountId, feeAmount);
         return true;
@@ -331,9 +331,9 @@ public partial class TransferWindow : Window
         amount = 0;
         try
         {
-            amount = MoneyInput.ParseFrench(field.Text, currency);
+            amount = MoneyInput.ParseLocalized(field.Text, currency);
             if (amount == 0 && !allowZero)
-                return ShowError("Saisissez un montant strictement positif. Zéro n’est autorisé que pour annuler des frais existants.", field);
+                return ShowError(L.Get("TransferWindow.EnterAStrictlyPositiveAmountZeroIsAllowed"), field);
             return true;
         }
         catch (ArgumentException error) { return ShowError(error.Message, field); }

@@ -1,9 +1,9 @@
-<Window x:Class="Moneta.App.LedgerSearchWindow"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.LedgerSearchWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Recherche dans le registre" Width="1080" Height="720" MinWidth="520" MinHeight="430"
+        Title="{loc:LocalizedText LedgerSearchWindow.RegisterSearch}" Width="1080" Height="720" MinWidth="520" MinHeight="430"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}"
-        PreviewKeyDown="SearchWindow_KeyDown" SizeChanged="SearchWindow_SizeChanged">
+        PreviewKeyDown="SearchWindow_KeyDown" SizeChanged="SearchWindow_SizeChanged" Language="{loc:LocalizedLanguage}">
     <Window.Resources>
         <Style x:Key="FilterField" TargetType="StackPanel">
             <Setter Property="Margin" Value="0,0,10,5"/>
@@ -17,58 +17,58 @@
         <ScrollViewer Name="SearchInputs" VerticalScrollBarVisibility="Auto" MaxHeight="300">
             <StackPanel>
                 <DockPanel Margin="0,0,0,6">
-                    <Button Name="ApplySearch" Content="_Rechercher" Style="{StaticResource PrimaryButton}" Click="Apply_Click" DockPanel.Dock="Right" Margin="8,0,0,0"/>
-                    <TextBox Name="Words" KeyDown="Words_KeyDown" MaxLength="240" AutomationProperties.Name="Texte dans les opérations enregistrées"
-                             ToolTip="Libellé, notes, référence de virement, tiers, catégories et mode de paiement."/>
+                    <Button Name="ApplySearch" Content="{loc:LocalizedText Common.SearchAccessKey}" Style="{StaticResource PrimaryButton}" Click="Apply_Click" DockPanel.Dock="Right" Margin="8,0,0,0"/>
+                    <TextBox Name="Words" KeyDown="Words_KeyDown" MaxLength="240" AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.TextInRecordedTransactions}"
+                             ToolTip="{loc:LocalizedText LedgerSearchWindow.WordingNotesTransferReferencePayeeCategoriesAndMethod}"/>
                 </DockPanel>
                 <WrapPanel Margin="0,0,0,6">
-                    <ComboBox Name="Scope" SelectedIndex="0" Width="168" Margin="0,0,8,0" SelectionChanged="Scope_Changed" AutomationProperties.Name="Périmètre de recherche">
-                        <ComboBoxItem Content="Compte du registre"/><ComboBoxItem Content="Tous les comptes"/>
+                    <ComboBox Name="Scope" SelectedIndex="0" Width="168" Margin="0,0,8,0" SelectionChanged="Scope_Changed" AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.SearchScope}">
+                        <ComboBoxItem Content="{loc:LocalizedText LedgerSearchWindow.RegisterAccount}"/><ComboBoxItem Content="{loc:LocalizedText LedgerSearchWindow.AllAccounts}"/>
                     </ComboBox>
-                    <CheckBox Name="Archives" Content="Inclure les archives" VerticalAlignment="Center" Margin="0,0,14,0"
+                    <CheckBox Name="Archives" Content="{loc:LocalizedText LedgerSearchWindow.IncludeArchives}" VerticalAlignment="Center" Margin="0,0,14,0"
                               IsEnabled="False"/>
-                    <ComboBox Name="Kind" Width="180" Margin="0,0,8,0" AutomationProperties.Name="Type d’opération"/>
-                    <ComboBox Name="Period" Width="166" Margin="0,0,8,0" SelectionChanged="Period_Changed" AutomationProperties.Name="Période">
-                        <ComboBoxItem Content="Toutes les dates" IsSelected="True"/>
-                        <ComboBoxItem Content="Ce mois"/><ComboBoxItem Content="Mois précédent"/>
-                        <ComboBoxItem Content="Cette année"/><ComboBoxItem Content="Personnalisée"/>
+                    <ComboBox Name="Kind" Width="180" Margin="0,0,8,0" AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.TypeOfTransaction}"/>
+                    <ComboBox Name="Period" Width="166" Margin="0,0,8,0" SelectionChanged="Period_Changed" AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.Period}">
+                        <ComboBoxItem Content="{loc:LocalizedText LedgerSearchWindow.AllDates}" IsSelected="True"/>
+                        <ComboBoxItem Content="{loc:LocalizedText Common.ThisMonth}"/><ComboBoxItem Content="{loc:LocalizedText LedgerSearchWindow.PreviousMonth}"/>
+                        <ComboBoxItem Content="{loc:LocalizedText LedgerSearchWindow.ThisYear}"/><ComboBoxItem Content="{loc:LocalizedText Common.Custom}"/>
                     </ComboBox>
                 </WrapPanel>
-                <Expander Name="Advanced" AutomationProperties.Name="Filtres avancés">
-                    <Expander.Header><TextBlock Text="Filtres avancés" Foreground="{DynamicResource TextBrush}"/></Expander.Header>
+                <Expander Name="Advanced" AutomationProperties.Name="{loc:LocalizedText Common.AdvancedFilters}">
+                    <Expander.Header><TextBlock Text="{loc:LocalizedText Common.AdvancedFilters}" Foreground="{DynamicResource TextBrush}"/></Expander.Header>
                     <WrapPanel Margin="8,3,0,2">
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Du (jj/mm/aaaa)" Target="{Binding ElementName=FromDate}"/><TextBox Name="FromDate" MaxLength="10" TextChanged="Date_Edited"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Au (jj/mm/aaaa)" Target="{Binding ElementName=ThroughDate}"/><TextBox Name="ThroughDate" MaxLength="10" TextChanged="Date_Edited"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Devise native" Target="{Binding ElementName=CountryCurrency}"/><ComboBox Name="CountryCurrency"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Montant signé exact" Target="{Binding ElementName=ExactAmount}"/><TextBox Name="ExactAmount" MaxLength="32"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Minimum signé" Target="{Binding ElementName=MinAmount}"/><TextBox Name="MinAmount" MaxLength="32"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Maximum signé" Target="{Binding ElementName=MaxAmount}"/><TextBox Name="MaxAmount" MaxLength="32"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Pointage" Target="{Binding ElementName=Pointing}"/><ComboBox Name="Pointing"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Tiers" Target="{Binding ElementName=Payee}"/><TextBox Name="Payee" MaxLength="240"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Catégorie" Target="{Binding ElementName=Category}"/><TextBox Name="Category" MaxLength="240"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Sous-catégorie" Target="{Binding ElementName=Subcategory}"/><TextBox Name="Subcategory" MaxLength="240"/></StackPanel>
-                        <StackPanel Style="{StaticResource FilterField}"><Label Content="Mode de paiement" Target="{Binding ElementName=Method}"/><TextBox Name="Method" MaxLength="240"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText LedgerSearchWindow.FromMmDdYyyy}" Target="{Binding ElementName=FromDate}"/><TextBox Name="FromDate" MaxLength="10" TextChanged="Date_Edited"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText LedgerSearchWindow.ToMmDdYyyy}" Target="{Binding ElementName=ThroughDate}"/><TextBox Name="ThroughDate" MaxLength="10" TextChanged="Date_Edited"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText Common.NativeCurrency}" Target="{Binding ElementName=CountryCurrency}"/><ComboBox Name="CountryCurrency"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText LedgerSearchWindow.ExactSignedAmount}" Target="{Binding ElementName=ExactAmount}"/><TextBox Name="ExactAmount" MaxLength="32"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText LedgerSearchWindow.MinimumSignedAmount}" Target="{Binding ElementName=MinAmount}"/><TextBox Name="MinAmount" MaxLength="32"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText LedgerSearchWindow.MaximumSignedAmount}" Target="{Binding ElementName=MaxAmount}"/><TextBox Name="MaxAmount" MaxLength="32"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText Common.ClearedStatus}" Target="{Binding ElementName=Pointing}"/><ComboBox Name="Pointing"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText Common.Payee}" Target="{Binding ElementName=Payee}"/><TextBox Name="Payee" MaxLength="240"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText Common.Category}" Target="{Binding ElementName=Category}"/><TextBox Name="Category" MaxLength="240"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText Common.Subcategory}" Target="{Binding ElementName=Subcategory}"/><TextBox Name="Subcategory" MaxLength="240"/></StackPanel>
+                        <StackPanel Style="{StaticResource FilterField}"><Label Content="{loc:LocalizedText Common.PaymentMethod}" Target="{Binding ElementName=Method}"/><TextBox Name="Method" MaxLength="240"/></StackPanel>
                     </WrapPanel>
                 </Expander>
             </StackPanel>
         </ScrollViewer>
         <DockPanel Grid.Row="1" Margin="0,9,0,6">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                <ComboBox Name="SortOrder" Width="118" Margin="4,0" SelectionChanged="Sort_Changed" AutomationProperties.Name="Trier les résultats par"/>
-                <CheckBox Name="Descending" Content="Décroissant" VerticalAlignment="Center" IsChecked="True" Click="Sort_Changed" Margin="4,0,0,0"/>
+                <ComboBox Name="SortOrder" Width="118" Margin="4,0" SelectionChanged="Sort_Changed" AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.SortResultsBy}"/>
+                <CheckBox Name="Descending" Content="{loc:LocalizedText LedgerSearchWindow.Descending}" VerticalAlignment="Center" IsChecked="True" Click="Sort_Changed" Margin="4,0,0,0"/>
             </StackPanel>
-            <TextBlock Name="SearchStatus" Text="Choisissez les critères puis lancez la recherche." TextWrapping="Wrap"
+            <TextBlock Name="SearchStatus" Text="{loc:LocalizedText LedgerSearchWindow.ChooseTheCriteriaAndStartTheSearch}" TextWrapping="Wrap"
                        VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
         </DockPanel>
         <DataGrid Name="Results" Grid.Row="2" IsReadOnly="True" AutoGenerateColumns="False"
                   CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False" SelectionMode="Single"
                   MouseDoubleClick="Results_DoubleClick" KeyDown="Results_KeyDown"
                   EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                  AutomationProperties.Name="Résultats de recherche enregistrés">
+                  AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.SavedSearchResults}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="90"/>
-                <DataGridTextColumn Header="Libellé" Binding="{Binding Row.Label}" Width="2*" MinWidth="145"/>
-                <DataGridTextColumn Header="Compte" Binding="{Binding Account}" Width="*" MinWidth="165">
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Date}" Binding="{Binding Date}" Width="90"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Description}" Binding="{Binding Row.Label}" Width="2*" MinWidth="145"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Account}" Binding="{Binding Account}" Width="*" MinWidth="165">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
@@ -76,22 +76,22 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Montant natif" Binding="{Binding Amount}" Width="Auto" MinWidth="112"/>
-                <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="*" MinWidth="100"/>
-                <DataGridTextColumn Header="Tiers" Binding="{Binding Row.Payee}" Width="*" MinWidth="88"/>
-                <DataGridTextColumn Header="NP/P/R" Binding="{Binding Status}" Width="68"/>
-                <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="100"/>
-                <DataGridTextColumn Header="Référence" Binding="{Binding Row.Reference}" Width="100"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.NativeAmount}" Binding="{Binding Amount}" Width="Auto" MinWidth="112"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Category}" Binding="{Binding Category}" Width="*" MinWidth="100"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Payee}" Binding="{Binding Row.Payee}" Width="*" MinWidth="88"/>
+                <DataGridTextColumn Header="{loc:LocalizedText LedgerSearchWindow.NpPR}" Binding="{Binding Status}" Width="68"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Type}" Binding="{Binding Kind}" Width="100"/>
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Reference}" Binding="{Binding Row.Reference}" Width="100"/>
             </DataGrid.Columns>
         </DataGrid>
         <DockPanel Grid.Row="3" Margin="0,9,0,0">
-            <Button Name="OpenResult" Content="_Voir dans le registre" Click="OpenResult_Click" Margin="8,0,0,0"
+            <Button Name="OpenResult" Content="{loc:LocalizedText LedgerSearchWindow.ShowInRegisterAccessKey}" Click="OpenResult_Click" Margin="8,0,0,0"
                     DockPanel.Dock="Right" IsEnabled="False"/>
-            <Button Content="Effacer les filtres" Click="Clear_Click" Margin="0,0,7,0" DockPanel.Dock="Left"/>
+            <Button Content="{loc:LocalizedText Common.ClearFilters}" Click="Clear_Click" Margin="0,0,7,0" DockPanel.Dock="Left"/>
             <Button Name="Previous" Content="‹" Click="Previous_Click" Width="34" Margin="0,0,4,0"
-                    AutomationProperties.Name="Page précédente des résultats" DockPanel.Dock="Left" IsEnabled="False"/>
+                    AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.PreviousPageOfResults}" DockPanel.Dock="Left" IsEnabled="False"/>
             <Button Name="Next" Content="›" Click="Next_Click" Width="34" Margin="0,0,6,0"
-                    AutomationProperties.Name="Page suivante des résultats" DockPanel.Dock="Left" IsEnabled="False"/>
+                    AutomationProperties.Name="{loc:LocalizedText LedgerSearchWindow.NextPageOfResults}" DockPanel.Dock="Left" IsEnabled="False"/>
             <TextBlock Name="PageStatus" VerticalAlignment="Center"/>
         </DockPanel>
     </Grid>

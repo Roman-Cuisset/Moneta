@@ -39,7 +39,7 @@ public sealed partial class MonetaFile
                 var id = ReadGuid(reader.GetString(0));
                 var name = reader.GetString(1);
                 if (reader.GetString(2) != FinancialRules.NameKey(name) || reader.GetInt64(3) != ordinal++)
-                    throw Error(DocumentError.Corrupt, "Clé normalisée ou ordre de catalogue invalide.");
+                    throw Error(DocumentError.Corrupt, L.Get("MonetaFile.StandardizedKeyOrInvalidCatalogOrder"));
                 if (table == "Categories") categories.Add(new(id, name, reader.IsDBNull(4) ? null : ReadGuid(reader.GetString(4))));
                 else if (table == "Payees") payees.Add(new(id, name));
                 else methods.Add(new(id, name));
@@ -138,7 +138,7 @@ public sealed partial class MonetaFile
         }
         catch (Exception exception) when (exception is ArgumentException or OverflowException or KeyNotFoundException)
         {
-            throw new DocumentException(DocumentError.Corrupt, "Une opération enregistrée viole les invariants financiers.", exception);
+            throw new DocumentException(DocumentError.Corrupt, L.Get("MonetaFile.ARegisteredTransactionViolatesFinancialInvariants"), exception);
         }
     }
 
@@ -164,10 +164,10 @@ public sealed partial class MonetaFile
     private static Transaction ReadTransaction(SqliteDataReader reader, LedgerLookup lookup)
     {
         var account = lookup.Accounts[ReadGuid(reader.GetString(1))];
-        if (reader.GetString(5) != account.Currency.Code) throw Error(DocumentError.Corrupt, "Devise native de l’opération incohérente.");
+        if (reader.GetString(5) != account.Currency.Code) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.IncoherentTransactionNativeCurrency"));
         var dateText = reader.GetString(2);
         if (!DateOnly.TryParseExact(dateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) || date == default || date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) != dateText)
-            throw Error(DocumentError.Corrupt, "Date d’opération non canonique.");
+            throw Error(DocumentError.Corrupt, L.Get("MonetaFile.DateOfNonCanonicalTransaction"));
         Guid? OptionalId(int index) => reader.IsDBNull(index) ? null : ReadGuid(reader.GetString(index));
         var payee = OptionalId(9); var category = OptionalId(10); var subcategory = OptionalId(11); var method = OptionalId(12);
         return new Transaction(ReadGuid(reader.GetString(0)), account.Id, date, reader.GetString(3),
@@ -218,25 +218,25 @@ public sealed partial class MonetaFile
             foreach (var change in changes)
             {
                 if (change is null || change.Value is null || !ids.Add(change.Value.Id) || change.ExpectedRevision < 0 || (creating && change.ExpectedRevision != 0))
-                    throw new ArgumentException("Lot de révisions invalide ou identifiant dupliqué.");
+                    throw new ArgumentException(L.Get("MonetaFile.SetOfInvalidOrDuplicatedRevisions"));
                 var value = change.Value;
                 FinancialRules.ValidateTransaction(value, metadata);
-                if (value.Revision != checked(change.ExpectedRevision + 1)) throw new ArgumentException("Révision suivante requise.");
+                if (value.Revision != checked(change.ExpectedRevision + 1)) throw new ArgumentException(L.Get("MonetaFile.NextRevisionRequired"));
                 var previous = FindTransaction(connection, value.Id, lookup, transaction);
                 if (change.ExpectedRevision == 0)
                 {
-                    if (previous is not null || value.IsDeleted) throw new ArgumentException("Insertion déjà présente ou supprimée.");
+                    if (previous is not null || value.IsDeleted) throw new ArgumentException(L.Get("MonetaFile.InsertAlreadyPresentOrDeleted"));
                 }
                 else if (previous is null || previous.IsDeleted || previous.Revision != change.ExpectedRevision ||
                     previous.AccountId != value.AccountId || previous.Currency.Code != value.Currency.Code || previous.CreatedUtc != value.CreatedUtc || value.ModifiedUtc < previous.ModifiedUtc)
-                    throw new ArgumentException("Révision obsolète, opération supprimée ou identité financière modifiée.");
-                if (lookup.Accounts[value.AccountId].IsArchived) throw new ArgumentException("Un compte archivé ne peut recevoir de modification d’opération.");
+                    throw new ArgumentException(L.Get("MonetaFile.ObsoleteRevisionDeletedTransactionOrModifiedFinancialIdentity"));
+                if (lookup.Accounts[value.AccountId].IsArchived) throw new ArgumentException(L.Get("MonetaFile.AnArchivedAccountCannotReceiveATransactionChange"));
                 WriteTransaction(connection, value, transaction);
             }
         }
         catch (Exception exception) when (exception is ArgumentException or OverflowException)
         {
-            throw new DocumentException(DocumentError.InvalidData, "Modification d’opération invalide : " + exception.Message, exception);
+            throw new DocumentException(DocumentError.InvalidData, L.Get("MonetaFile.InvalidTransactionModification") + exception.Message, exception);
         }
     }
 

@@ -54,11 +54,11 @@ public static class ExactMoney
         var scale = Scale(currency);
         decimal scaled;
         try { scaled = checked(amount * scale); }
-        catch (OverflowException) { throw new ArgumentOutOfRangeException(nameof(amount), "Montant hors limites."); }
+        catch (OverflowException) { throw new ArgumentOutOfRangeException(nameof(amount), L.Get("FinancialDocument.AmountOutsideLimits")); }
         if (decimal.Truncate(scaled) != scaled)
-            throw new ArgumentException("Précision monétaire excessive : aucun arrondi automatique.", nameof(amount));
+            throw new ArgumentException(L.Get("FinancialDocument.ExcessiveMonetaryAccuracyNoAutomaticRounding"), nameof(amount));
         if (scaled < -long.MaxValue || scaled > long.MaxValue)
-            throw new ArgumentOutOfRangeException(nameof(amount), "Montant hors limites des unités mineures.");
+            throw new ArgumentOutOfRangeException(nameof(amount), L.Get("FinancialDocument.OutOfLimitAmountOfMinorUnits"));
         return checked((long)scaled);
     }
 
@@ -79,7 +79,7 @@ public static class ExactMoney
             coefficient /= 10;
             places--;
         }
-        if (coefficient > maximum) throw new OverflowException("Le solde natif dépasse la précision du modèle décimal.");
+        if (coefficient > maximum) throw new OverflowException(L.Get("FinancialDocument.TheNativeBalanceExceedsThePrecisionOfThe"));
         return new decimal((int)(uint)(coefficient & uint.MaxValue), (int)(uint)((coefficient >> 32) & uint.MaxValue),
             (int)(uint)(coefficient >> 64), amount.Sign < 0, (byte)places);
     }

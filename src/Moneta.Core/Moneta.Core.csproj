@@ -4,4 +4,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Moneta.Localization/Moneta.Localization.csproj" />
+    <Using Include="Moneta.Localization" />
+  </ItemGroup>
 </Project>

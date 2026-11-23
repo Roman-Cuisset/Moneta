@@ -11,7 +11,7 @@ public sealed record ScheduleRule(ScheduleUnit Unit, int Interval = 1, bool EndO
         if (!Enum.IsDefined(Unit) || Interval is < 1 or > 366 ||
             (Unit == ScheduleUnit.Once && Interval != 1) ||
             (EndOfMonth && Unit is not (ScheduleUnit.Month or ScheduleUnit.Year)))
-            throw new ArgumentException("Fréquence ou intervalle invalide.");
+            throw new ArgumentException(L.Get("Scheduling.InvalidFrequencyOrInterval"));
     }
 
     public DateOnly? At(DateOnly anchor, int index)
@@ -57,37 +57,37 @@ public sealed record ScheduleTerms(ScheduleKind Kind, Guid AccountId, long Amoun
     {
         Account Find(Guid id)
         {
-            if (!accounts.TryGetValue(id, out var account)) throw new ArgumentException("Un compte de l’échéance est absent.");
+            if (!accounts.TryGetValue(id, out var account)) throw new ArgumentException(L.Get("Scheduling.ADueDateAccountIsNotAvailable"));
             if (active && account.IsArchived)
-                throw new InvalidOperationException($"Le compte « {account.Name} » est archivé. Réactivez-le avant de comptabiliser.");
+                throw new InvalidOperationException(L.Format("ScheduleWindow.TheAccount0IsArchivedReactivateItBefore", (account.Name)));
             return account;
         }
         var source = Find(AccountId);
         if (!Enum.IsDefined(Kind) || AmountMinor < 0 || FeeMinor < 0)
-            throw new ArgumentException("Type ou montant d’échéance invalide.");
+            throw new ArgumentException(L.Get("Scheduling.InvalidScheduledTransactionTypeOrAmount"));
         Text(Label, Kind == ScheduleKind.Transfer ? 120 : 240, required: true);
         Text(Notes, 2000, required: true, allowEmpty: true);
         foreach (var value in new[] { Payee, Category, Subcategory, Method }) Text(value, 120);
-        if (Subcategory is not null && Category is null) throw new ArgumentException("Choisissez la catégorie de la sous-catégorie.");
+        if (Subcategory is not null && Category is null) throw new ArgumentException(L.Get("Scheduling.ChooseTheCategoryInTheSubcategory"));
         if (Kind != ScheduleKind.Transfer)
         {
             if (DestinationId is not null || DestinationMinor is not null || FeeAccountId is not null || FeeMinor != 0)
-                throw new ArgumentException("Une recette ou une dépense utilise un seul compte.");
+                throw new ArgumentException(L.Get("Scheduling.ARecipeOrExpenseUsesASingleAccount"));
             return;
         }
 
         if (Payee is not null || Category is not null || Subcategory is not null || Method is not null ||
             DestinationId is not { } destinationId || destinationId == AccountId || AmountMinor == 0 ||
             DestinationMinor <= 0 || ((FeeAccountId is null) != (FeeMinor == 0)))
-            throw new ArgumentException("Renseignez deux comptes distincts et des montants de virement positifs.");
+            throw new ArgumentException(L.Get("Scheduling.InformTwoSeparateAccountsAndPositiveTransferAmounts"));
         var destination = Find(destinationId);
         if (source.Currency.Code == destination.Currency.Code)
         {
             if (DestinationMinor is { } received && received != AmountMinor)
-                throw new ArgumentException("Un virement dans une seule devise demande deux montants égaux.");
+                throw new ArgumentException(L.Get("Scheduling.ATransferIntoASingleCurrencyRequiresTwo"));
         }
         else if (posting && DestinationMinor is null)
-            throw new ArgumentException("Saisissez le montant réel reçu dans la devise du compte destination.");
+            throw new ArgumentException(L.Get("Scheduling.EnterTheActualAmountReceivedInTheCurrency"));
         if (FeeAccountId is { } feeId) _ = Find(feeId);
     }
 
@@ -95,7 +95,7 @@ public sealed record ScheduleTerms(ScheduleKind Kind, Guid AccountId, long Amoun
     {
         if ((required && value is null) || value is not null &&
             (value.Length > max || value.Contains('\0') || (!allowEmpty && string.IsNullOrWhiteSpace(value))))
-            throw new ArgumentException("Un champ de l’échéance est vide ou dépasse sa longueur autorisée.");
+            throw new ArgumentException(L.Get("Scheduling.AScheduledTransactionFieldIsEmptyOrLonger"));
     }
 }
 
@@ -109,7 +109,7 @@ public sealed record SchedulePlan(Guid Id, ScheduleTerms Terms, ScheduleRule Rul
     public void Validate(IReadOnlyDictionary<Guid, Account> accounts)
     {
         if (Id == Guid.Empty || Anchor == default || End < Anchor || Cursor is < 0 or > 3652059 || NextNumber < 1)
-            throw new ArgumentException("Identité, période ou position de programmation invalide.");
+            throw new ArgumentException(L.Get("Scheduling.IdentityPeriodOrInvalidProgrammingPosition"));
         Rule.Validate();
         Terms.Validate(accounts);
     }

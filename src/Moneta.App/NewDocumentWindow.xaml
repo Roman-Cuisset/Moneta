@@ -1,10 +1,10 @@
-<Window x:Class="Moneta.App.NewDocumentWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Nouveau dossier financier" Width="490" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.NewDocumentWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="{loc:LocalizedText NewDocumentWindow.NewFinancialDocument}" Width="490" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}" Language="{loc:LocalizedLanguage}">
  <StackPanel Margin="24">
-  <TextBlock Text="Nouveau dossier financier" Style="{StaticResource WindowHeading}"/>
-  <TextBlock Text="Un dossier vierge, sans opérations de démonstration. Son emplacement sera choisi au premier enregistrement." TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,18"/>
-  <Label Content="_Nom du dossier" Target="{Binding ElementName=DocumentName}"/>
-  <TextBox x:Name="DocumentName" MaxLength="120" AutomationProperties.AutomationId="DocumentName" AutomationProperties.Name="Nom du nouveau dossier financier"/>
+  <TextBlock Text="{loc:LocalizedText NewDocumentWindow.NewFinancialDocument}" Style="{StaticResource WindowHeading}"/>
+  <TextBlock Text="{loc:LocalizedText NewDocumentWindow.ABlankDocumentWithoutDemonstrationTransactionsItsLocation}" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,18"/>
+  <Label Content="{loc:LocalizedText NewDocumentWindow.DocumentNameAccessKey}" Target="{Binding ElementName=DocumentName}"/>
+  <TextBox x:Name="DocumentName" MaxLength="120" AutomationProperties.AutomationId="DocumentName" AutomationProperties.Name="{loc:LocalizedText NewDocumentWindow.NameOfNewFinancialFile}"/>
   <TextBlock x:Name="ErrorText" Foreground="{DynamicResource NegativeBrush}" Margin="0,8,0,0"/>
-  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0"><Button Content="Annuler" IsCancel="True" MinWidth="90" Margin="0,0,8,0"/><Button Content="Créer" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Create_Click" MinWidth="90" AutomationProperties.AutomationId="CreateDocument"/></StackPanel>
+  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0"><Button Content="{loc:LocalizedText Common.Cancel}" IsCancel="True" MinWidth="90" Margin="0,0,8,0"/><Button Content="{loc:LocalizedText NewDocumentWindow.Create}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Create_Click" MinWidth="90" AutomationProperties.AutomationId="CreateDocument"/></StackPanel>
  </StackPanel>
 </Window>

@@ -24,7 +24,6 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     private LedgerRow? _selectedRow;
     private IReadOnlyList<LedgerRow> _rows = Array.Empty<LedgerRow>();
     private string _selectedRowDetails = string.Empty;
-    private string _statusText = "Aucun compte sélectionné · données fictives en mémoire uniquement";
     private FinancialDocument? _document;
     private const int PageSize = 100;
     private ILedgerSource? _source;
@@ -42,15 +41,15 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         foreach (var transaction in portfolio.Transactions)
         {
             if (!accountsById.TryGetValue(transaction.AccountId, out var account))
-                throw new ArgumentException("Une opération référence un compte absent.", nameof(portfolio));
+                throw new ArgumentException(L.Get("MainViewModel.ATransactionRefersToAnAccountThatIs"), nameof(portfolio));
             if (transaction.Currency != account.Currency)
                 throw new ArgumentException(
-                    $"Devise incompatible pour le compte {account.Name} : {transaction.Currency.Code} au lieu de {account.Currency.Code}.",
+                    L.Format("MainViewModel.CurrencyIncompatibleOnAccount01InsteadOf", (account.Name), (transaction.Currency.Code), (account.Currency.Code)),
                     nameof(portfolio));
             if (transaction.Amount < 0)
-                throw new ArgumentOutOfRangeException(nameof(portfolio), "Le montant d'une opération doit être une magnitude positive ou nulle.");
+                throw new ArgumentOutOfRangeException(nameof(portfolio), L.Get("MainViewModel.TheAmountOfATransactionMustBeA"));
             if (transaction.Direction is not (TransactionDirection.Debit or TransactionDirection.Credit))
-                throw new ArgumentOutOfRangeException(nameof(portfolio), "Sens d'opération inconnu.");
+                throw new ArgumentOutOfRangeException(nameof(portfolio), L.Get("Common.UnknownSenseOfTransaction"));
         }
 
         var transactionsByAccount = portfolio.Transactions.ToLookup(transaction => transaction.AccountId);
@@ -59,7 +58,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
             if (!CurrencyRegistry.TryGet(account.Currency.Code, out var registered))
                 CurrencyRegistry.Register(account.Currency);
             else if (registered!.DecimalPlaces != account.Currency.DecimalPlaces)
-                throw new ArgumentException("La précision de la devise du compte diffère du référentiel.", nameof(portfolio));
+                throw new ArgumentException(L.Get("MainViewModel.TheAccuracyOfTheAccountCurrencyDiffersFrom"), nameof(portfolio));
         }
         for (var index = 0; index < portfolio.Accounts.Count; index++)
         {
@@ -79,10 +78,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
             var summary = new AccountSummary(account, balance, index);
             _accounts.Add(summary);
-            _ledgers.Add(account.Id, new AccountLedger(
-                summary,
-                Array.AsReadOnly(rows),
-                $"{rows.Length.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"))} opérations · {account.Name} ({account.Currency.Code}) · données fictives en mémoire uniquement"));
+            _ledgers.Add(account.Id, new AccountLedger(summary, Array.AsReadOnly(rows)));
         }
 
         SelectedAccount = Accounts.FirstOrDefault();
@@ -97,11 +93,10 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         _source = source;
         CurrencyRegistry = new CurrencyRegistry(document.Currencies);
         Accounts = new ReadOnlyObservableCollection<AccountSummary>(_accounts);
-        _statusText = EmptyAccountStatus;
         foreach (var account in document.Accounts)
         {
             if (!CurrencyRegistry.TryGet(account.Currency.Code, out var currency) || currency != account.Currency)
-                throw new ArgumentException("La devise du compte diffère du référentiel du dossier.", nameof(document));
+                throw new ArgumentException(L.Get("MainViewModel.TheCurrencyOfTheAccountDiffersFromThe"), nameof(document));
             _ = ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency);
             AddAccountSummary(account);
             if (document.AccountBalances?.TryGetValue(account.Id, out var balance) == true)
@@ -111,7 +106,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         if (document.SelectedAccountId is { } selectedId)
         {
             if (!_ledgers.TryGetValue(selectedId, out var ledger))
-                throw new ArgumentException("Le compte sélectionné est absent du dossier.", nameof(document));
+                throw new ArgumentException(L.Get("MainViewModel.TheSelectedAccountIsMissingFromTheDocument"), nameof(document));
             _showArchivedAccounts = ledger.Summary.Account.IsArchived;
             SelectedAccount = ledger.Summary;
         }
@@ -119,7 +114,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     public bool IsDemo => _document is null;
     public bool IsDirty { get; private set; }
-    public string DocumentName => _document?.Name ?? "Démonstration";
+    public string DocumentName => _document?.Name ?? L.Get("MainViewModel.Demo");
     public Guid DocumentId => _document?.Id ?? Guid.Empty;
     public Guid? SelectedAccountId => _selectedAccount?.Account.Id;
     public IReadOnlyCollection<TransactionChange> PendingChanges => Array.AsReadOnly(_pending.Values.ToArray());
@@ -129,13 +124,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     public bool CanPreviousPage => !IsDemo && _pageOffset > 0;
     public bool CanNextPage => !IsDemo && _pageOffset + (long)_rows.Count < _totalCount;
     public string PageStatusText => IsDemo ? string.Empty : _totalCount == 0
-        ? "Aucune opération"
+        ? L.Get("MainViewModel.NoTransaction")
         : $"{_pageOffset + 1:N0}–{_pageOffset + _rows.Count:N0} / {_totalCount:N0}";
     public string LedgerErrorText => _ledgerErrorText;
 
     public FinancialDocument CaptureDocument()
     {
-        var document = _document ?? throw new InvalidOperationException("La démonstration ne peut pas être enregistrée dans un dossier.");
+        var document = _document ?? throw new InvalidOperationException(L.Get("MainViewModel.TheDemonstrationCannotBeRecordedInADocument"));
         return document with
         {
             ModifiedUtc = IsDirty ? DateTimeOffset.UtcNow : document.ModifiedUtc,
@@ -148,9 +143,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     public void AcceptSaved(FinancialDocument snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        var document = _document ?? throw new InvalidOperationException("La démonstration ne peut pas être enregistrée dans un dossier.");
+        var document = _document ?? throw new InvalidOperationException(L.Get("MainViewModel.TheDemonstrationCannotBeRecordedInADocument"));
         if (snapshot.Id != document.Id)
-            throw new ArgumentException("Le dossier enregistré ne correspond pas au dossier courant.", nameof(snapshot));
+            throw new ArgumentException(L.Get("MainViewModel.TheSavedDocumentDoesNotMatchTheCurrent"), nameof(snapshot));
         FinancialRules.ValidateCatalog(snapshot);
         // SQL has already committed. A refresh error must not resurrect committed drafts.
         _document = snapshot;
@@ -172,7 +167,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         }
         catch (Exception exception)
         {
-            SetLedgerError($"Enregistrement effectué ; lecture du registre impossible : {exception.Message}");
+            SetLedgerError(L.Format("MainViewModel.RecordMadeRecordReadingImpossible0", (exception.Message)));
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingChanges)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingTransfers)));
@@ -188,7 +183,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     public void SetLedgerSource(ILedgerSource? source)
     {
         if (IsDemo && source is not null)
-            throw new InvalidOperationException("La démonstration ne peut pas être reliée à un registre réel.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheDemonstrationCannotBeLinkedToAReal"));
         // The workspace calls this after committing and before AcceptSaved; do not read
         // the newly committed source with the old pending insert revisions here.
         _source = source;
@@ -252,11 +247,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     private Account EditableAccount()
     {
-        if (IsDemo) throw new InvalidOperationException("Les opérations de démonstration ne sont pas modifiables.");
+        if (IsDemo) throw new InvalidOperationException(L.Get("MainViewModel.DemonstrationTransactionsAreNotEditable"));
         if (!_pendingReconciliations.IsEmpty)
-            throw new InvalidOperationException("Enregistrez d’abord le brouillon de rapprochement avec Ctrl+S avant de modifier les opérations.");
-        var account = _selectedAccount?.Account ?? throw new InvalidOperationException("Choisissez un compte.");
-        if (account.IsArchived) throw new InvalidOperationException("Les opérations d'un compte archivé ne sont pas modifiables.");
+            throw new InvalidOperationException(L.Get("MainViewModel.FirstRecordTheReconciliationDraftWithCtrlS"));
+        var account = _selectedAccount?.Account ?? throw new InvalidOperationException(L.Get("MainViewModel.ChooseAnAccount"));
+        if (account.IsArchived) throw new InvalidOperationException(L.Get("MainViewModel.TheTransactionsOfAnArchivedAccountAreNot"));
         return account;
     }
 
@@ -266,9 +261,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         var value = _pending.TryGetValue(id, out var change) ? change.Value
             : _rows.FirstOrDefault(row => row.Transaction.Id == id)?.Transaction;
         if (value is null || value.AccountId != account.Id || value.IsDeleted)
-            throw new InvalidOperationException("L'opération n'appartient pas au registre courant.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheTransactionDoesNotBelongToTheCurrent"));
         if (value.Revision != revision)
-            throw new InvalidOperationException("Cette opération a changé ; ouvrez à nouveau sa version actuelle.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisTransactionHasChangedOpenItsCurrentVersion"));
         return value;
     }
 
@@ -305,7 +300,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     {
         if (_source is not null) return _source.ReadPage(account, offset, PageSize, pending, anchorId);
         if (_document?.OperationCount > 0)
-            throw new InvalidOperationException("Le registre persistant du dossier n'est pas connecté.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThePersistentDocumentRegistryIsNotLoggedIn"));
         return LedgerProjection.ReadPending(account, offset, PageSize, pending, anchorId);
     }
 
@@ -342,15 +337,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         NotifyReconciliationChanged();
         _selectedRow = anchorId is { } anchor ? rows.FirstOrDefault(row => row.Transaction.Id == anchor) : null;
         _selectedRowDetails = _selectedRow is null ? string.Empty : FormatDetails(_selectedRow);
-        _statusText = RealStatus(_selectedAccount.Account, page.TotalCount);
         foreach (var args in new[] { RowsChanged, BalanceChanged, RowChanged, DetailsChanged, StatusChanged })
             PropertyChanged?.Invoke(this, args);
         NotifyDisplayCurrencyChanged();
         NotifyPagingChanged();
     }
-
-    private static string RealStatus(Account account, long count) =>
-        $"{count.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"))} opérations · {account.Name} ({account.Currency.Code})";
 
     private void NotifyPagingChanged()
     {
@@ -385,11 +376,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
             if (value is not null)
             {
                 if (!TryPresentationCurrency(value.Code, out registered) || registered != value)
-                    throw new ArgumentException("La devise d'affichage ne fait pas partie du référentiel.", nameof(value));
+                    throw new ArgumentException(L.Get("MainViewModel.TheDisplayCurrencyIsNotPartOfThe"), nameof(value));
             }
             else if (_selectedAccount is not null)
             {
-                throw new ArgumentException("Choisissez une devise d'affichage.", nameof(value));
+                throw new ArgumentException(L.Get("MainViewModel.ChooseADisplayCurrency"), nameof(value));
             }
             if (ReferenceEquals(registered, _displayCurrency))
                 return;
@@ -406,7 +397,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     public AccountSummary AddDemoAccount(string name, Currency currency, string? type, decimal openingBalance, string? notes)
     {
         if (!IsDemo)
-            throw new InvalidOperationException("Un compte fictif ne peut pas être ajouté à un dossier réel.");
+            throw new InvalidOperationException(L.Get("MainViewModel.AFictitiousAccountCannotBeAddedToA"));
         return AddAccountCore(new(name, type, notes), currency, openingBalance);
     }
 
@@ -416,7 +407,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     public AccountSummary AddAccount(AccountProperties properties, Currency currency, decimal openingBalance)
     {
         if (IsDemo)
-            throw new InvalidOperationException("Un compte réel ne peut pas être ajouté à la démonstration.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ARealAccountCannotBeAddedToThe"));
         ArgumentNullException.ThrowIfNull(properties);
         return AddAccountCore(properties, currency, openingBalance);
     }
@@ -425,7 +416,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     {
         ArgumentNullException.ThrowIfNull(currency);
         if (!CurrencyRegistry.TryGet(currency.Code, out var registered) || registered != currency)
-            throw new ArgumentException("Choisissez une devise du référentiel.", nameof(currency));
+            throw new ArgumentException(L.Get("MainViewModel.ChooseACurrencyFromTheRepository"), nameof(currency));
         _ = ExactMoney.ToMinorUnits(openingBalance, currency);
 
         var now = DateTimeOffset.UtcNow;
@@ -447,17 +438,14 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     private AccountSummary AddAccountSummary(Account account)
     {
         var summary = new AccountSummary(account, account.OpeningBalance, _accounts.Count);
-        var status = $"0 opérations · {account.Name} ({account.Currency.Code})";
-        if (IsDemo)
-            status += " · données fictives en mémoire uniquement";
-        _ledgers.Add(account.Id, new AccountLedger(summary, Array.Empty<LedgerRow>(), status));
+        _ledgers.Add(account.Id, new AccountLedger(summary, Array.Empty<LedgerRow>()));
         _accounts.Add(summary);
         return summary;
     }
 
     private string EmptyAccountStatus => IsDemo
-        ? "Aucun compte sélectionné · données fictives en mémoire uniquement"
-        : "Aucun compte sélectionné";
+        ? L.Get("MainViewModel.NoAccountSelectedFictiveDataInMemoryOnly")
+        : L.Get("Common.NoAccountSelected");
 
     public AccountSummary? SelectedAccount
     {
@@ -471,7 +459,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
             return;
         if (value is not null &&
             (!_ledgers.TryGetValue(value.Account.Id, out var candidate) || !ReferenceEquals(candidate.Summary, value)))
-            throw new ArgumentException("Le compte sélectionné ne fait pas partie de ce portefeuille.", nameof(value));
+            throw new ArgumentException(L.Get("MainViewModel.TheSelectedAccountIsNotPartOfThis"), nameof(value));
 
         var page = preparedPage ?? (!IsDemo && value is not null
             ? ReadPage(value.Account, 0, PendingChanges) : null);
@@ -488,7 +476,6 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
         NotifyReconciliationChanged();
         _selectedRow = null;
         _selectedRowDetails = string.Empty;
-        _statusText = page is null ? ledger?.StatusText ?? EmptyAccountStatus : RealStatus(value!.Account, page.TotalCount);
         _displayCurrency = value is null ? null : CurrencyRegistry.Get(value.CurrencyCode);
         SetLedgerError(string.Empty);
         PropertyChanged?.Invoke(this, AccountChanged);
@@ -512,7 +499,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
             if (ReferenceEquals(value, _selectedRow))
                 return;
             if (value is not null && !_rows.Contains(value))
-                throw new ArgumentException("L'opération sélectionnée n'appartient pas au compte courant.", nameof(value));
+                throw new ArgumentException(L.Get("MainViewModel.TheSelectedTransactionDoesNotBelongToThe"), nameof(value));
             _selectedRow = value;
             _selectedRowDetails = value is null ? string.Empty : FormatDetails(value);
             PropertyChanged?.Invoke(this, RowChanged);
@@ -522,7 +509,23 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
 
     public string SelectedAccountBalanceText => _selectedAccount?.BalanceText ?? string.Empty;
     public string SelectedRowDetails => _selectedRowDetails;
-    public string StatusText => _statusText;
+    public string StatusText => _selectedAccount is null ? EmptyAccountStatus
+        : L.Format(IsDemo ? "MainViewModel.0Transactions12FictitiousDataInMemory" : "MainViewModel.0Transactions12",
+            (IsDemo ? _rows.Count : _totalCount).ToString("N0", L.Culture), _selectedAccount.Name, _selectedAccount.CurrencyCode);
+
+    public void RefreshDisplayLanguage()
+    {
+        foreach (var account in Accounts) account.RefreshDisplayLanguage();
+        foreach (var row in _rows) row.RefreshDisplayLanguage();
+        _selectedRowDetails = _selectedRow is { } rowWithDetails ? FormatDetails(rowWithDetails) : string.Empty;
+        PropertyChanged?.Invoke(this, DetailsChanged);
+        PropertyChanged?.Invoke(this, StatusChanged);
+        PropertyChanged?.Invoke(this, BalanceChanged);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DateColumnHeader)));
+        NotifyReconciliationChanged();
+        NotifyDisplayCurrencyChanged();
+        NotifyPagingChanged();
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -540,11 +543,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, ITransferSou
     {
         var transaction = row.Transaction;
         var valuationText = transaction.Valuation is { } valuation
-            ? $"Valorisation indicative : {MoneyFormatter.Format(valuation.Amount, valuation.Currency)} · cours du {valuation.RateDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} · source : {valuation.Source}"
-            : "Aucune conversion : aucune valorisation disponible.";
-        var directionText = transaction.Direction == TransactionDirection.Debit ? "débit" : "crédit";
-        return $"Date : {row.DateText}\nLibellé : {row.Label}\nTiers : {row.PayeeName}\nCatégorie : {row.CategoryName}\nSous-catégorie : {row.SubcategoryName}\nMode : {row.PaymentModeName}\nMontant d'origine ({directionText}) : {MoneyFormatter.Format(transaction.Amount, transaction.Currency)}\nÉtat : {row.MarkText}\nDétail : {transaction.Details}\n{valuationText}";
+            ? L.Format("MainViewModel.IndicativeValue0RateOf1Source2", MoneyFormatter.Format(valuation.Amount, valuation.Currency), valuation.RateDate.ToString(L.DatePattern, L.Culture), valuation.Source)
+            : L.Get("MainViewModel.NoValuation");
+        var directionText = transaction.Direction == TransactionDirection.Debit ? L.Get("MainViewModel.FlowRate") : L.Get("MainViewModel.Credit");
+        return L.Format("MainViewModel.Date0Wording1Payee2Category3", (row.DateText), (row.Label), (row.PayeeName), (row.CategoryName), (row.SubcategoryName), (row.PaymentModeName), (directionText), (MoneyFormatter.Format(transaction.Amount, transaction.Currency)), (row.MarkText), (transaction.Details), (valuationText));
     }
 
-    private sealed record AccountLedger(AccountSummary Summary, IReadOnlyList<LedgerRow> Rows, string StatusText);
+    private sealed record AccountLedger(AccountSummary Summary, IReadOnlyList<LedgerRow> Rows);
 }

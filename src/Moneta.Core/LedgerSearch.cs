@@ -36,27 +36,29 @@ public sealed record LedgerSearchCriteria
 
     public void Validate()
     {
-        if (From > Through) throw new ArgumentException("La date de début doit précéder ou égaler la date de fin.");
-        if (Minimum > Maximum) throw new ArgumentException("Le minimum doit être inférieur ou égal au maximum.");
+        if (From > Through) throw new ArgumentException(L.Get("LedgerSearch.TheStartDateMustPrecedeOrEqualThe"));
+        if (Minimum > Maximum) throw new ArgumentException(L.Get("LedgerSearch.TheMinimumShallBeLessThanOrEqual"));
         if (Status == 0 || (Status & ~LedgerSearchStatus.All) != 0 || !Enum.IsDefined(Kind) || !Enum.IsDefined(Sort))
-            throw new ArgumentException("Le filtre ou le tri est inconnu.");
+            throw new ArgumentException(L.Get("LedgerSearch.TheFilterOrSortingIsUnknown"));
         foreach (var field in new[] { Text, Payee, Category, Subcategory, PaymentMethod, CurrencyCode })
             if (field?.Length > 240 || field?.Contains('\0') == true)
-                throw new ArgumentException("Chaque recherche textuelle est limitée à 240 caractères valides.");
+                throw new ArgumentException(L.Get("LedgerSearch.EachTextSearchIsLimitedTo240Valid"));
     }
 
-    public static decimal? ParseAmount(string text)
+    public static decimal? ParseAmount(string text) => ParseAmount(text, L.Culture);
+
+    public static decimal? ParseAmount(string text, CultureInfo culture)
     {
         text = text.Trim();
         if (text.Length == 0) return null;
-        var parts = text.TrimStart('+', '-').Split(',');
+        var parts = text.TrimStart('+', '-').Split(culture.NumberFormat.NumberDecimalSeparator);
         var digits = string.Concat(parts).TrimStart('0').TrimEnd('0').Length;
         var scale = parts.Length == 2 ? parts[1].TrimEnd('0').Length : 0;
         // Decimal.TryParse can round very long inputs. Check their precision before parsing.
         if (digits > 28 || scale > 28 ||
             !decimal.TryParse(text, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
-                CultureInfo.GetCultureInfo("fr-FR"), out var amount))
-            throw new ArgumentException("Saisissez un montant signé, avec une virgule et au plus 28 chiffres significatifs et décimales.");
+                culture, out var amount))
+            throw new ArgumentException(L.Get("LedgerSearch.EnterAnAmountSignedWithACommaAnd"));
         return amount;
     }
 }

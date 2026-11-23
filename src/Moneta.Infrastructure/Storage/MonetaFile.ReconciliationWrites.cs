@@ -18,18 +18,18 @@ public sealed partial class MonetaFile
             {
                 if (change?.Value is not { } value || !proposed.TryAdd(value.Id, change) || change.ExpectedRevision < 0 ||
                     (creating && change.ExpectedRevision != 0) || value.Revision != checked(change.ExpectedRevision + 1))
-                    throw new ArgumentException("Lot de révisions invalide.");
+                    throw new ArgumentException(L.Get("MonetaFile.NotValidRevisionPackage"));
                 FinancialRules.ValidateTransaction(value, metadata);
                 var original = FindTransaction(connection, value.Id, baselineLookup, transaction); originals.Add(value.Id, original);
                 if (change.ExpectedRevision == 0)
                 {
-                    if (original is not null || value.IsDeleted) throw new ArgumentException("Insertion déjà présente ou supprimée.");
+                    if (original is not null || value.IsDeleted) throw new ArgumentException(L.Get("MonetaFile.InsertAlreadyPresentOrDeleted"));
                 }
                 else if (original is null || original.IsDeleted || original.Revision != change.ExpectedRevision ||
                     original.AccountId != value.AccountId || original.Currency.Code != value.Currency.Code ||
                     original.CreatedUtc != value.CreatedUtc || value.ModifiedUtc < original.ModifiedUtc)
-                    throw new ArgumentException("Révision obsolète ou identité financière modifiée.");
-                if (lookup.Accounts[value.AccountId].IsArchived) throw new ArgumentException("Compte archivé.");
+                    throw new ArgumentException(L.Get("MonetaFile.ObsoleteRevisionOrModifiedFinancialIdentity"));
+                if (lookup.Accounts[value.AccountId].IsArchived) throw new ArgumentException(L.Get("MonetaFile.ArchivedAccount"));
             }
             foreach (var account in metadata.Accounts)
             {
@@ -38,16 +38,16 @@ public sealed partial class MonetaFile
                 command.Parameters.AddWithValue("$id", account.Id.ToString("D"));
                 using var reader = command.ExecuteReader();
                 if (reader.Read() && (reader.GetInt64(0) != ExactMoney.ToMinorUnits(account.OpeningBalance, account.Currency) || reader.GetString(1) != account.Currency.Code))
-                    throw new ArgumentException("Le solde initial et la devise sont immuables après un premier relevé.");
+                    throw new ArgumentException(L.Get("MonetaFile.TheInitialBalanceAndTheCurrencyAreImmutable"));
             }
             var events = new Dictionary<Guid, ReconciliationEvent>();
             foreach (var audit in batch.Events)
             {
                 ValidateAuditShape(audit, metadata, lookup);
-                if (!events.TryAdd(audit.Id, audit)) throw new ArgumentException("Événement dupliqué.");
+                if (!events.TryAdd(audit.Id, audit)) throw new ArgumentException(L.Get("MonetaFile.DuplicatedEvent"));
                 using var command = connection.CreateCommand(); command.Transaction = transaction;
                 command.CommandText = "SELECT 1 FROM ReconciliationHistory WHERE event_id=$id;"; command.Parameters.AddWithValue("$id", audit.Id.ToString("D"));
-                if (command.ExecuteScalar() is not null) throw new ArgumentException("Événement déjà enregistré.");
+                if (command.ExecuteScalar() is not null) throw new ArgumentException(L.Get("MonetaFile.EventAlreadyRecorded"));
             }
             var consumedEvents = new HashSet<Guid>(); var authorized = new HashSet<Guid>(); var sessions = new Dictionary<Guid, ReconciliationSession>();
             var latest = new Dictionary<Guid, ReconciliationSession?>();
@@ -55,24 +55,24 @@ public sealed partial class MonetaFile
             foreach (var change in batch.Sessions)
             {
                 var session = change.Value;
-                if (!sessions.TryAdd(session.Id, session)) throw new ArgumentException("Relevé dupliqué.");
+                if (!sessions.TryAdd(session.Id, session)) throw new ArgumentException(L.Get("MonetaFile.DuplicatedRecord"));
                 var account = lookup.Accounts[session.AccountId];
-                if (account.IsArchived) throw new ArgumentException("Compte archivé.");
+                if (account.IsArchived) throw new ArgumentException(L.Get("MonetaFile.ArchivedAccount"));
                 if (!latest.TryGetValue(account.Id, out var previous)) previous = LatestActiveSession(connection, account.Id, lookup, transaction);
                 var stored = FindSession(connection, session.Id, lookup, transaction);
                 ReconciliationEvent RequiredEvent(ReconciliationEventKind kind, DateTimeOffset occurred, string reason)
                 {
                     var matching = events.Values.Where(value => value.SessionId == session.Id && value.Kind == kind).ToArray();
                     if (matching.Length != 1 || matching[0].OccurredUtc != occurred || matching[0].Reason != reason || !consumedEvents.Add(matching[0].Id))
-                        throw new ArgumentException("Événement du relevé absent ou incohérent.");
+                        throw new ArgumentException(L.Get("MonetaFile.SurveyEventAbsentOrInconsistent"));
                     return matching[0];
                 }
                 if (change.ExpectedRevision == 0)
                 {
                     if (creating || stored is not null || session.State != ReconciliationSessionState.Validated || session.StatementDate > today ||
                         (previous is not null && session.ValidatedUtc < previous.ValidatedUtc))
-                        throw new ArgumentException("Nouveau relevé invalide ou déjà présent.");
-                    if (CountLegacyRows(connection, account.Id, transaction) != 0) throw new ArgumentException("Libérez explicitement les rapprochements hérités avant de valider un relevé.");
+                        throw new ArgumentException(L.Get("MonetaFile.NewRecordInvalidOrAlreadyPresent"));
+                    if (CountLegacyRows(connection, account.Id, transaction) != 0) throw new ArgumentException(L.Get("MainViewModel.ExplicitlyReleaseInheritedReconciliationsBeforeValidatingARecord"));
                     ReconciliationRules.ValidateSession(session, account, previous, change.Entries);
                     RequiredEvent(ReconciliationEventKind.Validated, session.ValidatedUtc, string.Empty);
                     // Staging fixes the local marking date. UTC±14 can differ from the validation UTC date by one
@@ -88,7 +88,7 @@ public sealed partial class MonetaFile
                             (current.MarkedOn is { } existingMarkedOn ? markedOn != existingMarkedOn :
                                 Math.Abs(markedOn.DayNumber - validationDate.DayNumber) > 1) ||
                             current.ModifiedUtc > session.ValidatedUtc)
-                            throw new ArgumentException("Instantané, sélection ou changement de rapprochement obsolète.");
+                            throw new ArgumentException(L.Get("MonetaFile.InstantSelectOrChangeObsoleteReconciliation"));
                         ValidateHistoricalOperation(original, metadata, lookup);
                     }
                     latest[account.Id] = session;
@@ -99,7 +99,7 @@ public sealed partial class MonetaFile
                         previous?.Id != stored.Id || change.Entries.Count != 0 || session.State != ReconciliationSessionState.Reopened ||
                         session.Revision != checked(stored.Revision + 1) || session.ReopenedUtc is not { } reopened || reopened < stored.ValidatedUtc ||
                         session != (stored with { State = ReconciliationSessionState.Reopened, Revision = 2, ReopenedUtc = session.ReopenedUtc, ReopenReason = session.ReopenReason }))
-                        throw new ArgumentException("Seul le dernier relevé actif peut être rouvert, sans réécrire son contenu.");
+                        throw new ArgumentException(L.Get("MonetaFile.OnlyTheLastActiveStatementCanBeReopened"));
                     ReconciliationRules.ValidateReason(session.ReopenReason!);
                     RequiredEvent(ReconciliationEventKind.Reopened, reopened, session.ReopenReason!);
                     foreach (var entry in StreamEntries(connection, stored.Id, metadata, lookup, transaction))
@@ -108,7 +108,7 @@ public sealed partial class MonetaFile
                             current.Status != ReconciliationStatus.Reconciled || current.ReconciliationId != stored.Id || !authorized.Add(current.Id) ||
                             !ReconciliationRules.FinancialPayloadEquals(current, entry.Original) || !ReconciliationRules.FinancialPayloadEquals(current, patch.Value) ||
                             patch.Value.Status != entry.Original.Status || patch.Value.MarkedOn != entry.Original.MarkedOn || patch.Value.ReconciliationId is not null)
-                            throw new ArgumentException("La réouverture exige chaque opération intacte et son état de pointage original.");
+                            throw new ArgumentException(L.Get("MonetaFile.TheReopeningRequiresEachTransactionIntactAndIts"));
                     }
                     latest[account.Id] = stored.PreviousSessionId is { } previousId ? FindSession(connection, previousId, lookup, transaction) : null;
                 }
@@ -122,28 +122,28 @@ public sealed partial class MonetaFile
                     !ReconciliationRules.FinancialPayloadEquals(current, patch.Value) || patch.Value.Status != ReconciliationStatus.Unmarked ||
                     patch.Value.MarkedOn is not null || patch.Value.ReconciliationId is not null || !authorized.Add(id) ||
                     audit.OccurredUtc != patch.Value.ModifiedUtc)
-                    throw new ArgumentException("Libération héritée invalide ou instantané obsolète.");
+                    throw new ArgumentException(L.Get("MonetaFile.InheritedReleaseInvalidOrInstantaneousObsolete"));
                 consumedEvents.Add(audit.Id);
             }
-            if (consumedEvents.Count != events.Count) throw new ArgumentException("Événement sans changement explicite correspondant.");
+            if (consumedEvents.Count != events.Count) throw new ArgumentException(L.Get("MonetaFile.EventWithoutExplicitCorrespondingChange"));
             foreach (var patch in proposed.Values)
             {
                 var value = patch.Value; var original = originals[value.Id];
                 if (authorized.Contains(value.Id)) continue;
                 if (original?.Status == ReconciliationStatus.Reconciled || value.ReconciliationId is not null ||
                     (value.Status == ReconciliationStatus.Reconciled && !(creating && original is null)))
-                    throw new ArgumentException("Une opération rapprochée est protégée : réouverture ou libération héritée explicite requise.");
+                    throw new ArgumentException(L.Get("MonetaFile.ACloseTransactionIsProtectedReopeningOrExplicitly"));
                 if (!creating && (original is null || value.Status != original.Status || value.MarkedOn != original.MarkedOn))
                 {
                     if (value.Status == ReconciliationStatus.Marked && (value.MarkedOn is not { } marked || marked > today ||
                         ((original is null || original.Status == ReconciliationStatus.Unmarked) && value.Date > today)))
-                        throw new ArgumentException("Une nouvelle date de pointage doit être connue, non future, et ne peut pointer une opération future.");
+                        throw new ArgumentException(L.Get("MonetaFile.ANewScoreDateMustBeKnownNot"));
                 }
             }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or OverflowException or KeyNotFoundException or NullReferenceException)
         {
-            throw new DocumentException(DocumentError.InvalidData, "Rapprochement ou modification invalide : " + exception.Message, exception);
+            throw new DocumentException(DocumentError.InvalidData, L.Get("MonetaFile.InvalidReconciliationOrModification") + exception.Message, exception);
         }
     }
 
@@ -158,18 +158,18 @@ public sealed partial class MonetaFile
     {
         if (value.Id == Guid.Empty || value.SessionId == Guid.Empty || value.TransactionId == Guid.Empty || !Enum.IsDefined(value.Kind) ||
             value.OccurredUtc == default || value.OccurredUtc.Offset != TimeSpan.Zero || value.Reason is null || value.Reason.Length > 1000)
-            throw new ArgumentException("Événement invalide.");
+            throw new ArgumentException(L.Get("MonetaFile.InvalidEvent"));
         if (value.Kind == ReconciliationEventKind.LegacyReleased)
         {
             ReconciliationRules.ValidateReason(value.Reason);
             if (value.SessionId is not null || value.TransactionId is null || value.OperationBefore is not { } before ||
                 before.Id != value.TransactionId || before.Status != ReconciliationStatus.Reconciled || before.ReconciliationId is not null || before.IsDeleted ||
-                before.ModifiedUtc > value.OccurredUtc) throw new ArgumentException("Audit de libération invalide.");
+                before.ModifiedUtc > value.OccurredUtc) throw new ArgumentException(L.Get("MonetaFile.InvalidReleaseAudit"));
             ValidateHistoricalOperation(before, metadata, lookup);
         }
         else if (value.SessionId is null || value.TransactionId is not null || value.OperationBefore is not null ||
             (value.Kind == ReconciliationEventKind.Validated ? value.Reason.Length != 0 : string.IsNullOrWhiteSpace(value.Reason)))
-            throw new ArgumentException("Audit de relevé invalide.");
+            throw new ArgumentException(L.Get("MonetaFile.AuditOfInvalidRecords"));
     }
 
     private static void WriteReconciliationChanges(SqliteConnection connection, FinancialDocument metadata, ReconciliationBatch batch, SqliteTransaction transaction)

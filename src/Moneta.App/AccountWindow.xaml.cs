@@ -18,23 +18,23 @@ public partial class AccountWindow : Window
         _editing = editing;
         InitializeComponent();
         DataContext = model;
-        Title = model.IsDemo ? "Ajouter un compte de démonstration" : "Ajouter un compte";
+        Title = model.IsDemo ? L.Get("AccountWindow.AddADemoAccount") : L.Get("Common.AddAccount");
         Heading.Text = Title;
         ModeNotice.Text = model.IsDemo
-            ? "En mémoire uniquement. Ce compte disparaîtra à la fermeture. Ne saisissez aucune donnée bancaire personnelle."
-            : "Le compte sera ajouté au dossier. Utilisez Enregistrer (Ctrl+S) pour conserver les modifications sur disque.";
-        ConfirmAccount.Content = model.IsDemo ? "Ajouter en mémoire" : "Ajouter au dossier";
+            ? L.Get("AccountWindow.InMemoryOnlyThisAccountWillDisappearUpon")
+            : L.Get("AccountWindow.TheAccountWillBeAddedToTheDocument");
+        ConfirmAccount.Content = model.IsDemo ? L.Get("AccountWindow.AddInMemory") : L.Get("AccountWindow.AddToDocument");
         if (model.IsDemo) BankFields.Visibility = Visibility.Collapsed;
         if (editing is not null)
         {
-            Heading.Text = Title = "Propriétés du compte";
-            ConfirmAccount.Content = "Appliquer";
-            ModeNotice.Text = "La devise native et le solde initial sont fixés à la création. Ctrl+S enregistre les propriétés dans le dossier.";
+            Heading.Text = Title = L.Get("Common.AccountProperties");
+            ConfirmAccount.Content = L.Get("Common.Apply");
+            ModeNotice.Text = L.Get("AccountWindow.TheNativeCurrencyAndTheInitialBalanceAre");
             AccountName.Text = editing.Name;
             AccountType.Text = editing.Type ?? string.Empty;
             NativeCurrency.SelectedItem = editing.Currency;
             NativeCurrency.IsEnabled = false;
-            OpeningBalance.Text = editing.OpeningBalance.ToString($"F{editing.Currency.DecimalPlaces}", CultureInfo.GetCultureInfo("fr-FR"));
+            OpeningBalance.Text = editing.OpeningBalance.ToString($"F{editing.Currency.DecimalPlaces}", L.Culture);
             OpeningBalance.IsReadOnly = true;
             BankName.Text = editing.BankName ?? string.Empty;
             BankReference.Text = editing.BankReference ?? string.Empty;
@@ -56,8 +56,8 @@ public partial class AccountWindow : Window
                 _model.EditAccount(account.Id, input);
             else
             {
-                if (NativeCurrency.SelectedItem is not Currency currency) throw new ArgumentException("Choisissez une devise native.");
-                var amount = MoneyInput.ParseFrench(OpeningBalance.Text, currency, allowNegative: true);
+                if (NativeCurrency.SelectedItem is not Currency currency) throw new ArgumentException(L.Get("AccountWindow.ChooseANativeCurrency"));
+                var amount = MoneyInput.ParseLocalized(OpeningBalance.Text, currency, allowNegative: true);
                 if (_model.IsDemo) _model.AddDemoAccount(input.Name, currency, input.Type, amount, input.Notes);
                 else _model.AddAccount(input, currency, amount);
             }

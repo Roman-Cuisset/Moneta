@@ -14,7 +14,7 @@ public partial class NewDocumentWindow : Window
     {
         if (string.IsNullOrWhiteSpace(FolderName))
         {
-            ErrorText.Text = "Indiquez un nom de dossier.";
+            ErrorText.Text = L.Get("NewDocumentWindow.EnterAFileName");
             DocumentName.Focus();
             return;
         }

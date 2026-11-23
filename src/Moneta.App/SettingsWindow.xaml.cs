@@ -9,12 +9,16 @@ namespace Moneta.App;
 public partial class SettingsWindow : Window
 {
     private readonly Action? _history;
+    private readonly Func<string>? _backupInformation;
 
-    public SettingsWindow(string? backupInformation = null, Action? history = null)
+    public SettingsWindow(Func<string>? backupInformation = null, Action? history = null)
     {
         _history = history;
+        _backupInformation = backupInformation;
         InitializeComponent();
         var settings = App.Settings.Current;
+        LanguageChoice.SelectedIndex = settings.Language == L.English ? 1 : 0;
+        Closed += (_, _) => App.ApplyLanguage(App.Settings.Current.Language);
         ThemeChoice.SelectedIndex = settings.Theme == "Dark" ? 1 : 0;
         CheckUpdates.IsChecked = settings.CheckUpdatesAtStartup;
         RefreshRates.IsChecked = settings.RefreshRatesAtStartup;
@@ -26,12 +30,8 @@ public partial class SettingsWindow : Window
         BackupInterval.Text = backups.IntervalMinutes.ToString(CultureInfo.InvariantCulture);
         BackupRetention.Text = backups.VersionsToKeep.ToString(CultureInfo.InvariantCulture);
         BackupDestination.Text = backups.DirectoryPath ?? "";
-        BackupDefaultPath.Text = "Par défaut : " + new BackupPolicy().Destination;
-        BackupInformation.Text = backupInformation ?? "";
         BackupHistory.IsEnabled = _history is not null;
-        var rates = App.Rates.State.Rates;
-        RatesInformation.Text = rates is null ? "Aucun cours applicable chargé."
-            : $"Dernier cours chargé : {Moneta.Core.RateRules.ProviderName(rates.Provider)}, effet du {rates.EffectiveDate:dd/MM/yyyy}, récupération {rates.RetrievedUtc.ToLocalTime():dd/MM/yyyy HH:mm}.";
+        RefreshLanguageLabels();
         SettingsPath.Text = App.Settings.FilePath;
         if (App.Settings.LoadError is { } error)
         {
@@ -43,6 +43,7 @@ public partial class SettingsWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         if (ThemeChoice.SelectedItem is not ComboBoxItem { Tag: string theme } ||
+            LanguageChoice.SelectedItem is not ComboBoxItem { Tag: string language } ||
             RateSourceChoice.SelectedItem is not ComboBoxItem { Tag: string rateSource })
         {
             return;
@@ -51,7 +52,7 @@ public partial class SettingsWindow : Window
         if (!int.TryParse(BackupInterval.Text, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes) ||
             !int.TryParse(BackupRetention.Text, NumberStyles.None, CultureInfo.InvariantCulture, out var retention))
         {
-            ReportBackupInput("Saisissez des nombres entiers pour l’intervalle et la rétention.");
+            ReportBackupInput(L.Get("SettingsWindow.EnterIntegerNumbersForIntervalAndRetention"));
             return;
         }
         var backups = new BackupPolicy
@@ -68,6 +69,7 @@ public partial class SettingsWindow : Window
         var settings = App.Settings.Current with
         {
             Theme = theme,
+            Language = language,
             CheckUpdatesAtStartup = CheckUpdates.IsChecked == true,
             RefreshRatesAtStartup = RefreshRates.IsChecked == true,
             RateSource = rateSource,
@@ -79,6 +81,25 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void LanguageChoice_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (IsLoaded && LanguageChoice.SelectedItem is ComboBoxItem { Tag: string language })
+        {
+            App.ApplyLanguage(language);
+            RefreshLanguageLabels();
+        }
+    }
+
+    private void RefreshLanguageLabels()
+    {
+        BackupDefaultPath.Text = L.Get("SettingsWindow.ByDefault") + new BackupPolicy().Destination;
+        BackupInformation.Text = _backupInformation?.Invoke() ?? "";
+        var rates = App.Rates.State.Rates;
+        RatesInformation.Text = rates is null ? L.Get("SettingsWindow.NoApplicableExchangeRateLoaded")
+            : L.Format("SettingsWindow.LastRateLoaded0EffectOf1Mm", Moneta.Core.RateRules.ProviderName(rates.Provider),
+                rates.EffectiveDate, rates.RetrievedUtc.ToLocalTime());
+    }
+
     private void ReportBackupInput(string error)
     {
         BackupValidation.Text = error;
@@ -88,7 +109,7 @@ public partial class SettingsWindow : Window
 
     private void BrowseBackups_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new OpenFolderDialog { Title = "Destination des sauvegardes Moneta" };
+        var picker = new OpenFolderDialog { Title = L.Get("SettingsWindow.DestinationOfMonetaBackups") };
         if (picker.ShowDialog(this) == true) BackupDestination.Text = picker.FolderName;
     }
 

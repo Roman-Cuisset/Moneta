@@ -4,6 +4,7 @@
     <Project Path="src/Moneta.BankPerfect/Moneta.BankPerfect.csproj" />
     <Project Path="src/Moneta.Core/Moneta.Core.csproj" />
     <Project Path="src/Moneta.Infrastructure/Moneta.Infrastructure.csproj" />
+    <Project Path="src/Moneta.Localization/Moneta.Localization.csproj" />
     <Project Path="src/Moneta.Updates/Moneta.Updates.csproj" />
     <Project Path="src/Moneta.UpdateHost/Moneta.UpdateHost.csproj" />
   </Folder>

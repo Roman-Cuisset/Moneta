@@ -26,7 +26,7 @@ public static class RateConverter
         var total = Fraction.Zero;
         foreach (var amount in amounts)
         {
-            if (amount is null) throw new ArgumentException("Un montant natif est absent.", nameof(amounts));
+            if (amount is null) throw new ArgumentException(L.GetCanonical("RateConverter.ANativeAmountIsMissing"), nameof(amounts));
             ValidateCode(amount.CurrencyCode, nameof(amounts));
             OfficialRateQuote? source = null;
             if (amount.CurrencyCode != rates.ReferenceCurrency && !quotes.TryGetValue(amount.CurrencyCode, out source))
@@ -83,7 +83,7 @@ public static class RateConverter
     private static void ValidateCode(string code, string parameter)
     {
         if (!RateRules.IsCurrencyCode(code))
-            throw new ArgumentException("Le code de devise doit contenir trois lettres ASCII majuscules.", parameter);
+            throw new ArgumentException(L.GetCanonical("RateConverter.TheCurrencyCodeMustContainThreeCapitalLetters"), parameter);
     }
 
     private static RateException Missing(string code) => new(RateFailure.Unavailable, $"Aucun cours officiel de cette publication pour {code}.");
@@ -132,7 +132,7 @@ public static class RateConverter
 
         public static Fraction operator /(Fraction left, Fraction right)
         {
-            if (right._numerator.Sign <= 0) throw new InvalidOperationException("Le facteur de change doit être positif.");
+            if (right._numerator.Sign <= 0) throw new InvalidOperationException(L.GetCanonical("RateConverter.TheExchangeFactorMustBePositive"));
             return left * new Fraction(right._denominator, right._numerator, reduced: true);
         }
 
@@ -159,7 +159,7 @@ public static class RateConverter
                 scale--;
             }
             if (coefficient > MaximumCoefficient)
-                throw new OverflowException("Le résultat arrondi n’est pas représentable exactement en décimal.");
+                throw new OverflowException(L.GetCanonical("RateConverter.TheRoundedResultIsNotRepresentedExactlyIn"));
             return new decimal((int)(uint)(coefficient & uint.MaxValue),
                 (int)(uint)((coefficient >> 32) & uint.MaxValue),
                 (int)(uint)(coefficient >> 64), _numerator.Sign < 0 && !coefficient.IsZero, (byte)scale);

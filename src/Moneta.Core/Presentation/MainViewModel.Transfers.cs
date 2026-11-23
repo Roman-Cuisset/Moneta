@@ -53,7 +53,7 @@ public sealed partial class MainViewModel
 
     public TransferDetails GetTransfer(Guid transferId)
     {
-        if (IsDemo) throw new InvalidOperationException("La démonstration ne contient aucun virement réel.");
+        if (IsDemo) throw new InvalidOperationException(L.Get("MainViewModel.TheDemonstrationDoesNotContainAnyActualTransfer"));
         TransferDetails details;
         if (_pendingTransfers.TryGetValue(transferId, out var pending))
         {
@@ -63,7 +63,7 @@ public sealed partial class MainViewModel
         }
         else
         {
-            var source = _source as ITransferSource ?? throw new InvalidOperationException("Le registre des virements n'est pas connecté.");
+            var source = _source as ITransferSource ?? throw new InvalidOperationException(L.Get("MainViewModel.TheTransferLogIsNotLoggedIn"));
             details = source.ReadTransfer(transferId);
         }
         return details with
@@ -86,15 +86,15 @@ public sealed partial class MainViewModel
     {
         var details = GetTransfer(transferId);
         if (details.Value.IsDeleted || !ContainsLeg(details.Value, transactionId))
-            throw new InvalidOperationException("Cette opération n'appartient pas à un virement actif.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisTransactionDoesNotBelongToAnActive"));
         var target = transactionId == details.Debit.Id ? details.Credit : details.Debit;
         var summary = _ledgers.TryGetValue(target.AccountId, out var ledger) ? ledger.Summary
-            : throw new InvalidOperationException("Le compte de contrepartie est absent du dossier.");
+            : throw new InvalidOperationException(L.Get("MainViewModel.TheCounterpartAccountIsMissingFromTheFile"));
         // Read the ID-anchored page before publishing any account or row selection.
         var page = ReadPage(summary.Account, 0, PendingChanges, target.Id);
         var rows = BuildRows(page);
         if (!rows.Any(row => row.Transaction.Id == target.Id))
-            throw new InvalidOperationException("La contrepartie n'est pas présente dans le registre.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheCounterpartyIsNotPresentInTheRegister"));
         if (summary.Account.IsArchived) ShowArchivedAccounts = true;
         SelectAccount(summary, page, rows);
         ApplyPage(page, rows, target.Id);
@@ -103,9 +103,9 @@ public sealed partial class MainViewModel
 
     private FinancialDocument TransferContext()
     {
-        if (IsDemo) throw new InvalidOperationException("Les virements réels ne sont pas disponibles en démonstration.");
+        if (IsDemo) throw new InvalidOperationException(L.Get("MainViewModel.ActualTransfersAreNotAvailableOnDemonstration"));
         if (!_pendingReconciliations.IsEmpty)
-            throw new InvalidOperationException("Enregistrez d’abord le brouillon de rapprochement avec Ctrl+S avant de modifier les virements.");
+            throw new InvalidOperationException(L.Get("MainViewModel.FirstSaveTheReconciliationDraftWithCtrlS"));
         return CaptureDocument();
     }
 
@@ -113,19 +113,19 @@ public sealed partial class MainViewModel
     {
         ProtectScheduledDraft(id, transfer: true);
         var details = GetTransfer(id);
-        if (details.Value.IsDeleted) throw new InvalidOperationException("Ce virement est supprimé.");
+        if (details.Value.IsDeleted) throw new InvalidOperationException(L.Get("MainViewModel.ThisTransferShallBeDeleted"));
         if (details.Value.Revision != revision)
-            throw new InvalidOperationException("Ce virement a changé ; ouvrez à nouveau sa version actuelle.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisTransferHasChangedOpenItsCurrentVersion"));
         if (details.HasReconciledLeg)
-            throw new InvalidOperationException("Une jambe du virement est rapprochée. Rouvrez le relevé ou libérez le rapprochement hérité, puis enregistrez avec Ctrl+S.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ALegOfTheTransferIsCloseReopen"));
         return details;
     }
 
     private static Account ActiveTransferAccount(FinancialDocument metadata, Guid id)
     {
         var account = metadata.Accounts.SingleOrDefault(value => value.Id == id)
-            ?? throw new ArgumentException("Le compte du virement est absent du dossier.");
-        if (account.IsArchived) throw new InvalidOperationException("Un compte archivé ne peut pas participer à une modification de virement.");
+            ?? throw new ArgumentException(L.Get("MainViewModel.TheTransferAccountIsMissingFromTheFile"));
+        if (account.IsArchived) throw new InvalidOperationException(L.Get("MainViewModel.AnArchivedAccountCannotParticipateInATransfer"));
         return account;
     }
 
@@ -135,16 +135,16 @@ public sealed partial class MainViewModel
         var source = ActiveTransferAccount(metadata, draft.SourceAccountId);
         var destination = ActiveTransferAccount(metadata, draft.DestinationAccountId);
         if (previous is not null && (source.Id != previous.Debit.AccountId || destination.Id != previous.Credit.AccountId))
-            throw new InvalidOperationException("Les comptes d'un virement sont immuables : annulez le virement entier et recréez-le.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheAccountsOfATransferAreImmutableCancel"));
         if (previous?.Fee is { } oldFee && draft.FeeAccountId != oldFee.AccountId)
-            throw new InvalidOperationException("Le compte des frais est immuable ; conservez la ligne et saisissez zéro pour annuler les frais.");
+            throw new InvalidOperationException(L.Get("MainViewModel.TheFeeAccountIsImmutableKeepTheLine"));
         Account? feeAccount = draft.FeeAccountId is { } feeId ? ActiveTransferAccount(metadata, feeId) : null;
         if (feeAccount is null && draft.FeeAmount != 0)
-            throw new ArgumentException("Choisissez le compte des frais.", nameof(draft));
+            throw new ArgumentException(L.Get("MainViewModel.ChooseTheFeeAccount"), nameof(draft));
         if (feeAccount is not null && (draft.FeeAmount < 0 || previous?.Fee is null && draft.FeeAmount == 0))
-            throw new ArgumentException("Les nouveaux frais doivent être strictement positifs ; un frais existant peut être ramené à zéro.", nameof(draft));
-        var reference = draft.Reference?.Trim() ?? throw new ArgumentException("La référence du virement est invalide.", nameof(draft));
-        var notes = draft.Notes ?? throw new ArgumentException("Les notes du virement sont invalides.", nameof(draft));
+            throw new ArgumentException(L.Get("MainViewModel.TheNewFeesMustBeStrictlyPositiveAn"), nameof(draft));
+        var reference = draft.Reference?.Trim() ?? throw new ArgumentException(L.Get("MainViewModel.TheTransferReferenceIsInvalid"), nameof(draft));
+        var notes = draft.Notes ?? throw new ArgumentException(L.Get("MainViewModel.TheTransferNotesAreInvalid"), nameof(draft));
         var crossCurrency = source.Currency.Code != destination.Currency.Code;
         var now = previous is null ? DateTimeOffset.UtcNow : TransferNow(previous);
         var catalog = new DraftCatalog(metadata);
@@ -154,12 +154,12 @@ public sealed partial class MainViewModel
                 reference.Length == 0 ? label : $"{label} · {reference}", Notes: notes), old);
             return old is null ? value : NextRevision(value, old);
         }
-        var debit = BuildLeg(source, draft.DebitedAmount, TransactionDirection.Debit, "Virement émis", previous?.Debit);
-        var credit = BuildLeg(destination, draft.CreditedAmount, TransactionDirection.Credit, "Virement reçu", previous?.Credit);
-        var fee = feeAccount is null ? null : BuildLeg(feeAccount, draft.FeeAmount, TransactionDirection.Debit, "Frais de virement", previous?.Fee);
+        var debit = BuildLeg(source, draft.DebitedAmount, TransactionDirection.Debit, L.Get("MainViewModel.TransferIssued"), previous?.Debit);
+        var credit = BuildLeg(destination, draft.CreditedAmount, TransactionDirection.Credit, L.Get("MainViewModel.TransferReceived"), previous?.Credit);
+        var fee = feeAccount is null ? null : BuildLeg(feeAccount, draft.FeeAmount, TransactionDirection.Debit, L.Get("Common.TransferFees"), previous?.Fee);
         var value = new Transfer(previous?.Value.Id ?? Guid.NewGuid(), debit.Id, credit.Id, fee?.Id, draft.Date,
             reference, notes, crossCurrency ? draft.ExchangeDate ?? draft.Date : null,
-            crossCurrency ? string.IsNullOrWhiteSpace(draft.RateSource) ? "Montants saisis par l’utilisateur" : draft.RateSource.Trim() : null,
+            crossCurrency ? string.IsNullOrWhiteSpace(draft.RateSource) ? L.Get("MainViewModel.AmountsSeizedByTheUser") : draft.RateSource.Trim() : null,
             previous?.Value.CreatedUtc ?? now, now, previous?.Value.Revision ?? 1);
         var details = new TransferDetails(value, debit, credit, fee);
         TransferRules.Validate(details, metadata);
@@ -216,14 +216,14 @@ public sealed partial class MainViewModel
     }
 
     private Transaction PendingLeg(Guid id) => _pending.TryGetValue(id, out var change) ? change.Value
-        : throw new InvalidOperationException("Une jambe du brouillon de virement est absente.");
+        : throw new InvalidOperationException(L.Get("MainViewModel.ALegOfTheTransferDraftIsMissing"));
 
     private Transaction OverlayLeg(Transaction value) => _pending.TryGetValue(value.Id, out var change) ? change.Value : value;
 
     private void EnsureOrdinaryTransaction(Guid id)
     {
         if (FindTransferId(id) is not null)
-            throw new InvalidOperationException("Cette opération est liée à un virement. Modifiez ou supprimez le virement entier.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisTransactionIsLinkedToATransferChange"));
     }
 
     private static bool ContainsLeg(Transfer value, Guid id) => value.DebitTransactionId == id || value.CreditTransactionId == id || value.FeeTransactionId == id;

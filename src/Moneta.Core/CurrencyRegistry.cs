@@ -32,7 +32,7 @@ public sealed class CurrencyRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         return _byCode.TryGetValue(code, out var currency)
             ? currency
-            : throw new ArgumentException("La devise n'est pas enregistrée.", nameof(code));
+            : throw new ArgumentException(L.Get("CurrencyRegistry.TheCurrencyIsNotRegistered"), nameof(code));
     }
 
     public bool TryGet(string code, out Currency? currency) => _byCode.TryGetValue(code, out currency);
@@ -41,7 +41,7 @@ public sealed class CurrencyRegistry
     {
         ArgumentNullException.ThrowIfNull(currency);
         if (currency.Code is not { Length: 3 } || currency.Code.Any(character => character is < 'A' or > 'Z'))
-            throw new ArgumentException("Le code ISO doit contenir trois lettres majuscules.", nameof(currency));
+            throw new ArgumentException(L.Get("CurrencyRegistry.TheIsoCodeShallContainThreeCapitalLetters"), nameof(currency));
         ArgumentException.ThrowIfNullOrWhiteSpace(currency.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(currency.Symbol);
         ArgumentOutOfRangeException.ThrowIfNegative(currency.DecimalPlaces);
@@ -51,7 +51,7 @@ public sealed class CurrencyRegistry
         if (_byCode.TryGetValue(currency.Code, out var existing))
         {
             if (existing != currency)
-                throw new ArgumentException("Ce code ISO possède déjà une définition différente.", nameof(currency));
+                throw new ArgumentException(L.Get("CurrencyRegistry.ThisIsoCodeAlreadyHasADifferentDefinition"), nameof(currency));
             return existing;
         }
 

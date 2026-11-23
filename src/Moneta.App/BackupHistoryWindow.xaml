@@ -1,40 +1,40 @@
-<Window x:Class="Moneta.App.BackupHistoryWindow"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.BackupHistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Historique des sauvegardes — Moneta" Width="980" Height="570" MinWidth="650" MinHeight="420"
-        ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Style="{StaticResource {x:Type Window}}">
+        Title="{loc:LocalizedText BackupHistoryWindow.HistoryOfBackupsMoneta}" Width="980" Height="570" MinWidth="650" MinHeight="420"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Style="{StaticResource {x:Type Window}}" Language="{loc:LocalizedLanguage}">
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" />
             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="Historique des sauvegardes" Style="{StaticResource WindowHeading}" Margin="0,0,0,6" />
+            <TextBlock Text="{loc:LocalizedText Common.BackupHistory}" Style="{StaticResource WindowHeading}" Margin="0,0,0,6" />
             <TextBlock x:Name="Notice" Style="{StaticResource BodyMuted}" />
         </StackPanel>
         <TextBlock x:Name="DestinationText" Grid.Row="1" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"
                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
         <DataGrid x:Name="Versions" Grid.Row="2" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
                   CanUserAddRows="False" CanUserDeleteRows="False" EnableRowVirtualization="True"
-                  SelectionChanged="Versions_SelectionChanged" AutomationProperties.Name="Versions historiques de sauvegarde">
+                  SelectionChanged="Versions_SelectionChanged" AutomationProperties.Name="{loc:LocalizedText BackupHistoryWindow.HistoricalBackupVersions}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Date locale" Binding="{Binding Date}" Width="142" />
-                <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="125" />
-                <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="105" />
-                <DataGridTextColumn Header="Format / schéma" Binding="{Binding Format}" Width="110" />
-                <DataGridTextColumn Header="Contrôle" Binding="{Binding Status}" Width="2*" MinWidth="180" />
-                <DataGridTextColumn Header="Destination" Binding="{Binding Entry.DirectoryPath}" Width="*" MinWidth="110" />
+                <DataGridTextColumn Header="{loc:LocalizedText Common.LocalDate}" Binding="{Binding Date}" Width="142" />
+                <DataGridTextColumn Header="{loc:LocalizedText Common.Type}" Binding="{Binding Kind}" Width="125" />
+                <DataGridTextColumn Header="{loc:LocalizedText BackupHistoryWindow.Size}" Binding="{Binding Size}" Width="105" />
+                <DataGridTextColumn Header="{loc:LocalizedText BackupHistoryWindow.FormatSchema}" Binding="{Binding Format}" Width="110" />
+                <DataGridTextColumn Header="{loc:LocalizedText BackupHistoryWindow.Verification}" Binding="{Binding Status}" Width="2*" MinWidth="180" />
+                <DataGridTextColumn Header="{loc:LocalizedText BackupHistoryWindow.Destination}" Binding="{Binding Entry.DirectoryPath}" Width="*" MinWidth="110" />
             </DataGrid.Columns>
         </DataGrid>
         <TextBlock x:Name="HistoryState" Grid.Row="3" Margin="0,8,0,4" TextWrapping="Wrap"
                    AutomationProperties.LiveSetting="Polite" />
         <WrapPanel Grid.Row="4" Margin="0,6,0,0">
-            <Button x:Name="Manual" Content="Sauvegarder _maintenant" Style="{StaticResource PrimaryButton}" Click="Manual_Click" Margin="0,0,8,4" />
-            <Button x:Name="CancelBackup" Content="Annuler la sauvegarde" Click="CancelBackup_Click"
+            <Button x:Name="Manual" Content="{loc:LocalizedText BackupHistoryWindow.BackUpNowAccessKey}" Style="{StaticResource PrimaryButton}" Click="Manual_Click" Margin="0,0,8,4" />
+            <Button x:Name="CancelBackup" Content="{loc:LocalizedText Common.CancelBackup}" Click="CancelBackup_Click"
                     Margin="0,0,8,4" Visibility="Collapsed" />
-            <Button x:Name="Reload" Content="_Actualiser" Click="Reload_Click" Margin="0,0,8,4" />
-            <Button x:Name="Verify" Content="_Vérifier" Click="Verify_Click" Margin="0,0,8,4" />
-            <Button x:Name="Restore" Content="_Restaurer vers un nouveau fichier…" Click="Restore_Click" Margin="0,0,8,4" />
+            <Button x:Name="Reload" Content="{loc:LocalizedText Common.UpdateAccessKey}" Click="Reload_Click" Margin="0,0,8,4" />
+            <Button x:Name="Verify" Content="{loc:LocalizedText BackupHistoryWindow.VerifyAccessKey}" Click="Verify_Click" Margin="0,0,8,4" />
+            <Button x:Name="Restore" Content="{loc:LocalizedText BackupHistoryWindow.RestoreToANewFileAccessKey}" Click="Restore_Click" Margin="0,0,8,4" />
             <Button Content="_Fermer" IsCancel="True" Margin="0,0,0,4" />
         </WrapPanel>
     </Grid>

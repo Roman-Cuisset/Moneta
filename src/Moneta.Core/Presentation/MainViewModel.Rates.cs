@@ -15,7 +15,7 @@ public sealed partial class MainViewModel
     private bool _ratesConnected;
     private string _rateMessage = string.Empty;
     private string _projectedBalance = string.Empty;
-    private string _projectedRateDescription = "Aucun compte sélectionné. Aucun service de change actif ; aucun cours chargé.";
+    private string _projectedRateDescription = L.Get("MainViewModel.NoAccountSelectedNoActiveCurrencyExchangeService");
 
     // Presentation currencies never enter the financial registry or CaptureDocument.
     private ReadOnlyObservableCollection<Currency> PresentationCurrencies
@@ -67,17 +67,17 @@ public sealed partial class MainViewModel
     }
 
     public string NativeBalanceDescription => _selectedAccount is not null && !IsNativeDisplay
-        ? "Solde natif : " + _selectedAccount.BalanceText : string.Empty;
+        ? L.Get("MainViewModel.NativeBalance") + _selectedAccount.BalanceText : string.Empty;
 
     public void UpdateRateDisplay(OfficialRateSet? rates, RateProvider provider, DateOnly date, bool fromCache, string message)
     {
         _ = RateRules.ReferenceCurrency(provider);
-        if (date == default) throw new ArgumentException("Date de valorisation invalide.", nameof(date));
+        if (date == default) throw new ArgumentException(L.Get("MainViewModel.InvalidValuationDate"), nameof(date));
         if (rates is not null)
         {
             RateRules.Validate(rates);
             if (rates.Provider != provider || rates.EffectiveDate > date || date.DayNumber - rates.EffectiveDate.DayNumber > RateRules.MaximumAgeDays)
-                throw new ArgumentException("Cotations incompatibles avec le fournisseur ou la date de valorisation.", nameof(rates));
+                throw new ArgumentException(L.Get("MainViewModel.RatingsIncompatibleWithTheSupplierOrDateOf"), nameof(rates));
         }
         _displayRates = rates;
         _rateProvider = provider;
@@ -93,21 +93,21 @@ public sealed partial class MainViewModel
         if (_selectedAccount is null)
         {
             _projectedBalance = string.Empty;
-            _projectedRateDescription = "Aucun compte sélectionné." + (_ratesConnected ? " " + _rateMessage : " Aucun service de change actif ; aucun cours chargé.");
+            _projectedRateDescription = L.Get("MainViewModel.NoAccountSelected") + (_ratesConnected ? " " + _rateMessage : L.Get("MainViewModel.NoActiveCurrencyExchangeServiceNoPriceCharged"));
             return;
         }
         if (IsNativeDisplay)
         {
             _projectedBalance = _selectedAccount.BalanceText;
-            _projectedRateDescription = $"Devise native {_selectedAccount.CurrencyCode} · aucune conversion." +
-                (_ratesConnected ? string.Empty : " Aucun service de change actif ; aucun cours chargé.");
+            _projectedRateDescription = L.Format("MainViewModel.NativeCurrency0NoConversion", (_selectedAccount.CurrencyCode)) +
+                (_ratesConnected ? string.Empty : L.Get("MainViewModel.NoActiveCurrencyExchangeServiceNoPriceCharged"));
             return;
         }
-        _projectedBalance = "Cours indisponible";
-        _projectedRateDescription = $"Cours indisponible : {_selectedAccount.CurrencyCode} → {_displayCurrency?.Code}. Le solde natif reste inchangé. ";
+        _projectedBalance = L.Get("MainViewModel.ExchangeRateUnavailable");
+        _projectedRateDescription = L.Format("MainViewModel.ExchangeRateNotAvailable01TheNative", (_selectedAccount.CurrencyCode), (_displayCurrency?.Code));
         if (!_ratesConnected)
         {
-            _projectedRateDescription += "Aucun service de change actif ; aucun cours chargé.";
+            _projectedRateDescription += L.Get("MainViewModel.NoActiveCurrencyExchangeServiceNoPriceCharged2");
             return;
         }
         if (_displayRates is null || _displayCurrency is null)
@@ -120,10 +120,10 @@ public sealed partial class MainViewModel
             var estimate = RateConverter.ConvertAmount(_selectedAccount.Balance, _selectedAccount.CurrencyCode, _displayCurrency, _displayRates);
             _projectedBalance = MoneyFormatter.Format(estimate, _displayCurrency);
             var age = _valuationDate.DayNumber - _displayRates.EffectiveDate.DayNumber;
-            _projectedRateDescription = $"Équivalent estimé · {RateRules.ProviderName(_rateProvider)}\nCours du {_displayRates.EffectiveDate:dd/MM/yyyy}" +
-                (age == 0 ? string.Empty : $" · ancien de {age} jour(s)") +
-                $"\nDate demandée : {_valuationDate:dd/MM/yyyy}. Récupéré le {_displayRates.RetrievedUtc.ToLocalTime():dd/MM/yyyy HH:mm}. " +
-                (_rateFromCache ? "Cache local. " : "Réponse réseau validée. ") + _rateMessage;
+            _projectedRateDescription = L.Format("MainViewModel.EstimatedEquivalent0ExchangeRateOf1Mm", (RateRules.ProviderName(_rateProvider)), (_displayRates.EffectiveDate)) +
+                (age == 0 ? string.Empty : L.Format("MainViewModel.FormerOf0DayS", (age))) +
+                L.Format("MainViewModel.DateRequested0MmDdYyyyRecoveredOn", (_valuationDate), (_displayRates.RetrievedUtc.ToLocalTime())) +
+                (_rateFromCache ? "Cache local. " : L.Get("MainViewModel.NetworkResponseValidated")) + _rateMessage;
         }
         catch (Exception error) when (error is RateException or OverflowException or ArgumentException)
         {

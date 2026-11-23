@@ -19,7 +19,7 @@ public sealed partial class MainViewModel
         var plan = new SchedulePlan(Guid.NewGuid(), terms, rule, first, end);
         var accounts = document.Accounts.ToDictionary(account => account.Id);
         plan.Validate(accounts);
-        if (plan.Next is null) throw new ArgumentException("La fin précède la première échéance.");
+        if (plan.Next is null) throw new ArgumentException(L.Get("MainViewModel.TheEndPrecedesTheFirstScheduledTransaction"));
         terms.Validate(accounts, active: true);
         StageSchedule(document with { Schedules = [.. Schedules, plan] });
         return plan;
@@ -41,8 +41,8 @@ public sealed partial class MainViewModel
         changed.Validate(document.Accounts.ToDictionary(account => account.Id));
         var handled = ScheduleHistory.Where(item => item.PlanId == id && item.Step == 1)
             .Select(item => item.OriginalDate).DefaultIfEmpty().Max();
-        if (changed.Next is not { } date) throw new ArgumentException("La fin précède la prochaine échéance.");
-        if (date <= handled) throw new ArgumentException("La prochaine date doit suivre les occurrences ayant déjà reçu une décision.");
+        if (changed.Next is not { } date) throw new ArgumentException(L.Get("MainViewModel.TheEndIsAheadOfTheNextScheduled"));
+        if (date <= handled) throw new ArgumentException(L.Get("MainViewModel.TheNextDateMustFollowTheOccurrencesThat"));
         if (changed != existing) StageSchedule(ReplacePlan(document, changed));
     }
 
@@ -62,7 +62,7 @@ public sealed partial class MainViewModel
     public void DeferScheduleOccurrence(ScheduleOccurrence occurrence, DateOnly date)
     {
         var plan = CheckOccurrence(occurrence);
-        if (date <= occurrence.Date) throw new ArgumentException("Choisissez une date de report postérieure à l’échéance.");
+        if (date <= occurrence.Date) throw new ArgumentException(L.Get("MainViewModel.ChooseAPostScheduledTransactionCarryoverDate"));
         StageSchedule(RecordDecision(CaptureDocument(), plan, occurrence, date, ScheduleOutcome.Deferred, occurrence.Terms));
     }
 
@@ -78,7 +78,7 @@ public sealed partial class MainViewModel
         var document = TransferContext();
         if (date == default || terms.Kind != occurrence.Terms.Kind || terms.AccountId != occurrence.Terms.AccountId ||
             terms.DestinationId != occurrence.Terms.DestinationId)
-            throw new ArgumentException("Confirmez une date et conservez les comptes de cette occurrence.");
+            throw new ArgumentException(L.Get("MainViewModel.ConfirmADateAndKeepTheAccountsOf"));
         var accounts = document.Accounts.ToDictionary(account => account.Id);
         terms.Validate(accounts, active: true, posting: true);
         var source = accounts[terms.AccountId];
@@ -108,12 +108,12 @@ public sealed partial class MainViewModel
     }
 
     private SchedulePlan FindSchedule(Guid id) => Schedules.SingleOrDefault(plan => plan.Id == id && !plan.Retired)
-        ?? throw new InvalidOperationException("Cette programmation est absente ou supprimée.");
+        ?? throw new InvalidOperationException(L.Get("MainViewModel.ThisProgrammingIsMissingOrDeleted"));
 
     private SchedulePlan CheckOccurrence(ScheduleOccurrence occurrence)
     {
         var plan = FindSchedule(occurrence.PlanId);
-        if (plan.Suspended) throw new InvalidOperationException("Reprenez la programmation avant de traiter ses échéances.");
+        if (plan.Suspended) throw new InvalidOperationException(L.Get("MainViewModel.TakeOverTheProgrammingBeforeProcessingItsScheduled"));
         if (occurrence.PreviousStep == 0 && occurrence.Number == plan.NextNumber &&
             plan.Next == occurrence.Date && occurrence.OriginalDate == occurrence.Date && occurrence.Terms == plan.Terms)
             return plan;
@@ -122,7 +122,7 @@ public sealed partial class MainViewModel
         if (last is { Outcome: ScheduleOutcome.Deferred } && last.Step == occurrence.PreviousStep &&
             last.Date == occurrence.Date && last.OriginalDate == occurrence.OriginalDate && last.Terms == occurrence.Terms)
             return plan;
-        throw new InvalidOperationException("Cette occurrence a changé, a déjà été traitée ou attend une échéance précédente.");
+        throw new InvalidOperationException(L.Get("MainViewModel.ThisOccurrenceHasChangedHasAlreadyBeenDealt"));
     }
 
     private static FinancialDocument ReplacePlan(FinancialDocument document, SchedulePlan plan) =>
@@ -155,6 +155,6 @@ public sealed partial class MainViewModel
     {
         if (ScheduleHistory.Any(decision => (transfer ? decision.TransferId : decision.TransactionId) == id &&
             !IsScheduleDecisionSaved(decision)))
-            throw new InvalidOperationException("Ce brouillon appartient à l’échéancier. Enregistrez-le avant de le modifier dans le registre.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisDraftBelongsToTheScheduleSaveIt"));
     }
 }

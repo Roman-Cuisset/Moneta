@@ -11,6 +11,7 @@
     <ApplicationIcon>../../assets/branding/moneta.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Using Include="Moneta.Localization" />
     <Resource Include="../../assets/branding/moneta.ico" Link="Branding/moneta.ico" />
     <Resource Include="../../assets/branding/moneta-256.png" Link="Branding/moneta-256.png" />
     <ProjectReference Include="../Moneta.Core/Moneta.Core.csproj" />

@@ -19,7 +19,7 @@ public sealed partial class MonetaFile
     private static void WriteBankPerfectProvenance(SqliteConnection connection, SqliteTransaction transaction, byte[] payload)
     {
         if (payload.Length is 0 or > MaxBankPerfectProvenanceBytes)
-            throw Error(DocumentError.InvalidData, "Taille du rapport de provenance hors limites.");
+            throw Error(DocumentError.InvalidData, L.Get("MonetaFile.SizeOfTheOutboundReportOfProvenance"));
         Execute(connection, BankPerfectProvenanceSql, transaction);
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -37,12 +37,12 @@ public sealed partial class MonetaFile
         using var reader = command.ExecuteReader();
         if (!reader.Read() || reader.GetInt64(0) != 1 || reader.GetInt64(1) != 1 ||
             reader.GetInt64(3) is <= 0 or > MaxBankPerfectProvenanceBytes)
-            throw Error(DocumentError.Corrupt, "Rapport de provenance BankPerfect absent ou de format invalide.");
+            throw Error(DocumentError.Corrupt, L.Get("MonetaFile.ReportOfBankperfectSProvenanceAbsentOrIn"));
         var expected = reader.GetString(2);
         using var payload = reader.GetStream(4);
         var hash = Convert.ToHexString(SHA256.HashData(payload));
         if (hash != expected || reader.Read())
-            throw Error(DocumentError.Corrupt, "Empreinte du rapport de provenance BankPerfect invalide.");
+            throw Error(DocumentError.Corrupt, L.Get("MonetaFile.ImpregnatedBankperfectProvenanceReportInvalid"));
         return hash;
     }
 
@@ -53,7 +53,7 @@ public sealed partial class MonetaFile
         if (Snapshot.BankPerfectProvenanceHash is not { } expected) return null;
         using var transaction = Connection.BeginTransaction(deferred: true);
         if (VerifyBankPerfectProvenance(Connection, transaction) != expected)
-            throw Error(DocumentError.VerificationFailed, "La provenance a changé depuis l’ouverture du dossier.");
+            throw Error(DocumentError.VerificationFailed, L.Get("MonetaFile.TheProvenanceHasChangedSinceTheOpeningOf"));
         using var command = Connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = "SELECT payload FROM BankPerfectProvenance WHERE singleton=1;";
@@ -76,14 +76,14 @@ public sealed partial class MonetaFile
         FileStream gate;
         try { gate = AcquireOwnership(path); }
         catch (DocumentException error) when (error.Error == DocumentError.InUse)
-        { throw new DocumentException(DocumentError.DestinationExists, "La destination est réservée par une autre écriture ou son verrou est indisponible.", error); }
+        { throw new DocumentException(DocumentError.DestinationExists, L.Get("MonetaFile.TheDestinationIsReservedByAnotherHandwritingOr"), error); }
         using (gate)
         {
             EnsureNewDestination(path);
             cancellationToken.ThrowIfCancellationRequested();
             try { File.Move(candidate, path, overwrite: false); }
             catch (IOException error) when (File.Exists(path) || Directory.Exists(path))
-            { throw new DocumentException(DocumentError.DestinationExists, "La destination a été créée entre-temps. Aucun dossier n’a été remplacé.", error); }
+            { throw new DocumentException(DocumentError.DestinationExists, L.Get("MonetaFile.TheDestinationHasBeenCreatedInTheMeantime"), error); }
         }
     }
 }

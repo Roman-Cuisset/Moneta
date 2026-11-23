@@ -8,7 +8,7 @@ namespace Moneta.App;
 
 public partial class RatesWindow : Window
 {
-    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo DisplayCulture => L.Culture;
     private readonly ExchangeRateSession _session;
     private readonly CancellationTokenSource _lifetime = new();
     private bool _updating;
@@ -50,7 +50,7 @@ public partial class RatesWindow : Window
         try
         {
             ProviderChoice.SelectedIndex = state.Provider == RateProvider.Cbr ? 1 : 0;
-            QueryDate.Text = state.Date.ToString("dd/MM/yyyy", French);
+            QueryDate.Text = state.Date.ToString(L.DatePattern, DisplayCulture);
             QueryDate.IsEnabled = !state.IsRefreshing;
             RefreshButton.IsEnabled = !state.IsRefreshing;
             CancelRefreshButton.IsEnabled = state.IsRefreshing;
@@ -60,22 +60,22 @@ public partial class RatesWindow : Window
             if (state.Rates is not { } rates)
             {
                 QuotesGrid.ItemsSource = Array.Empty<QuoteRow>();
-                RateDates.Text = $"Date de valorisation demandée : {state.Date:dd/MM/yyyy}. Aucun cours applicable chargé.";
-                TraceInformation.Text = "Aucun montant estimé sans publication officielle valide. Cache indépendant des fichiers .moneta.";
+                RateDates.Text = L.Format("RatesWindow.DateOfValuationRequested0MmDdYyyy", (state.Date));
+                TraceInformation.Text = L.Get("RatesWindow.NoEstimatedAmountWithoutValidOfficialPublicationIndependent");
             }
             else
             {
                 var rows = rates.Quotes.Select(quote => new QuoteRow(quote.CurrencyCode, quote.Name,
-                    quote.Nominal.ToString("N0", French), quote.OfficialValue.ToString("G29", French), rates.ReferenceCurrency,
+                    quote.Nominal.ToString("N0", DisplayCulture), quote.OfficialValue.ToString("G29", DisplayCulture), rates.ReferenceCurrency,
                     quote.SourceId.Length == 0 ? quote.NumericCode : quote.SourceId)).ToList();
-                rows.Add(new(rates.ReferenceCurrency, "Devise de référence", "1", "1", rates.ReferenceCurrency,
-                    "Identité mathématique, pas un cours publié"));
+                rows.Add(new(rates.ReferenceCurrency, L.Get("RatesWindow.ReferenceCurrency"), "1", "1", rates.ReferenceCurrency,
+                    L.Get("RatesWindow.MathematicalIdentityNotAPublishedRate")));
                 QuotesGrid.ItemsSource = rows.OrderBy(row => row.Code, StringComparer.Ordinal).ToArray();
-                RateDates.Text = $"Demandé : {state.Date:dd/MM/yyyy} · effet réel : {rates.EffectiveDate:dd/MM/yyyy} · requête fournisseur : {rates.RequestedDate:dd/MM/yyyy}\nRécupéré : {rates.RetrievedUtc.ToLocalTime():dd/MM/yyyy HH:mm:ss zzz} · " +
-                    (state.FromCache ? state.IsPersistent ? "cache disque" : "mémoire uniquement, persistance non confirmée" : state.IsPersistent ? "réponse HTTPS conservée" : "réponse HTTPS, cache non enregistré") +
-                    ". Valeur de référence = montant coté × valeur officielle / nominal.";
+                RateDates.Text = L.Format("RatesWindow.Requested0MmDdYyyyActualEffect1", (state.Date), (rates.EffectiveDate), (rates.RequestedDate), (rates.RetrievedUtc.ToLocalTime())) +
+                    (state.FromCache ? state.IsPersistent ? "cache disque" : L.Get("RatesWindow.MemoryOnlyPersistenceNotConfirmed") : state.IsPersistent ? L.Get("RatesWindow.HttpsResponseStored") : L.Get("RatesWindow.HttpsResponseCacheNotSaved")) +
+                    L.Get("RatesWindow.ReferenceValueQuotedAmountOfficialNominalValue");
                 TraceInformation.Text = rates.Endpoint;
-                TraceInformation.ToolTip = "SHA-256 du contenu original : " + rates.PayloadSha256;
+                TraceInformation.ToolTip = L.Get("RatesWindow.Sha256OfTheOriginalContent") + rates.PayloadSha256;
             }
         }
         finally { _updating = false; }
@@ -90,8 +90,8 @@ public partial class RatesWindow : Window
             var rows = await _session.HistoryAsync(_lifetime.Token);
             if (_lifetime.IsCancellationRequested || generation != _historyGeneration || _session.State.Provider != provider) return;
             HistoryGrid.ItemsSource = rows.Select(row => new HistoryRow(
-                row.EffectiveDate.ToString("dd/MM/yyyy", French), row.RequestedDate.ToString("dd/MM/yyyy", French),
-                row.RetrievedUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss", French), row.PayloadSha256)).ToArray();
+                row.EffectiveDate.ToString(L.DatePattern, DisplayCulture), row.RequestedDate.ToString(L.DatePattern, DisplayCulture),
+                row.RetrievedUtc.ToLocalTime().ToString(L.DatePattern + " HH:mm:ss", DisplayCulture), row.PayloadSha256)).ToArray();
         }
         catch (OperationCanceledException) { }
         catch (RateException error)
@@ -109,8 +109,8 @@ public partial class RatesWindow : Window
 
     private bool TryDate(out DateOnly date)
     {
-        if (DateOnly.TryParseExact(QueryDate.Text, "dd/MM/yyyy", French, DateTimeStyles.None, out date) && date != default) return true;
-        ErrorText.Text = "Date invalide : utilisez jj/mm/aaaa.";
+        if (DateOnly.TryParseExact(QueryDate.Text, L.DatePattern, DisplayCulture, DateTimeStyles.None, out date) && date != default) return true;
+        ErrorText.Text = L.Get("RatesWindow.InvalidDateUseMmDdYyyy");
         QueryDate.Focus();
         return false;
     }
@@ -135,18 +135,18 @@ public partial class RatesWindow : Window
             ErrorText.Text = string.Empty;
             ConversionResult.Text = string.Empty;
             if (ConvertSource.SelectedItem is not Currency source || ConvertTarget.SelectedItem is not Currency target)
-                throw new ArgumentException("Choisissez deux devises de présentation.");
-            var amount = MoneyInput.ParseFrench(ConvertInput.Text, source, allowNegative: true);
+                throw new ArgumentException(L.Get("RatesWindow.ChooseTwoCurrenciesOfPresentation"));
+            var amount = MoneyInput.ParseLocalized(ConvertInput.Text, source, allowNegative: true);
             var state = _session.State;
             decimal estimate;
             if (source.Code == target.Code) estimate = amount;
             else
             {
-                if (state.Rates is null) throw new RateException(RateFailure.Unavailable, "Cours indisponible.");
+                if (state.Rates is null) throw new RateException(RateFailure.Unavailable, L.Get("RatesWindow.ExchangeRateNotAvailable"));
                 estimate = RateConverter.ConvertAmount(amount, source.Code, target, state.Rates);
             }
             ConversionResult.Text = MoneyFormatter.Format(amount, source) + " → " + MoneyFormatter.Format(estimate, target) +
-                (source.Code == target.Code ? " · identité, sans change." : $" · estimation {RateRules.ProviderName(state.Provider)}, cours du {state.Rates!.EffectiveDate:dd/MM/yyyy}.");
+                (source.Code == target.Code ? L.Get("RatesWindow.IdentityUnchanged") : L.Format("RatesWindow.Estimate0PriceOf1MmDdYyyy", (RateRules.ProviderName(state.Provider)), (state.Rates!.EffectiveDate)));
         }
         catch (Exception error) when (error is ArgumentException or OverflowException or RateException)
         {

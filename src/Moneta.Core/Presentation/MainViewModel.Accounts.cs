@@ -35,7 +35,7 @@ public sealed partial class MainViewModel
         var summary = ManagedAccount(id);
         if (summary.Account.IsArchived == archived) return;
         if (archived && HasAccountDrafts(id))
-            throw new InvalidOperationException("Enregistrez les brouillons de ce compte avant de l’archiver.");
+            throw new InvalidOperationException(L.Get("MainViewModel.SaveDraftsFromThisAccountBeforeArchiving"));
         if (archived && ReferenceEquals(SelectedAccount, summary)) ShowArchivedAccounts = true;
         UpdateAccount(summary, summary.Account with { IsArchived = archived });
         NotifyVisibleAccounts();
@@ -53,7 +53,7 @@ public sealed partial class MainViewModel
         if (step is not (-1 or 1)) throw new ArgumentOutOfRangeException(nameof(step));
         var previous = _accounts.IndexOf(summary);
         var target = AdjacentAccount(previous, step);
-        if (target < 0) throw new InvalidOperationException("Le compte est déjà à cette limite de la liste.");
+        if (target < 0) throw new InvalidOperationException(L.Get("MainViewModel.TheAccountIsAlreadyAtThisLimitOf"));
         _accounts.Move(previous, target);
         if (Math.Abs(target - previous) > 1) _accounts.Move(target - step, previous);
         _accounts[previous].UpdateOrdinal(previous);
@@ -73,13 +73,13 @@ public sealed partial class MainViewModel
     {
         var account = ManagedAccount(id).Account;
         if (ScheduleUsesAccount(id))
-            throw new InvalidOperationException("Ce compte est utilisé par l’échéancier. Archivez-le pour conserver ses références.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisAccountIsUsedByTheTimelineArchive"));
         if (Budgets.Any(item => item.Accounts.Contains(id)))
-            throw new InvalidOperationException("Ce compte est utilisé par un budget. Retirez-le du budget ou archivez le compte.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ThisAccountIsUsedByABudgetRemove"));
         var persisted = _document!.Accounts.Any(item => item.Id == id);
         if (account.OpeningBalance != 0 || HasAccountDrafts(id) ||
             (persisted && (_source is not IAccountHistorySource history || history.HasAccountHistory(id))))
-            throw new InvalidOperationException("Seul un compte sans solde initial, historique ni brouillon peut être supprimé. Vous pouvez l’archiver.");
+            throw new InvalidOperationException(L.Get("MainViewModel.OnlyAnAccountWithoutInitialBalanceHistoryOr"));
     }
 
     public void DeleteEmptyAccount(Guid id)
@@ -100,7 +100,7 @@ public sealed partial class MainViewModel
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         if (SelectedAccount is not { Account.IsArchived: true } summary || _source is not IAccountHistorySource source)
-            throw new InvalidOperationException("Sélectionnez un compte archivé enregistré.");
+            throw new InvalidOperationException(L.Get("MainViewModel.SelectASavedArchivedAccount"));
         if (source.FindAccountOperation(summary.Account.Id, text.Trim(), SelectedRow?.Transaction.Id) is not { } id)
             return false;
         var page = ReadPage(summary.Account, 0, PendingChanges, id);
@@ -113,7 +113,7 @@ public sealed partial class MainViewModel
     private AccountSummary ManagedAccount(Guid id)
     {
         if (IsDemo || !_ledgers.TryGetValue(id, out var ledger))
-            throw new InvalidOperationException("Choisissez un compte du dossier.");
+            throw new InvalidOperationException(L.Get("MainViewModel.ChooseADocumentAccount"));
         return ledger.Summary;
     }
 
@@ -129,7 +129,6 @@ public sealed partial class MainViewModel
         summary.UpdateAccount(updated with { ModifiedUtc = now > updated.ModifiedUtc ? now : updated.ModifiedUtc });
         if (ReferenceEquals(summary, SelectedAccount))
         {
-            _statusText = RealStatus(summary.Account, _totalCount);
             PropertyChanged?.Invoke(this, StatusChanged);
             PropertyChanged?.Invoke(this, AccountChanged);
         }
@@ -147,18 +146,18 @@ public sealed partial class MainViewModel
             if (existing && value == previous) return previous;
             value = value?.Trim();
             if (value?.Length > max || value?.Contains('\0') == true)
-                throw new ArgumentException($"{label} est limité à {max} caractères valides.");
+                throw new ArgumentException(L.Format("MainViewModel.0IsLimitedTo1ValidCharacters", (label), (max)));
             return string.IsNullOrEmpty(value) ? null : value;
         }
         return account with
         {
-            Name = Field(input.Name, account.Name, 120, "Le nom du compte")
-                ?? throw new ArgumentException("Saisissez un nom de compte."),
-            Type = Field(input.Type, account.Type, 80, "Le type"),
-            Notes = Field(input.Notes, account.Notes, 2000, "Les notes"),
-            BankName = Field(input.BankName, account.BankName, 120, "Le nom de la banque"),
-            BankReference = Field(input.BankReference, account.BankReference, 120, "La référence bancaire"),
-            Holder = Field(input.Holder, account.Holder, 120, "Le titulaire")
+            Name = Field(input.Name, account.Name, 120, L.Get("MainViewModel.TheNameOfTheAccount"))
+                ?? throw new ArgumentException(L.Get("MainViewModel.EnterAnAccountName")),
+            Type = Field(input.Type, account.Type, 80, L.Get("MainViewModel.TheGuy")),
+            Notes = Field(input.Notes, account.Notes, 2000, L.Get("MainViewModel.Notes")),
+            BankName = Field(input.BankName, account.BankName, 120, L.Get("MainViewModel.TheNameOfTheBank")),
+            BankReference = Field(input.BankReference, account.BankReference, 120, L.Get("MainViewModel.TheBankingReference")),
+            Holder = Field(input.Holder, account.Holder, 120, L.Get("MainViewModel.TheHolder"))
         };
     }
 }

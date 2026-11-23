@@ -22,10 +22,10 @@ public sealed partial class MonetaFile
             foreach (var change in pending)
             {
                 if (change?.Value is not { } value || !overlay.TryAdd(value.Id, value))
-                    throw new ArgumentException("Opération de brouillon absente ou dupliquée.");
+                    throw new ArgumentException(L.Get("MonetaFile.DraftTransactionAbsentOrDuplicated"));
                 if (value.AccountId == account.Id && (value.Currency != account.Currency || value.Amount < 0 ||
                     !Enum.IsDefined(value.Direction) || !Enum.IsDefined(value.Status) || value.Date == default || value.CreatedUtc.Offset != TimeSpan.Zero))
-                    throw new ArgumentException("Valeurs du brouillon incohérentes avec le compte.");
+                    throw new ArgumentException(L.Get("MonetaFile.IncoherentDraftValuesWithTheAccount"));
                 if (value.AccountId == account.Id) _ = ExactMoney.ToMinorUnits(value.Amount, account.Currency);
             }
             var pendingRows = overlay.Values.Where(value => value.AccountId == account.Id && !value.IsDeleted)
@@ -64,7 +64,7 @@ public sealed partial class MonetaFile
                 if (overlay.TryGetValue(id, out var draft)) rows.Add(draft);
                 else
                 {
-                    var value = FindTransaction(Connection, id, lookup, transaction) ?? throw Error(DocumentError.Corrupt, "Une opération de la page est introuvable.");
+                    var value = FindTransaction(Connection, id, lookup, transaction) ?? throw Error(DocumentError.Corrupt, L.Get("MonetaFile.AnTransactionOnThePageCouldNotBe"));
                     FinancialRules.ValidateTransaction(value, Snapshot);
                     rows.Add(value);
                 }
@@ -92,16 +92,16 @@ public sealed partial class MonetaFile
             var id = ReadGuid(reader.GetString(0));
             if (overlay.ContainsKey(id)) continue;
             if (!DateOnly.TryParseExact(reader.GetString(1), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) || date == default)
-                throw Error(DocumentError.Corrupt, "Date de l’opération invalide.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.DateOfTransactionNotValid"));
             var created = ReadTimestamp(reader.GetString(2));
             var minor = reader.GetInt64(3);
             var direction = reader.GetInt64(4);
             if (minor < 0 || direction is not (0 or 1) || reader.GetString(5) != account.Currency.Code)
-                throw Error(DocumentError.Corrupt, "Montant ou devise de l’opération invalide.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.InvalidAmountOrCurrencyOfTheTransaction"));
             var amount = ExactMoney.FromMinorUnits(minor, account.Currency);
             var status = (ReconciliationStatus)checked((int)reader.GetInt64(6));
             if (!Enum.IsDefined(status) || (!reader.IsDBNull(7) && status != ReconciliationStatus.Reconciled))
-                throw Error(DocumentError.Corrupt, "État de pointage incohérent.");
+                throw Error(DocumentError.Corrupt, L.Get("MonetaFile.IncoherentScoreState"));
             var value = new LedgerLight(id, reader.GetString(0), date, created, direction == 0 ? -amount : amount, status);
             while (nextPending < pending.Length && CompareLight(pending[nextPending], value) < 0) yield return pending[nextPending++];
             yield return value;

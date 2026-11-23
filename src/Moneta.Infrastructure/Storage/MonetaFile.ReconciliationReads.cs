@@ -13,7 +13,7 @@ public sealed partial class MonetaFile
     private static ReconciliationSession ReadSession(SqliteDataReader reader, LedgerLookup lookup)
     {
         var account = lookup.Accounts[ReadGuid(reader.GetString(1))];
-        if (reader.GetString(2) != account.Currency.Code) throw Error(DocumentError.Corrupt, "Devise du relevé incohérente.");
+        if (reader.GetString(2) != account.Currency.Code) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.IncoherentSurveyCurrency"));
         return new(ReadGuid(reader.GetString(0)), account.Id, ReadDate(reader.GetString(3)), reader.GetString(4),
             ExactMoney.FromMinorUnits(reader.GetInt64(5), account.Currency), ExactMoney.FromMinorUnits(reader.GetInt64(6), account.Currency),
             ExactMoney.FromMinorUnits(reader.GetInt64(7), account.Currency), reader.IsDBNull(8) ? null : ReadGuid(reader.GetString(8)),
@@ -47,10 +47,10 @@ public sealed partial class MonetaFile
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            if (reader.GetInt64(1) != 1) throw Error(DocumentError.Corrupt, "Version d’instantané inconnue.");
+            if (reader.GetInt64(1) != 1) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.UnknownInstantVersion"));
             var json = reader.GetString(2);
             var original = DecodeOperationSnapshot(json, metadata, lookup);
-            if (original.Id != ReadGuid(reader.GetString(0))) throw Error(DocumentError.Corrupt, "Identité de l’instantané incohérente.");
+            if (original.Id != ReadGuid(reader.GetString(0))) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.IdentityOfTheIncoherentInstant"));
             if (digest is not null)
             {
                 HashValue(digest, "entry"); HashValue(digest, sessionId.ToString("D")); HashValue(digest, reader.GetString(0));
@@ -67,10 +67,10 @@ public sealed partial class MonetaFile
             ReadTimestamp(reader.GetString(4)), reader.GetString(5));
         if (!reader.IsDBNull(6))
         {
-            if (reader.GetInt64(6) != 1 || reader.IsDBNull(7)) throw Error(DocumentError.Corrupt, "Version d’audit inconnue.");
+            if (reader.GetInt64(6) != 1 || reader.IsDBNull(7)) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.UnknownAuditVersion"));
             value = value with { OperationBefore = DecodeOperationSnapshot(reader.GetString(7), metadata, lookup) };
         }
-        else if (!reader.IsDBNull(7)) throw Error(DocumentError.Corrupt, "Version d’audit absente.");
+        else if (!reader.IsDBNull(7)) throw Error(DocumentError.Corrupt, L.Get("MonetaFile.AuditVersionNotAvailable"));
         return value;
     }
 
@@ -78,7 +78,7 @@ public sealed partial class MonetaFile
     {
         ObjectDisposedException.ThrowIf(closed, this); ArgumentNullException.ThrowIfNull(ids);
         var frozen = ids.ToArray();
-        if (frozen.Any(id => id == Guid.Empty) || frozen.Distinct().Count() != frozen.Length) throw new ArgumentException("Identifiants absents ou dupliqués.", nameof(ids));
+        if (frozen.Any(id => id == Guid.Empty) || frozen.Distinct().Count() != frozen.Length) throw new ArgumentException(L.Get("MonetaFile.IdentifiersAbsentOrDuplicated"), nameof(ids));
         try
         {
             using var transaction = Connection.BeginTransaction(deferred: true);
@@ -95,7 +95,7 @@ public sealed partial class MonetaFile
                     var value = ReadTransaction(reader, ledgerLookup); FinancialRules.ValidateTransaction(value, Snapshot); values.Add(value);
                 }
             }
-            if (values.Count != frozen.Length) throw Error(DocumentError.InvalidData, "Une opération sélectionnée n’existe plus.");
+            if (values.Count != frozen.Length) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.ASelectedTransactionNoLongerExists"));
             transaction.Commit(); return values.AsReadOnly();
         }
         catch (Exception exception) when (exception is not DocumentException) { throw Translate(exception, DocumentError.InvalidData); }
@@ -106,7 +106,7 @@ public sealed partial class MonetaFile
         ObjectDisposedException.ThrowIf(closed, this); ArgumentNullException.ThrowIfNull(account); ArgumentNullException.ThrowIfNull(selectedIds);
         ValidatePage(offset, pageSize);
         if (!ledgerLookup.Accounts.TryGetValue(account.Id, out var stored) || stored != account || statementDate == default)
-            throw new ArgumentException("Compte ou date de relevé invalide.");
+            throw new ArgumentException(L.Get("MonetaFile.InvalidAccountOrDateOfStatement"));
         var selected = selectedIds.ToHashSet();
         try
         {
@@ -125,7 +125,7 @@ public sealed partial class MonetaFile
                     var id = ReadGuid(reader.GetString(0)); var date = ReadDate(reader.GetString(1));
                     var status = reader.GetInt64(5); var minor = reader.GetInt64(2); var direction = reader.GetInt64(3);
                     if (status is not (0 or 1 or 2) || minor < 0 || direction is not (0 or 1) || reader.GetString(4) != account.Currency.Code || (!reader.IsDBNull(6) && status != 2))
-                        throw Error(DocumentError.Corrupt, "Candidat de rapprochement invalide.");
+                        throw Error(DocumentError.Corrupt, L.Get("MonetaFile.InvalidReconciliationCandidate"));
                     if (status == 2) { if (reader.IsDBNull(6)) legacy++; continue; }
                     if (date > statementDate) continue;
                     if (selected.Contains(id))
@@ -137,8 +137,8 @@ public sealed partial class MonetaFile
                     total++;
                 }
             }
-            if (selectedCount != selected.Count) throw Error(DocumentError.InvalidData, "La sélection contient une opération inconnue, supprimée, future, déjà rapprochée ou d’un autre compte.");
-            var rows = pageIds.Select(id => FindTransaction(Connection, id, ledgerLookup, transaction) ?? throw Error(DocumentError.Corrupt, "Candidat introuvable.")).ToArray();
+            if (selectedCount != selected.Count) throw Error(DocumentError.InvalidData, L.Get("MonetaFile.TheSelectionContainsAnUnknownDeletedFutureAlready"));
+            var rows = pageIds.Select(id => FindTransaction(Connection, id, ledgerLookup, transaction) ?? throw Error(DocumentError.Corrupt, L.Get("MonetaFile.CandidateNotFound"))).ToArray();
             foreach (var value in rows) FinancialRules.ValidateTransaction(value, Snapshot);
             transaction.Commit();
             return new(Array.AsReadOnly(rows), total, offset, previous?.ExpectedClosingBalance ?? account.OpeningBalance, selectedNet, selectedCount, previous?.Id, legacy);
@@ -149,7 +149,7 @@ public sealed partial class MonetaFile
     public ReconciliationHistoryPage ReadReconciliationHistory(Guid accountId, int offset, int pageSize)
     {
         ObjectDisposedException.ThrowIf(closed, this); ValidatePage(offset, pageSize);
-        if (!ledgerLookup.Accounts.ContainsKey(accountId)) throw new ArgumentException("Compte absent.", nameof(accountId));
+        if (!ledgerLookup.Accounts.ContainsKey(accountId)) throw new ArgumentException(L.Get("MonetaFile.AccountMissing"), nameof(accountId));
         try
         {
             using var transaction = Connection.BeginTransaction(deferred: true);
@@ -172,7 +172,7 @@ public sealed partial class MonetaFile
         try
         {
             using var transaction = Connection.BeginTransaction(deferred: true);
-            var session = FindSession(Connection, sessionId, ledgerLookup, transaction) ?? throw Error(DocumentError.InvalidData, "Rapprochement absent.");
+            var session = FindSession(Connection, sessionId, ledgerLookup, transaction) ?? throw Error(DocumentError.InvalidData, L.Get("MonetaFile.AbsentCloseness"));
             var entries = StreamEntries(Connection, sessionId, Snapshot, ledgerLookup, transaction).ToArray();
             var events = new List<ReconciliationEvent>();
             using (var command = Connection.CreateCommand())

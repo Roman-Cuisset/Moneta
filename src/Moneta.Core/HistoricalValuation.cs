@@ -11,14 +11,14 @@ public sealed record HistoricalFlow(Transaction Transaction, Guid? TransferId = 
     public HistoricalInput Input()
     {
         if (Transaction.IsDeleted || (TransferId is null) != (Role is null) || TransferId == Guid.Empty)
-            throw new ArgumentException("Choisissez une opération active et ses liens enregistrés.");
+            throw new ArgumentException(L.Get("HistoricalValuation.ChooseAnActiveTransactionAndItsSavedLinks"));
         var kind = Role switch
         {
             LedgerTransferLeg.Debit => HistoricalFlowKind.TransferDebit,
             LedgerTransferLeg.Credit => HistoricalFlowKind.TransferCredit,
             LedgerTransferLeg.Fee => HistoricalFlowKind.Fee,
             null => Transaction.Direction == TransactionDirection.Debit ? HistoricalFlowKind.Expense : HistoricalFlowKind.Income,
-            _ => throw new ArgumentException("Jambe de virement inconnue.")
+            _ => throw new ArgumentException(L.Get("HistoricalValuation.UnknownTransferLeg"))
         };
         return new(HistoricalUse.Flow, Transaction.Date, FinancialRules.SignedAmount(Transaction), Transaction.Currency.Code,
             Transaction.Id, Transaction.Revision, kind, TransferId);
@@ -50,9 +50,9 @@ public sealed record HistoricalProof(int RulesVersion, HistoricalInput Input, st
     public decimal Reproduce()
     {
         if (RulesVersion != CurrentRules || Rounding != MidpointRounding.ToEven)
-            throw new ArgumentException("Version de calcul ou convention d’arrondi inconnue.");
+            throw new ArgumentException(L.Get("HistoricalValuation.UnknownCalculationVersionOrRoundingConvention"));
         HistoricalValuation.Validate(Input, new Currency(TargetCode, TargetCode, TargetDecimals));
-        if (Input.Use == HistoricalUse.Forecast) throw new ArgumentException("Une projection ne constitue pas une preuve historique.");
+        if (Input.Use == HistoricalUse.Forecast) throw new ArgumentException(L.Get("HistoricalValuation.AProjectionDoesNotConstituteHistoricalEvidence"));
         var target = new Currency(TargetCode, TargetCode, TargetDecimals);
         if (Quotation is { } quote)
         {
@@ -62,12 +62,12 @@ public sealed record HistoricalProof(int RulesVersion, HistoricalInput Input, st
                 quote.EffectiveDate, quote.RetrievedUtc, quote.Endpoint, quote.PayloadSha256, operands));
             if ((quote.Source?.CurrencyCode ?? quote.ReferenceCurrency) != Input.SourceCode ||
                 (quote.Target?.CurrencyCode ?? quote.ReferenceCurrency) != TargetCode || quote.PublishedDate is not null)
-                throw new ArgumentException("Cotations incompatibles avec cette preuve.");
+                throw new ArgumentException(L.Get("HistoricalValuation.RatingsInconsistentWithThisEvidence"));
         }
         if ((Input.SourceCode == TargetCode) != (Quotation is null) || Method != HistoricalValuation.Method(Quotation))
-            throw new ArgumentException("Chemin de conversion incohérent.");
+            throw new ArgumentException(L.Get("HistoricalValuation.IncoherentPathOfConversion"));
         var amount = RateConverter.ConvertQuoted(Input.NativeAmount, target, Quotation?.Source, Quotation?.Target);
-        if (amount != Value) throw new ArgumentException("Le résultat enregistré diffère du calcul reproduit.");
+        if (amount != Value) throw new ArgumentException(L.Get("HistoricalValuation.TheRecordedResultDiffersFromTheCalculationReproduced"));
         return amount;
     }
 }
@@ -90,17 +90,17 @@ public sealed record HistoricalFlowTotals(decimal Income, decimal Expenses, int 
         {
             if (row.Input.Use != HistoricalUse.Flow || row.Input.SubjectId is not { } id || !seen.Add(id) ||
                 seen.Count > HistoricalValuation.MaximumBatchSize)
-                throw new ArgumentException("Le total attend des flux enregistrés distincts.");
+                throw new ArgumentException(L.Get("HistoricalValuation.TheTotalExpectsSeparateRecordedFlows"));
             if (row.Input.FlowKind is HistoricalFlowKind.TransferDebit or HistoricalFlowKind.TransferCredit) continue;
             var income = row.Input.FlowKind == HistoricalFlowKind.Income;
             if (row.Proof is { } proof)
             {
                 if (proof.TargetCode != target.Code || proof.TargetDecimals != target.DecimalPlaces || proof.Input != row.Input)
-                    throw new ArgumentException("Le total attend une devise cible et une preuve par flux cohérentes.");
+                    throw new ArgumentException(L.Get("HistoricalValuation.TheTotalExpectsATargetCurrencyAndConsistent"));
                 if (proof.Quotation is { } quote)
                 {
                     if (source is { } existing && existing != quote.Provider)
-                        throw new ArgumentException("Les flux agrégés doivent employer la même source officielle.");
+                        throw new ArgumentException(L.Get("HistoricalValuation.AggregateFlowsMustUseTheSameOfficialSource"));
                     source = quote.Provider;
                 }
                 (income ? gains : costs).Add(income ? proof.Value : -proof.Value);

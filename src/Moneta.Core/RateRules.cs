@@ -14,36 +14,36 @@ public static class RateRules
     {
         RateProvider.Nbrb => "BYN",
         RateProvider.Cbr => "RUB",
-        _ => throw Invalid("La source de cours est inconnue.")
+        _ => throw Invalid(L.GetCanonical("RateRules.TheSourceOfTheLessonsIsUnknown"))
     };
 
     public static string ProviderName(RateProvider provider) => provider switch
     {
         RateProvider.Nbrb => "NBRB",
         RateProvider.Cbr => "CBR",
-        _ => throw Invalid("La source de cours est inconnue.")
+        _ => throw Invalid(L.GetCanonical("RateRules.TheSourceOfTheLessonsIsUnknown"))
     };
 
     public static void Validate(OfficialRateSet rates)
     {
-        if (rates is null) throw Invalid("La publication de cours est absente.");
+        if (rates is null) throw Invalid(L.GetCanonical("RateRules.ThereIsNoPublicationOfRates"));
         var reference = ReferenceCurrency(rates.Provider);
         if (rates.Id == Guid.Empty || rates.ReferenceCurrency != reference ||
             rates.RequestedDate == default || rates.EffectiveDate == default ||
             rates.RetrievedUtc == default || rates.RetrievedUtc.Offset != TimeSpan.Zero)
-            throw Invalid("Les métadonnées de la publication sont invalides.");
+            throw Invalid(L.GetCanonical("RateRules.TheMetadataOfThePublicationIsInvalid"));
         var referenceSince = rates.Provider == RateProvider.Nbrb ? BynSince : RubSince;
         if (rates.EffectiveDate < referenceSince)
-            throw Invalid($"La publication précède la monnaie de référence {reference} actuelle " +
-                $"({referenceSince.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}). Aucune redénomination automatique n’est appliquée.");
+            throw Invalid(L.FormatCanonical("RateRules.ThePublicationPrecedesTheCurrentReferenceCurrency0", reference) +
+                L.FormatCanonical("RateRules.0NoAutomaticRenominationIsApplied", referenceSince.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)));
         if (!ValidText(rates.PayloadSha256, 64) || rates.PayloadSha256.Length != 64)
-            throw Invalid("L’empreinte de la publication est invalide.");
+            throw Invalid(L.GetCanonical("RateRules.ThePrintOfThePublicationIsInvalid"));
         foreach (var character in rates.PayloadSha256)
             if (character is not (>= '0' and <= '9') and not (>= 'a' and <= 'f') and not (>= 'A' and <= 'F'))
-                throw Invalid("L’empreinte de la publication est invalide.");
+                throw Invalid(L.GetCanonical("RateRules.ThePrintOfThePublicationIsInvalid"));
         ValidateEndpoint(rates);
         if (rates.Quotes is null || rates.Quotes.Count is < 1 or > 1000)
-            throw Invalid("La publication doit contenir entre 1 et 1000 cours.");
+            throw Invalid(L.GetCanonical("RateRules.ThePublicationMustContainBetween1And1000"));
         var codes = new HashSet<string>(rates.Quotes.Count, StringComparer.Ordinal);
         foreach (var quote in rates.Quotes)
         {
@@ -51,7 +51,7 @@ public static class RateRules
                 !codes.Add(quote.CurrencyCode) || quote.OfficialValue <= 0 || quote.Nominal is < 1 or > 1_000_000_000 ||
                 !ValidText(quote.SourceId, 128) || !ValidText(quote.Name, 512) ||
                 !ValidNumericCode(quote.NumericCode))
-                throw Invalid("Un cours officiel est invalide ou dupliqué.");
+                throw Invalid(L.GetCanonical("RateRules.AnOfficialRateIsInvalidOrDuplicated"));
         }
     }
 
@@ -59,14 +59,14 @@ public static class RateRules
     public static decimal ParseOfficialDecimal(string invariant)
     {
         if (string.IsNullOrEmpty(invariant) || invariant.Length > 256)
-            throw Invalid("Le cours décimal est absent ou trop long.");
+            throw Invalid(L.GetCanonical("RateRules.TheDecimalRateIsAbsentOrTooLong"));
         var text = invariant.AsSpan();
         var index = 0;
         var coefficient = BigInteger.Zero;
         if (text[index] == '0') index++;
         else
         {
-            if (text[index] is < '1' or > '9') throw Invalid("Le cours décimal est invalide.");
+            if (text[index] is < '1' or > '9') throw Invalid(L.GetCanonical("RateRules.TheDecimalRateIsInvalid"));
             while (index < text.Length && IsDigit(text[index]))
                 coefficient = coefficient * 10 + (text[index++] - '0');
         }
@@ -80,7 +80,7 @@ public static class RateRules
                 coefficient = coefficient * 10 + (text[index++] - '0');
                 fractionalDigits++;
             }
-            if (index == start) throw Invalid("Le cours décimal est invalide.");
+            if (index == start) throw Invalid(L.GetCanonical("RateRules.TheDecimalRateIsInvalid"));
         }
         var exponent = 0;
         if (index < text.Length && text[index] is 'e' or 'E')
@@ -92,12 +92,12 @@ public static class RateRules
             while (index < text.Length && IsDigit(text[index]))
             {
                 exponent = exponent * 10 + (text[index++] - '0');
-                if (exponent > 512) throw Invalid("Le cours dépasse la précision décimale exacte.");
+                if (exponent > 512) throw Invalid(L.GetCanonical("RateRules.ThePriceExceedsTheExactDecimalAccuracy"));
             }
-            if (index == start) throw Invalid("Le cours décimal est invalide.");
+            if (index == start) throw Invalid(L.GetCanonical("RateRules.TheDecimalRateIsInvalid"));
             if (negative) exponent = -exponent;
         }
-        if (index != text.Length || coefficient.IsZero) throw Invalid("Le cours décimal doit être strictement positif.");
+        if (index != text.Length || coefficient.IsZero) throw Invalid(L.GetCanonical("RateRules.TheDecimalRateMustBeStrictlyPositive"));
         var scale = fractionalDigits - exponent;
         while (scale > 0 && coefficient % 10 == 0)
         {
@@ -106,12 +106,12 @@ public static class RateRules
         }
         if (scale < 0)
         {
-            if (scale < -28) throw Invalid("Le cours dépasse la précision décimale exacte.");
+            if (scale < -28) throw Invalid(L.GetCanonical("RateRules.ThePriceExceedsTheExactDecimalAccuracy"));
             coefficient *= BigInteger.Pow(10, -scale);
             scale = 0;
         }
         if (scale > 28 || coefficient > MaximumCoefficient)
-            throw Invalid("Le cours dépasse la précision décimale exacte.");
+            throw Invalid(L.GetCanonical("RateRules.ThePriceExceedsTheExactDecimalAccuracy"));
         return new decimal((int)(uint)(coefficient & uint.MaxValue),
             (int)(uint)((coefficient >> 32) & uint.MaxValue),
             (int)(uint)(coefficient >> 64), false, (byte)scale);
@@ -129,7 +129,7 @@ public static class RateRules
     {
         if (!ValidText(rates.Endpoint, 2048) || !Uri.TryCreate(rates.Endpoint, UriKind.Absolute, out var uri) ||
             uri.Scheme != Uri.UriSchemeHttps || uri.Port != 443 || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0)
-            throw Invalid("L’adresse de la publication officielle est invalide.");
+            throw Invalid(L.GetCanonical("RateRules.TheAddressOfTheOfficialPublicationIsInvalid"));
         var query = Uri.UnescapeDataString(uri.Query);
         var requested = rates.RequestedDate;
         var valid = rates.Provider switch
@@ -143,7 +143,7 @@ public static class RateRules
                 query == $"?date_req={requested.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}",
             _ => false
         };
-        if (!valid) throw Invalid("L’adresse ne correspond pas à la source et à la date demandées.");
+        if (!valid) throw Invalid(L.GetCanonical("RateRules.TheAddressDoesNotCorrespondToTheSource"));
     }
 
     private static RateException Invalid(string message) => new(RateFailure.InvalidResponse, message);

@@ -24,7 +24,7 @@ public partial class BankPerfectImportWindow : Window
 
     private async void Browse_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new OpenFileDialog { Title = "Choisir un fichier BankPerfect", Filter = "BankPerfect (*.bp)|*.bp", CheckFileExists = true };
+        var picker = new OpenFileDialog { Title = L.Get("BankPerfectImportWindow.ChooseABankperfectFile"), Filter = "BankPerfect (*.bp)|*.bp", CheckFileExists = true };
         if (picker.ShowDialog(this) == true) await AnalyzeAsync(picker.FileName);
     }
 
@@ -35,13 +35,13 @@ public partial class BankPerfectImportWindow : Window
         SourceText.Text = Path.GetFileName(path);
         SourceText.ToolTip = path;
         ReportText.Clear();
-        await RunAsync("Analyse en lecture seule…", async token =>
+        await RunAsync(L.Get("BankPerfectImportWindow.ReadOnlyAnalysis"), async token =>
         {
             preview = await Task.Run(() => BankPerfectImporter.Prepare(path, token), token);
             ReportText.Text = Format(preview.Report);
             StatusText.Text = preview.Report.CanImport
-                ? "Rapport prêt. Choisissez une destination neuve pour confirmer la création."
-                : "Import bloqué. Les causes sont détaillées dans le rapport.";
+                ? L.Get("BankPerfectImportWindow.ReportReadyChooseANewDestinationToConfirm")
+                : L.Get("BankPerfectImportWindow.TheCausesAreDetailedInTheReport");
         });
     }
 
@@ -50,8 +50,8 @@ public partial class BankPerfectImportWindow : Window
         if (preview is not { Report.CanImport: true } approved) return;
         var picker = new SaveFileDialog
         {
-            Title = "Confirmer la création d’un nouveau dossier Moneta",
-            Filter = "Dossier Moneta (*.moneta)|*.moneta", DefaultExt = ".moneta", AddExtension = true,
+            Title = L.Get("BankPerfectImportWindow.ConfirmCreationOfANewMonetaDocument"),
+            Filter = L.Get("Common.DocumentMonetaMonetaMoneta"), DefaultExt = ".moneta", AddExtension = true,
             CheckPathExists = true, OverwritePrompt = false,
             FileName = Path.GetFileNameWithoutExtension(SourceText.Text) + ".moneta"
         };
@@ -59,15 +59,15 @@ public partial class BankPerfectImportWindow : Window
     }
 
     private Task ImportToAsync(BankPerfectImportPreview approved, string destination) =>
-        RunAsync("Vérification du plan approuvé…", async token =>
+        RunAsync(L.Get("BankPerfectImportWindow.AuditOfApprovedPlan"), async token =>
         {
-            var progress = new Progress<string>(message => StatusText.Text = message);
+            var progress = new Progress<string>(message => StatusText.Text = L.Diagnostic(message));
             var result = await Task.Run(() => BankPerfectImporter.Import(approved, destination, token, progress), token);
             Result = result;
-            ReportText.Text = $"Dossier créé et vérifié\r\n{result.Destination}\r\n" +
-                $"UUID Moneta {result.DocumentId:D}\r\nProvenance SHA-256 {result.ProvenanceSha256}\r\n" +
-                $"Sauvegarde et restauration de contrôle vérifiées.\r\n\r\n{Format(result.Report)}";
-            StatusText.Text = "Importation terminée.";
+            ReportText.Text = L.Format("BankPerfectImportWindow.DocumentCreatedAndVerified0", (result.Destination)) +
+                L.Format("BankPerfectImportWindow.UuidMoneta0DSourceSha2561", (result.DocumentId), (result.ProvenanceSha256)) +
+                L.Format("BankPerfectImportWindow.VerifiedBackupAndRestorationOfControl0", (Format(result.Report)));
+            StatusText.Text = L.Get("BankPerfectImportWindow.ImportationCompleted");
         });
 
     private async Task RunAsync(string title, Func<CancellationToken, Task> action)
@@ -78,9 +78,9 @@ public partial class BankPerfectImportWindow : Window
         StatusText.Text = title;
         UpdateButtons();
         try { await action(cancellation.Token); }
-        catch (OperationCanceledException) { StatusText.Text = "Opération annulée avant publication."; }
+        catch (OperationCanceledException) { StatusText.Text = L.Get("BankPerfectImportWindow.TransactionCancelledBeforePublication"); }
         catch (Exception error) when (error is DocumentException or IOException or UnauthorizedAccessException or ArgumentException)
-        { StatusText.Text = error.Message; }
+        { StatusText.Text = L.Diagnostic(error.Message); }
         finally { work = null; UpdateButtons(); }
     }
 
@@ -90,7 +90,7 @@ public partial class BankPerfectImportWindow : Window
         ImportButton.Visibility = preview?.Report.CanImport == true && Result is null ? Visibility.Visible : Visibility.Collapsed;
         ImportButton.IsEnabled = work is null;
         OpenButton.Visibility = Result is null ? Visibility.Collapsed : Visibility.Visible;
-        CloseButton.Content = work is null ? "Fermer" : "Annuler";
+        CloseButton.Content = work is null ? "Fermer" : L.Get("Common.Cancel");
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
@@ -102,32 +102,32 @@ public partial class BankPerfectImportWindow : Window
         if (work is null) return;
         e.Cancel = true;
         work.Cancel();
-        StatusText.Text = "Annulation demandée…";
+        StatusText.Text = L.Get("BankPerfectImportWindow.Canceling");
     }
 
     private static string Format(BankPerfectImportReport report)
     {
         var text = new StringBuilder();
-        text.AppendLine(report.CanImport ? "Rapport préalable · compatible" : "Rapport préalable · bloqué");
-        text.AppendLine($"Format {report.Reader.Format ?? "indéterminé"} · {Count(report.Reader.Operations, "ligne", "lignes")} · " +
+        text.AppendLine(report.CanImport ? L.Get("BankPerfectImportWindow.PreliminaryReportCompatible") : L.Get("BankPerfectImportWindow.PreliminaryReportBlocked"));
+        text.AppendLine(L.Format("BankPerfectImportWindow.Format01", (report.Reader.Format ?? "indéterminé"), (Count(report.Reader.Operations, "ligne", "lignes"))) +
                         $"{Count(report.Reader.LinkedTransfers, "virement lié", "virements liés")} · " +
-                        Count(report.Reader.Categories, "catégorie", "catégories"));
-        text.AppendLine($"États source  NP {report.Reader.NP}  /  P {report.Reader.P}  /  R {report.Reader.R}");
+                        Count(report.Reader.Categories, L.Get("BankPerfectImportWindow.Category"), L.Get("BankPerfectImportWindow.Categories")));
+        text.AppendLine(L.Format("BankPerfectImportWindow.SourceStatesNp0P1R2", (report.Reader.NP), (report.Reader.P), (report.Reader.R)));
         foreach (var account in report.Accounts)
-            text.AppendLine($"• {account.Name} · {Count(account.OperationCount, "ligne", "lignes")} · solde {Money(account.Balance, account.Currency)}" +
-                            $" · pointé {Money(account.PointedBalance, account.Currency)}");
+            text.AppendLine(L.Format("BankPerfectImportWindow.01Balance2", (account.Name), (Count(account.OperationCount, "ligne", "lignes")), (Money(account.Balance, account.Currency))) +
+                            L.Format("BankPerfectImportWindow.Cleared0", (Money(account.PointedBalance, account.Currency))));
         if (report.Issues.Count != 0) text.AppendLine();
         foreach (var issue in report.Issues.OrderByDescending(issue => issue.Blocking))
         {
             text.Append(issue.Kind switch
             {
                 BankPerfectImportIssueKind.Blocker => "Bloquant · ",
-                BankPerfectImportIssueKind.HistoricalUncertainty => "Historique incertain · ",
+                BankPerfectImportIssueKind.HistoricalUncertainty => L.Get("BankPerfectImportWindow.UncertainHistory"),
                 BankPerfectImportIssueKind.ProvenanceOnly => "Provenance · ",
                 _ => "Information · "
             });
-            if (issue.Source is { } source) text.Append($"ligne {source.Line} · ");
-            text.AppendLine(issue.Message);
+            if (issue.Source is { } source) text.Append(L.Format("BankPerfectImportWindow.Line0", (source.Line)));
+            text.AppendLine(L.Diagnostic(issue.Message));
         }
         return text.ToString();
     }
@@ -135,6 +135,6 @@ public partial class BankPerfectImportWindow : Window
     private static string Count(int count, string singular, string plural) => $"{count} {(count > 1 ? plural : singular)}";
 
     private static string Money(decimal? amount, string? code) => amount is { } exact
-        ? $"{exact.ToString("#,0.00##########################", CultureInfo.GetCultureInfo("fr-FR"))} {code}"
-        : "indéterminé";
+        ? $"{exact.ToString("#,0.00##########################", L.Culture)} {code}"
+        : L.Get("BankPerfectImportWindow.Indeterminate");
 }

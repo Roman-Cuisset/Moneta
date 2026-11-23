@@ -124,7 +124,7 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
     {
         // File.Exists suppresses access errors; distinguish an absent cache from an unreadable one.
         try { return (File.GetAttributes(FilePath) & FileAttributes.Directory) == 0
-                ? true : throw CacheError("Le chemin du cache désigne un répertoire."); }
+                ? true : throw CacheError(L.GetCanonical("SqliteRateCache.TheCachePathRefersToADirectory")); }
         catch (FileNotFoundException) { return false; }
         catch (DirectoryNotFoundException) { return false; }
     }
@@ -179,18 +179,18 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
     {
         // Changing journal mode inside a transaction is prohibited; reject non-cache journal configurations.
         if (!string.Equals(Convert.ToString(Scalar(connection, transaction, "PRAGMA journal_mode;"), CultureInfo.InvariantCulture), "delete", StringComparison.OrdinalIgnoreCase))
-            throw CacheError("Le cache doit utiliser le journal SQLite DELETE.");
+            throw CacheError(L.GetCanonical("SqliteRateCache.TheCacheMustUseTheSqliteDeleteLog"));
         if (Convert.ToInt64(Scalar(connection, transaction, "PRAGMA synchronous;"), CultureInfo.InvariantCulture) != 2)
-            throw CacheError("La synchronisation du cache doit être FULL.");
+            throw CacheError(L.GetCanonical("SqliteRateCache.TheTimingOfTheCacheMustBeFull"));
     }
 
     private static void ValidateDatabase(SqliteConnection connection, SqliteTransaction transaction, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         if (Convert.ToInt64(Scalar(connection, transaction, "PRAGMA application_id;"), CultureInfo.InvariantCulture) != ApplicationId)
-            throw CacheError("Ce fichier n’est pas un cache de cours Moneta.");
+            throw CacheError(L.GetCanonical("SqliteRateCache.ThisFileIsNotAMonetaRateCache"));
         if (Convert.ToInt64(Scalar(connection, transaction, "PRAGMA user_version;"), CultureInfo.InvariantCulture) != SchemaVersion)
-            throw new RateException(RateFailure.UnsupportedVersion, "Version du cache de cours inconnue.");
+            throw new RateException(RateFailure.UnsupportedVersion, L.GetCanonical("SqliteRateCache.UnknownRateCacheVersion"));
         ValidateJournalSettings(connection, transaction);
         using (var command = Command(connection, transaction, "SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY name;"))
         using (var reader = command.ExecuteReader())
@@ -207,13 +207,13 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
                     "sqlite_autoindex_RateSets_1" => reader.GetString(0) == "index" && reader.GetString(2) == "RateSets" && reader.IsDBNull(3),
                     _ => false
                 };
-                if (!valid || !seen.Add(name)) throw CacheError("Schéma du cache non reconnu.");
+                if (!valid || !seen.Add(name)) throw CacheError(L.GetCanonical("SqliteRateCache.UnrecognizedCacheDiagram"));
             }
-            if (seen.Count != 3) throw CacheError("Schéma du cache incomplet.");
+            if (seen.Count != 3) throw CacheError(L.GetCanonical("SqliteRateCache.IncompleteCacheDiagram"));
         }
         using var integrity = Command(connection, transaction, "PRAGMA integrity_check;");
         using var check = integrity.ExecuteReader();
-        if (!check.Read() || check.GetString(0) != "ok" || check.Read()) throw CacheError("Le cache SQLite est corrompu.");
+        if (!check.Read() || check.GetString(0) != "ok" || check.Read()) throw CacheError(L.GetCanonical("SqliteRateCache.TheSqliteCacheIsCorrupt"));
         token.ThrowIfCancellationRequested();
     }
 
@@ -225,21 +225,21 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
             token.ThrowIfCancellationRequested();
             var idText = reader.GetString(0);
             if (!Guid.TryParseExact(idText, "D", out var id) || id == Guid.Empty || id.ToString("D") != idText)
-                throw CacheError("Identifiant de lot invalide.");
+                throw CacheError(L.GetCanonical("SqliteRateCache.InvalidBatchId"));
             var providerNumber = reader.GetInt64(1);
-            if (providerNumber is not (0 or 1)) throw CacheError("Source du lot invalide.");
+            if (providerNumber is not (0 or 1)) throw CacheError(L.GetCanonical("SqliteRateCache.SourceOfInvalidBatch"));
             var requested = ReadDate(reader.GetString(2));
             var effective = ReadDate(reader.GetString(3));
             var utcText = reader.GetString(4);
             if (!DateTimeOffset.TryParseExact(utcText, "O", CultureInfo.InvariantCulture, DateTimeStyles.None, out var utc) ||
                 utc.Offset != TimeSpan.Zero || utc.ToString("O", CultureInfo.InvariantCulture) != utcText)
-                throw CacheError("Horodatage du lot invalide.");
+                throw CacheError(L.GetCanonical("SqliteRateCache.InvalidLotTimeStamping"));
             var length = reader.GetBytes(7, 0, null, 0, 0);
-            if (length is < 1 or > MaximumPayloadBytes) throw CacheError("Taille de réponse du cache invalide.");
+            if (length is < 1 or > MaximumPayloadBytes) throw CacheError(L.GetCanonical("SqliteRateCache.ResponseSizeOfInvalidCache"));
             var payload = (byte[])reader.GetValue(7);
             var parsed = OfficialRateParsers.Parse((RateProvider)providerNumber, requested, utc, reader.GetString(5), payload).Rates;
             if (parsed.EffectiveDate != effective || !string.Equals(parsed.PayloadSha256, reader.GetString(6), StringComparison.Ordinal))
-                throw CacheError("La réponse originale ne correspond pas aux métadonnées du cache.");
+                throw CacheError(L.GetCanonical("SqliteRateCache.TheOriginalResponseDoesNotMatchTheMetadata"));
             yield return parsed with { Id = id };
         }
     }
@@ -247,7 +247,7 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
     private static RateDownload ValidateDownload(RateDownload download)
     {
         RateRules.Validate(download.Rates);
-        if (download.Payload.Length is < 1 or > MaximumPayloadBytes) throw CacheError("Taille de réponse invalide.");
+        if (download.Payload.Length is < 1 or > MaximumPayloadBytes) throw CacheError(L.GetCanonical("SqliteRateCache.InvalidResponseSize"));
         var parsed = OfficialRateParsers.Parse(download.Rates.Provider, download.Rates.RequestedDate,
             download.Rates.RetrievedUtc, download.Rates.Endpoint, download.Payload);
         var original = download.Rates;
@@ -256,7 +256,7 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
             rates.RequestedDate != original.RequestedDate || rates.EffectiveDate != original.EffectiveDate ||
             rates.RetrievedUtc != original.RetrievedUtc || rates.Endpoint != original.Endpoint ||
             rates.PayloadSha256 != original.PayloadSha256 || !rates.Quotes.SequenceEqual(original.Quotes))
-            throw CacheError("Le lot ne correspond pas à sa réponse originale.");
+            throw CacheError(L.GetCanonical("SqliteRateCache.TheBatchDoesNotMatchItsOriginalResponse"));
         return parsed with { Rates = rates with { Id = original.Id } };
     }
 
@@ -283,7 +283,7 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
     private static DateOnly ReadDate(string text)
     {
         if (!DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) || date == default)
-            throw CacheError("Date du lot invalide.");
+            throw CacheError(L.GetCanonical("SqliteRateCache.DateOfInvalidLot"));
         return date;
     }
 
@@ -333,7 +333,7 @@ public sealed class SqliteRateCache : IRateCache, IHistoricalRateCache
             RateException or FormatException or InvalidCastException or OverflowException or ArgumentException)
         {
             token.ThrowIfCancellationRequested();
-            throw new RateException(RateFailure.Cache, "Le cache de cours ne peut pas être lu ou enregistré ; son contenu est conservé.", exception);
+            throw new RateException(RateFailure.Cache, L.GetCanonical("SqliteRateCache.TheRateCacheCannotBeReadOrRecorded"), exception);
         }
     }
 

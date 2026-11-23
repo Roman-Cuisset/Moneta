@@ -1,26 +1,27 @@
-<Window x:Class="Moneta.App.UpdateWindow"
+<Window xmlns:loc="clr-namespace:Moneta.App" x:Class="Moneta.App.UpdateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mise à jour Moneta" Width="620" Height="490" MinWidth="470" MinHeight="340"
-        Style="{StaticResource {x:Type Window}}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+        Title="{loc:LocalizedText UpdateWindow.MonetaUpdate}" Width="620" Height="490" MinWidth="470" MinHeight="340"
+        Style="{StaticResource {x:Type Window}}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Language="{loc:LocalizedLanguage}">
     <Grid Margin="22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,8">
-            <TextBlock Text="Une nouvelle version est disponible" Style="{StaticResource WindowHeading}" />
+            <TextBlock Text="{loc:LocalizedText UpdateWindow.ANewVersionIsAvailable}" Style="{StaticResource WindowHeading}" />
             <TextBlock x:Name="Versions" Style="{StaticResource BodyMuted}" Margin="0,4,0,12" />
-            <Label Content="_Quoi de neuf ?" Target="{Binding ElementName=Notes}" />
+            <Label Content="{loc:LocalizedText UpdateWindow.WhatSUpAccessKey}" Target="{Binding ElementName=Notes}" />
+            <TextBlock Text="{loc:LocalizedText Update.OriginalNotes}" TextWrapping="Wrap" Style="{StaticResource BodyMuted}" />
         </StackPanel>
         <TextBox x:Name="Notes" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                 VerticalContentAlignment="Top" AutomationProperties.Name="Notes de publication signées" />
+                 VerticalContentAlignment="Top" AutomationProperties.Name="{loc:LocalizedText UpdateWindow.SignedPublicationNotes}" />
         <StackPanel Grid.Row="2" Margin="0,10,0,0">
             <TextBlock x:Name="Status" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" Margin="0,0,0,6" />
             <ProgressBar x:Name="DownloadProgress" Minimum="0" Maximum="100" Height="8" Visibility="Collapsed"
-                         Foreground="{DynamicResource AccentBrush}" AutomationProperties.Name="Progression du téléchargement" />
+                         Foreground="{DynamicResource AccentBrush}" AutomationProperties.Name="{loc:LocalizedText UpdateWindow.ProgressInDownloading}" />
             <WrapPanel HorizontalAlignment="Right" Margin="0,10,0,0">
-                <Button x:Name="Later" Content="_Plus tard" Click="Later_Click" Margin="0,0,8,0" />
-                <Button x:Name="Install" Content="_Télécharger et installer" Click="Install_Click" Style="{StaticResource PrimaryButton}" />
+                <Button x:Name="Later" Content="{loc:LocalizedText UpdateWindow.LaterAccessKey}" Click="Later_Click" Margin="0,0,8,0" />
+                <Button x:Name="Install" Content="{loc:LocalizedText UpdateWindow.DownloadAndInstallAccessKey}" Click="Install_Click" Style="{StaticResource PrimaryButton}" />
             </WrapPanel>
         </StackPanel>
     </Grid>

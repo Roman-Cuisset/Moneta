@@ -20,33 +20,33 @@ public sealed partial class MonetaFile
             {
                 if (change?.Value is not { } value || !transferIds.Add(value.Id) || change.ExpectedRevision < 0 ||
                     (creating && change.ExpectedRevision != 0) || value.Revision != checked(change.ExpectedRevision + 1))
-                    throw new ArgumentException("Lot de révisions de virements invalide.");
+                    throw new ArgumentException(L.Get("MonetaFile.InvalidTransferRevisionPackage"));
                 var previous = FindTransfer(connection, value.Id, baseline ?? metadata, lookup, transaction);
                 if (change.ExpectedRevision == 0)
                 {
-                    if (previous is not null || value.IsDeleted) throw new ArgumentException("Virement déjà présent ou supprimé à l’insertion.");
+                    if (previous is not null || value.IsDeleted) throw new ArgumentException(L.Get("MonetaFile.TransferAlreadyPresentOrDeletedToInsertion"));
                 }
                 else if (previous is null || previous.Value.IsDeleted || previous.Value.Revision != change.ExpectedRevision ||
                     previous.Value.CreatedUtc != value.CreatedUtc || value.ModifiedUtc < previous.Value.ModifiedUtc ||
                     previous.Value.DebitTransactionId != value.DebitTransactionId || previous.Value.CreditTransactionId != value.CreditTransactionId ||
                     (previous.Value.FeeTransactionId is not null && previous.Value.FeeTransactionId != value.FeeTransactionId))
-                    throw new ArgumentException("Révision obsolète ou identité/liens du virement modifiés.");
+                    throw new ArgumentException(L.Get("MonetaFile.ObsoleteRevisionOrChangedIdentityLinksOfTransfer"));
                 if (previous?.HasReconciledLeg == true)
-                    throw new ArgumentException("Une jambe rapprochée protège le virement entier. Rouvrez ou libérez-la, puis enregistrez avant modification.");
+                    throw new ArgumentException(L.Get("MonetaFile.ACloseLegProtectsTheEntireTransferReopen"));
 
                 Transaction Leg(Guid id, Transaction? original)
                 {
                     if (!coveredLegs.TryAdd(id, value.Id) || !patches.TryGetValue(id, out var patch))
-                        throw new ArgumentException("Chaque virement exige un lot complet de jambes distinctes.");
+                        throw new ArgumentException(L.Get("MonetaFile.EachTransferRequiresACompleteSetOfDistinct"));
                     var owner = FindTransferId(connection, id, transaction);
-                    if (owner is not null && owner != value.Id) throw new ArgumentException("Jambe déjà liée à un autre virement.");
+                    if (owner is not null && owner != value.Id) throw new ArgumentException(L.Get("MonetaFile.LegAlreadyLinkedToAnotherTransfer"));
                     if (original is null)
                     {
                         if (patch.ExpectedRevision != 0 || FindTransaction(connection, id, lookup, transaction) is not null)
-                            throw new ArgumentException("Une nouvelle jambe doit être une nouvelle opération.");
+                            throw new ArgumentException(L.Get("MonetaFile.ANewLegMustBeANewTransaction"));
                     }
                     else if (patch.ExpectedRevision != original.Revision || patch.Value.ReconciliationId != original.ReconciliationId)
-                        throw new ArgumentException("La révision et l’appartenance au rapprochement de chaque jambe doivent être conservées.");
+                        throw new ArgumentException(L.Get("MonetaFile.TheRevisionAndBelongingToTheRapprochementOf"));
                     return patch.Value;
                 }
                 var debit = Leg(value.DebitTransactionId, previous?.Debit);
@@ -61,14 +61,14 @@ public sealed partial class MonetaFile
                 var owner = FindTransferId(connection, patch.Value.Id, transaction);
                 if (owner is null || coveredLegs.TryGetValue(patch.Value.Id, out var covered) && covered == owner) continue;
                 var original = FindTransaction(connection, patch.Value.Id, lookup, transaction)
-                    ?? throw new ArgumentException("Jambe de virement orpheline.");
+                    ?? throw new ArgumentException(L.Get("MonetaFile.OrphanTransferLeg"));
                 if (!ReconciliationRules.FinancialPayloadEquals(original, patch.Value))
-                    throw new ArgumentException("Une jambe liée ne peut être modifiée séparément : modifiez le virement entier.");
+                    throw new ArgumentException(L.Get("MonetaFile.ALinkedLegCannotBeChangedSeparatelyChange"));
             }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or OverflowException or KeyNotFoundException or NullReferenceException)
         {
-            throw new DocumentException(DocumentError.InvalidData, "Modification de virement invalide : " + exception.Message, exception);
+            throw new DocumentException(DocumentError.InvalidData, L.Get("MonetaFile.InvalidTransferChange") + exception.Message, exception);
         }
     }
 
