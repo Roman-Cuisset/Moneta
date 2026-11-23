@@ -170,6 +170,7 @@ public sealed class BankPerfectImportTests
     [DataRow("missing-opening", "opening-uncertain")]
     [DataRow("ambiguous-opening", "opening-uncertain")]
     [DataRow("missing-link", "transfer-missing-links")]
+    [DataRow("scheduler-extension", "extension-data")]
     [DataRow("protected", "password-field")]
     [DataRow("version", "unsupported-version")]
     [DataRow("truncated", "structure")]
@@ -189,6 +190,7 @@ public sealed class BankPerfectImportTests
             case "missing-opening": rows = Income; break;
             case "ambiguous-opening": rows += "\n" + Opening.Replace("UId=1", "UId=9"); break;
             case "missing-link": rows += "\n46337;;24;Transfert vers le compte Épargne;essai;-1;-45;46337;UId=4"; break;
+            case "scheduler-extension": header += "\nbp_script_data_fabiobpscheduler=(lp1_0a."; break;
             case "protected": header += "\npass=secret-fictif"; break;
         }
         var preview = variant == "truncated" ? SaveAndPrepare(BankPerfectV5Tests.Encode(header))
@@ -302,6 +304,58 @@ public sealed class BankPerfectImportTests
             command.ExecuteNonQuery();
         }
         Assert.ThrowsException<DocumentException>(() => MonetaFile.Open(Target));
+    }
+
+    [TestMethod]
+    public void AccountOpeningAtZeroKeepsTheReconciledRowAndExactLedgerBalances()
+    {
+        const string zeroOpening = "46337;R;42;Solde initial;;-1;0,00;46337;UId=4";
+        const string pointed = "46338;P;40;Recette Démo;;-1;25,00;46338;UId=5";
+        const string unmarked = "46339;;20;Dépense Démo;;-1;-12,00;46339;UId=6";
+        var preview = Prepare(Header + "\n" + SecondAccount,
+            Opening + Separator + string.Join("\n", zeroOpening, pointed, unmarked));
+
+        Assert.IsTrue(preview.Report.CanImport, Describe(preview));
+        Assert.IsNotNull(preview.Report.Accounts[1].Opening);
+        var before = Hash(Source);
+        Assert.IsTrue(BankPerfectImporter.Import(preview, Target).BackupRestoreVerified);
+        using var file = MonetaFile.Open(Target);
+        var account = file.Snapshot.Accounts[1];
+        var rows = Operations(file, account);
+        Assert.AreEqual(3, rows.Count);
+        var opening = rows.Single(row => row.Amount == 0m);
+        Assert.AreEqual(ReconciliationStatus.Reconciled, opening.Status);
+        Assert.AreEqual(0m, account.OpeningBalance);
+        Assert.AreEqual(13m, file.Snapshot.AccountBalances![account.Id]);
+        Assert.AreEqual(25m, file.Snapshot.AccountPointedBalances![account.Id]);
+        using var audit = JsonDocument.Parse(file.ReadBankPerfectProvenance()!);
+        var entry = audit.RootElement.GetProperty("objects").EnumerateArray()
+            .Single(item => item.GetProperty("targetId").GetGuid() == opening.Id);
+        Assert.IsTrue(entry.GetProperty("opening").GetBoolean());
+        Assert.AreEqual("Probable", entry.GetProperty("openingConfidence").GetString());
+        Assert.AreEqual("0,00", entry.GetProperty("raw")[6].GetString());
+        Assert.AreEqual(before, Hash(Source));
+    }
+
+    [DataTestMethod]
+    [DataRow("B", true)]
+    [DataRow("Z", false)]
+    public void TransferAccountMarkerWithoutLineIdBlocksOncePerOperation(string sisterAccount, bool targetHasMarker)
+    {
+        var debit = $"46338;P;24;Transfert vers le compte Épargne;;-1;-15;46338;UId=3<||>#sisterAccUid={sisterAccount}";
+        var credit = "46338;P;42;Transfert depuis le compte Courant;;-1;15;46338;UId=4" +
+            (targetHasMarker ? "<||>#sisterAccUid=A" : "");
+        var preview = Prepare(Header + "\n" + SecondAccount, Opening + "\n" + debit +
+            Separator + "46337;R;42;Solde initial;;-1;200;46337;UId=2\n" + credit);
+
+        Assert.IsFalse(preview.Report.CanImport);
+        Assert.AreEqual(0, preview.Report.Reader.LinkedTransfers);
+        var blockers = preview.Report.Issues.Where(issue => issue.Blocking).ToArray();
+        CollectionAssert.AreEquivalent(new[] { "transfer-incomplete", targetHasMarker ? "transfer-incomplete" : "transfer-missing-links" },
+            blockers.Select(issue => issue.Code).ToArray(), Describe(preview));
+        Assert.AreEqual(2, blockers.Select(issue => (issue.Source!.Block, issue.Source.Line)).Distinct().Count());
+        Assert.ThrowsException<DocumentException>(() => BankPerfectImporter.Import(preview, Target));
+        Assert.IsFalse(File.Exists(Target));
     }
 
     [TestMethod]

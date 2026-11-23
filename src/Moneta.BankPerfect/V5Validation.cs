@@ -95,8 +95,12 @@ internal static class V5Validation
 
         if (row.DuplicateReference)
             return WithStatus(V5TransferStatus.Ambiguous, "transfer-ambiguous", "Références sœurs répétées dans Extra.");
-        if (string.IsNullOrWhiteSpace(row.TargetAccount) || string.IsNullOrWhiteSpace(row.TargetLine))
-            return WithStatus(V5TransferStatus.Incomplete, "transfer-incomplete", "Références sœurs absentes ou partielles.");
+        if (string.IsNullOrWhiteSpace(row.TargetAccount))
+            return WithStatus(V5TransferStatus.Incomplete, "transfer-incomplete", "UID du compte de la ligne sœur absent.");
+        if (string.IsNullOrWhiteSpace(row.TargetLine))
+            return WithStatus(V5TransferStatus.Incomplete, "transfer-incomplete", byAccount.Contains(row.TargetAccount)
+                ? "Compte de la ligne sœur référencé, mais UID de l’opération sœur absent."
+                : "Compte de la ligne sœur introuvable et UID de l’opération sœur absent.");
         if (!validTargetUid)
             return WithStatus(V5TransferStatus.Inconsistent, "transfer-invalid-uid", "UID de l’opération sœur invalide.");
         var targetAccounts = byAccount[row.TargetAccount];

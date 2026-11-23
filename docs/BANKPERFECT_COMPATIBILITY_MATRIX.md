@@ -1,4 +1,10 @@
-# Compatibilité BankPerfect — qualification missions 10A à 10E
+# Compatibilité BankPerfect
+
+## Variantes historiques qualifiées pour Moneta 0.1.1
+
+- **Ouverture d’un compte à zéro.** La signature `Solde initial` avec le mode source `42` est admissible à zéro. Le candidat doit rester unique, rapproché, sans catégorie, détail ni référence sœur, avec une date supplémentaire absente ou identique à la date comptable. L’ouverture reste qualifiée de probable. Le solde initial technique Moneta vaut zéro et la ligne source est importée une seule fois, avec sa valeur et son état R. [Description du format V5 par l’auteur](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/docs/inventaire/02-format-fichier-bp.md#5-rattachement-des-opérations-aux-comptes)
+- **Références de virement partielles.** Un UID de compte sœur sans UID de ligne sœur déclenche un refus, même si le compte existe. Le rapport indique si le compte manque aussi. Une jambe dont le libellé suit la convention native et qui ne porte aucune référence sœur reçoit son propre diagnostic. Moneta exige des UID de ligne uniques, deux références réciproques et des mouvements financiers cohérents. La documentation Delphi décrit une réattribution globale des UID qui retire les anciennes références de ligne. La présence du seul UID de compte ne suffit donc pas à désigner la ligne d’origine. [Champs supplémentaires et identifiants V5](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/docs/inventaire/02-format-fichier-bp.md#7-identifiants-de-ligne-uid)
+- **Extensions.** `bp_script_data_fabiobpscheduler` identifie des données historiques d’échéancier absentes du périmètre d’import. Cette extension reste bloquante. `bp_script_data_fabiobptransfer` reste une donnée de provenance inerte. Les liaisons financières sont validées dans les opérations. [Stockage des données de scripts](https://github.com/fabiochelly/bankperfect/blob/990f5c7f712dab07c7fefc2921cbf60beee7f6b1/docs/inventaire/02-format-fichier-bp.md#413-bp_script_data_--données-persistantes-des-scripts)
 
 ## Qualification avancée en mission 10E
 

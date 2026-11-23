@@ -17,8 +17,7 @@ internal static class BankPerfectPlan
         var accounts = new List<BankPerfectImportAccount>();
         if (source is not null)
         {
-            var linkedRows = source.Transfers.Where(link => link.Status == V5TransferStatus.Linked)
-                .Select(link => link.Source).ToHashSet();
+            var rowsWithSisterReferences = source.Transfers.Select(link => link.Source).ToHashSet();
             foreach (var account in source.Accounts)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -35,7 +34,7 @@ internal static class BankPerfectPlan
                         "Une ligne correspond à une ouverture historique probable. Le solde de départ Moneta est nul et chaque ligne est reprise une seule fois.",
                         false, opening) { Kind = BankPerfectImportIssueKind.HistoricalUncertainty });
                 foreach (var row in account.Operations)
-                    if (!linkedRows.Contains(row.Source) && row.Payee is { } payee &&
+                    if (!rowsWithSisterReferences.Contains(row.Source) && row.Payee is { } payee &&
                         (payee.StartsWith("Transfert vers le compte ", StringComparison.Ordinal) ||
                          payee.StartsWith("Transfert depuis le compte ", StringComparison.Ordinal)))
                         issues.Add(new("transfer-missing-links", "Signature d’une jambe de transfert sans références réciproques.", true, row.Source));
@@ -76,16 +75,21 @@ internal static class BankPerfectPlan
 
     private static BankPerfectImportIssue ToImportIssue(V5Diagnostic diagnostic, V5Document? source)
     {
+        var extension = diagnostic.Code == "extension-data"
+            ? source?.Extensions.FirstOrDefault(entry => entry.Header.Source == diagnostic.Source)?.Header.Key
+            : null;
         var kind = diagnostic.Code switch
         {
             "missing-document-id" or "missing-account-uid" or "missing-operation-uid" or "missing-additional-date" or
                 "earlier-additional-date" => BankPerfectImportIssueKind.HistoricalUncertainty,
             "logo" => BankPerfectImportIssueKind.ProvenanceOnly,
-            "extension-data" when source?.Extensions.Any(extension => extension.Header.Source == diagnostic.Source &&
-                extension.Header.Key == "bp_script_data_fabiobptransfer") == true => BankPerfectImportIssueKind.ProvenanceOnly,
+            "extension-data" when extension == "bp_script_data_fabiobptransfer" => BankPerfectImportIssueKind.ProvenanceOnly,
             _ => BankPerfectImportIssueKind.Blocker
         };
-        return new(diagnostic.Code, diagnostic.Message, kind == BankPerfectImportIssueKind.Blocker, diagnostic.Source) { Kind = kind };
+        var message = extension == "bp_script_data_fabiobpscheduler"
+            ? "Données d’échéancier BankPerfect encodées : leur import n’est pas qualifié."
+            : diagnostic.Message;
+        return new(diagnostic.Code, message, kind == BankPerfectImportIssueKind.Blocker, diagnostic.Source) { Kind = kind };
     }
 
     private static V5Location? FindOpening(V5Account account)
@@ -100,7 +104,7 @@ internal static class BankPerfectPlan
         {
             ("Création du compte courant", "40", >= 0) or
             ("Création du compte courant", "23", < 0) or
-            ("Solde initial", "42", > 0) => row.Source,
+            ("Solde initial", "42", >= 0) => row.Source,
             _ => null
         };
     }
