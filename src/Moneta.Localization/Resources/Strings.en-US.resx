@@ -2154,6 +2154,9 @@ Exchange rate of {1:MM/dd/yyyy}</value>
   <data name="MainWindow.FieldsOfTransactionSelected" xml:space="preserve">
     <value>Fields of transaction selected</value>
   </data>
+  <data name="MainWindow.FileAccessKey" xml:space="preserve">
+    <value>_File</value>
+  </data>
   <data name="MainWindow.FileMigratedMoneta" xml:space="preserve">
     <value>Migrated .moneta file</value>
   </data>

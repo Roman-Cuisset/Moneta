@@ -303,7 +303,8 @@ public partial class MainWindow : Window
             {
                 authorized = update is not null && AuthorizeUpdate(update);
                 _allowClose = true;
-                Close();
+                // The original Closing event must return even when the awaited work completes inline.
+                _ = Dispatcher.BeginInvoke(new Action(Close));
             }
             else
             {

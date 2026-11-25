@@ -2154,6 +2154,9 @@ Cours du {1:dd/MM/yyyy}</value>
   <data name="MainWindow.FieldsOfTransactionSelected" xml:space="preserve">
     <value>Champs de l’opération sélectionnée</value>
   </data>
+  <data name="MainWindow.FileAccessKey" xml:space="preserve">
+    <value>_Fichier</value>
+  </data>
   <data name="MainWindow.FileMigratedMoneta" xml:space="preserve">
     <value>Dossier migré.moneta</value>
   </data>

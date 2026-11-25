@@ -125,7 +125,7 @@
                     <TextBlock Text="Moneta" FontWeight="SemiBold" VerticalAlignment="Center" Margin="7,0,0,0" />
                 </StackPanel>
                 <Menu KeyboardNavigation.TabNavigation="Once" VerticalAlignment="Center" AutomationProperties.AutomationId="MainMenu">
-                    <MenuItem Header="_Fichier">
+                    <MenuItem Header="{loc:LocalizedText MainWindow.FileAccessKey}">
                         <MenuItem Header="{loc:LocalizedText MainWindow.NewDocumentAccessKey}" Command="{x:Static local:WindowCommands.New}" AutomationProperties.AutomationId="NewDocumentCommand" />
                         <MenuItem Header="{loc:LocalizedText MainWindow.OpenAccessKey}" Command="{x:Static local:WindowCommands.Open}" AutomationProperties.AutomationId="OpenDocumentCommand" />
                         <MenuItem Header="{loc:LocalizedText Common.SaveAccessKey}" Command="{x:Static local:WindowCommands.Save}" AutomationProperties.AutomationId="SaveDocumentCommand" />
