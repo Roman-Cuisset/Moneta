@@ -134,7 +134,7 @@ public partial class LedgerSearchWindow : Window
                 try
                 {
                     if (LedgerSearchCriteria.ParseAmount(field.Text, _inputCulture) is { } amount)
-                        field.Text = amount.ToString("0.############################", L.Culture);
+                        field.Text = MoneyInput.FormatForEdit(amount);
                 }
                 catch (ArgumentException) { /* Keep malformed input available for correction. */ }
             }

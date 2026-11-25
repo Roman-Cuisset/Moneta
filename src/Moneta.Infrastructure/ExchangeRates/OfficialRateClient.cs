@@ -50,7 +50,7 @@ public sealed class OfficialRateClient : IOfficialRateSource, IDisposable
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
             // Redirects are HTTP failures; never contact a supplied Location or another provider.
             if (!response.IsSuccessStatusCode)
-                throw new RateException(RateFailure.Http, L.FormatCanonical("OfficialRateClient.TheOfficialServiceRepliedHttp0", ((int)response.StatusCode)));
+                throw new RateException(RateFailure.Http, L.Format("OfficialRateClient.TheOfficialServiceRepliedHttp0", (int)response.StatusCode));
             if (response.Content.Headers.ContentLength > OfficialRateParsers.MaximumPayloadBytes)
                 throw new RateException(RateFailure.InvalidResponse, L.GetCanonical("OfficialRateClient.TheRateResponseExceedsTheAuthorizedSize"));
             await using var body = await response.Content.ReadAsStreamAsync(deadline.Token).ConfigureAwait(false);

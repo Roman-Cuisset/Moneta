@@ -10,6 +10,7 @@ public sealed record LocalSettings
 {
     public string Theme { get; init; } = "Light";
     public string Language { get; init; } = L.French;
+    public bool CompactRegister { get; init; }
     public bool CheckUpdatesAtStartup { get; init; } = true;
     public bool RefreshRatesAtStartup { get; init; }
     public string RateSource { get; init; } = "NBRB";
@@ -100,6 +101,7 @@ public sealed class SettingsStore
                     SchemaVersion = SchemaVersion,
                     Theme = settings.Theme,
                     Language = settings.Language,
+                    CompactRegister = settings.CompactRegister,
                     CheckUpdatesAtStartup = settings.CheckUpdatesAtStartup,
                     RefreshRatesAtStartup = settings.RefreshRatesAtStartup,
                     RateSource = settings.RateSource,
@@ -160,6 +162,7 @@ public sealed class SettingsStore
         {
             Theme = document.Theme,
             Language = L.ResolveLanguage(document.Language),
+            CompactRegister = document.CompactRegister,
             CheckUpdatesAtStartup = document.CheckUpdatesAtStartup,
             RefreshRatesAtStartup = document.RefreshRatesAtStartup,
             RateSource = document.SchemaVersion == 1 ? "NBRB" : document.RateSource
@@ -194,6 +197,7 @@ public sealed class SettingsStore
         public required int SchemaVersion { get; init; }
         public required string Theme { get; init; }
         public string? Language { get; init; }
+        public bool CompactRegister { get; init; }
         public required bool CheckUpdatesAtStartup { get; init; }
         public required bool RefreshRatesAtStartup { get; init; }
         public string? RateSource { get; init; }

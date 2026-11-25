@@ -79,10 +79,6 @@
         <Style x:Key="ToolLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11" /><Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
-        <Style x:Key="MutedText" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
-            <Setter Property="FontSize" Value="11.5" /><Setter Property="TextWrapping" Value="Wrap" />
-        </Style>
         <Style x:Key="SecondaryCellText" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
@@ -90,10 +86,31 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="EntryField" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="IsReadOnly" Value="True" /><Setter Property="MinHeight" Value="30" />
-            <Setter Property="Padding" Value="7,5" /><Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+        <Style x:Key="RegisterCellStack" TargetType="StackPanel">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="9,3" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCompactRegister, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Value="True">
+                    <Setter Property="Margin" Value="9,1" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="RegisterSecondaryText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryCellText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCompactRegister, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="RegisterPointingButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="5,3" />
+            <Setter Property="MinHeight" Value="26" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCompactRegister, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Value="True">
+                    <Setter Property="Padding" Value="5,1" />
+                    <Setter Property="MinHeight" Value="22" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
     <Grid Background="{DynamicResource CanvasBrush}">
@@ -149,6 +166,12 @@
                         <MenuItem Header="{loc:LocalizedText Common.ThemeAccessKey}" SubmenuOpened="ThemeMenu_Opened">
                             <MenuItem x:Name="LightThemeItem" Header="{loc:LocalizedText MainWindow.LightAccessKey}" IsCheckable="True" Command="{x:Static local:WindowCommands.Theme}" CommandParameter="Light" />
                             <MenuItem x:Name="DarkThemeItem" Header="{loc:LocalizedText MainWindow.DarkAccessKey}" IsCheckable="True" Command="{x:Static local:WindowCommands.Theme}" CommandParameter="Dark" />
+                        </MenuItem>
+                        <MenuItem Header="{loc:LocalizedText RegisterDensity.Menu}">
+                            <MenuItem x:Name="StandardRegisterItem" Header="{loc:LocalizedText RegisterDensity.Standard}" IsCheckable="True"
+                                      Click="RegisterDensity_Click" Tag="Standard" AutomationProperties.AutomationId="RegisterStandard" />
+                            <MenuItem x:Name="CompactRegisterItem" Header="{loc:LocalizedText RegisterDensity.Compact}" IsCheckable="True"
+                                      Click="RegisterDensity_Click" Tag="Compact" AutomationProperties.AutomationId="RegisterCompact" />
                         </MenuItem>
                         <Separator />
                         <MenuItem Header="{loc:LocalizedText MainWindow.ViewOn2LinesAccessKey}" InputGestureText="F4" Style="{StaticResource UnavailableMenuItem}" />
@@ -269,7 +292,7 @@
                     <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.Budgets}" AutomationProperties.Name="{loc:LocalizedText Common.Budget}"><StackPanel><Path Data="{StaticResource BudgetIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="{loc:LocalizedText Common.Budget}" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.CategoryReports}" AutomationProperties.Name="{loc:LocalizedText Common.TotalsByCategory}"><StackPanel><Path Data="{StaticResource TotalsIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="{loc:LocalizedText MainWindow.Total}" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.Reports}" CommandParameter="3" AutomationProperties.Name="{loc:LocalizedText Common.Charts}"><StackPanel><Path Data="{StaticResource ChartIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="{loc:LocalizedText Common.Charts}" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
-                    <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.SearchFilters}" AutomationProperties.Name="Filtres"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="Filtres" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
+                    <Button Style="{StaticResource ToolbarButton}" Command="{x:Static local:WindowCommands.SearchFilters}" AutomationProperties.Name="{loc:LocalizedText RegisterDensity.Filters}"><StackPanel><Path Data="{StaticResource FilterIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="{loc:LocalizedText RegisterDensity.Filters}" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.Schedule}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{loc:LocalizedText Common.ScheduledTransactions}"><StackPanel><Path Data="{StaticResource ScheduleIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="{loc:LocalizedText Common.ScheduledTransactions}" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                     <Button Command="{x:Static local:WindowCommands.NewTransfer}" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{loc:LocalizedText Common.Transfer}" AutomationProperties.AutomationId="NewTransferButton" ToolTip="{loc:LocalizedText MainWindow.LinkedTransferToFileTwoExactNativeAmounts}"><StackPanel><Path Data="{StaticResource TransferIcon}" Style="{StaticResource ToolIcon}" /><TextBlock Text="{loc:LocalizedText Common.Transfer}" Style="{StaticResource ToolLabel}" /></StackPanel></Button>
                 </ToolBar>
@@ -437,9 +460,17 @@
                         <DataGridTextColumn x:Name="RegisterDateColumn" Header="{loc:LocalizedText Common.Date}" Binding="{Binding DisplayDateText}" Width="102" MinWidth="90" ElementStyle="{StaticResource CellText}" />
                         <DataGridTextColumn Header="{loc:LocalizedText MainWindow.Mode}" Binding="{Binding PaymentModeName}" Width="112" MinWidth="95" ElementStyle="{StaticResource CellText}" />
                         <DataGridTemplateColumn Header="{loc:LocalizedText MainWindow.PayeeWording}" Width="2*" MinWidth="170">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
-                                <TextBlock Text="{Binding PayeeName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PayeeName}">
-                                    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Style.Triggers><DataTrigger Binding="{Binding IsTransfer}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel Style="{StaticResource RegisterCellStack}">
+                                <TextBlock TextTrimming="CharacterEllipsis" ToolTip="{Binding PayeeName}">
+                                    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Text" Value="{Binding PayeeName}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTransfer}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCompactRegister, RelativeSource={RelativeSource AncestorType=local:MainWindow}}" Value="True">
+                                                <Setter Property="Text" Value="{Binding Label}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style></TextBlock.Style>
                                 </TextBlock>
                                 <DockPanel>
                                     <DockPanel.Style><Style TargetType="DockPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsTransfer}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></DockPanel.Style>
@@ -449,13 +480,13 @@
                                             HorizontalAlignment="Left" Focusable="False" IsTabStop="False" Padding="0" MinHeight="18" Height="18" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource AccentBrush}"
                                             AutomationProperties.AutomationId="OpenTransferCell" AutomationProperties.Name="{loc:LocalizedText Common.OpenTheLinkedTransfer}" ToolTip="{loc:LocalizedText MainWindow.ConsultOrModifyTheEntireTransferNeverA}" />
                                 </DockPanel>
-                                <TextBlock Text="{Binding Label}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}" />
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource RegisterSecondaryText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}" />
                             </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="{loc:LocalizedText Common.Category}" Width="*" MinWidth="135">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel VerticalAlignment="Center" Margin="9,3">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel Style="{StaticResource RegisterCellStack}">
                                 <TextBlock Text="{Binding CategoryName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CategoryName}" />
-                                <TextBlock Text="{Binding SubcategoryName}" Style="{StaticResource SecondaryCellText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SubcategoryName}" />
+                                <TextBlock Text="{Binding SubcategoryName}" Style="{StaticResource RegisterSecondaryText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SubcategoryName}" />
                             </StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{loc:LocalizedText MainWindow.Flow}" Binding="{Binding DebitText}" Width="112" MinWidth="100" ElementStyle="{StaticResource AmountText}" />
@@ -464,7 +495,7 @@
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <Button Content="{Binding MarkText}" Command="{x:Static local:WindowCommands.TogglePointing}" CommandParameter="{Binding}"
                                         CommandTarget="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        Focusable="False" IsTabStop="False" Padding="5,3" Margin="4,1" MinHeight="26"
+                                        Focusable="False" IsTabStop="False" Margin="4,1" Style="{StaticResource RegisterPointingButton}"
                                         ToolTip="{loc:LocalizedText MainWindow.ClickUnmarkedACloseUpTransactionRequiresAn}"
                                         ToolTipService.ShowOnDisabled="True" AutomationProperties.AutomationId="PointingCell" AutomationProperties.Name="{Binding MarkText}" />
                             </DataTemplate></DataGridTemplateColumn.CellTemplate>
@@ -491,19 +522,7 @@
                                 <TextBlock Text="{loc:LocalizedText MainWindow.DraftCtrlS}" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,4,6,4" />
                             </WrapPanel>
                         </DockPanel>
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False" AutomationProperties.Name="{loc:LocalizedText MainWindow.FieldsOfTransactionSelected}">
-                        <Grid MinWidth="527">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="92" /><ColumnDefinition Width="100" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="*" MinWidth="105" /><ColumnDefinition Width="125" /></Grid.ColumnDefinitions>
-                            <Grid.Resources><Style TargetType="StackPanel"><Setter Property="Margin" Value="0,0,8,0" /></Style></Grid.Resources>
-                            <StackPanel><TextBlock Text="{loc:LocalizedText Common.Date}" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.DateText, Mode=OneWay}" AutomationProperties.Name="{loc:LocalizedText MainWindow.DateOfTransaction}" /></StackPanel>
-                            <StackPanel Grid.Column="1"><TextBlock Text="{loc:LocalizedText MainWindow.Mode}" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.PaymentModeName, Mode=OneWay}" AutomationProperties.Name="{loc:LocalizedText Common.PaymentMethod}" /></StackPanel>
-                            <StackPanel Grid.Column="2"><TextBlock Text="{loc:LocalizedText Common.Payee}" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.PayeeName, Mode=OneWay}" AutomationProperties.Name="{loc:LocalizedText MainWindow.PayeeOfTheTransaction}" /></StackPanel>
-                            <StackPanel Grid.Column="3"><TextBlock Text="{loc:LocalizedText Common.Category}" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" Text="{Binding SelectedRow.CategoryName, Mode=OneWay}" AutomationProperties.Name="{loc:LocalizedText MainWindow.TypeOfTransaction}" /></StackPanel>
-                            <StackPanel Grid.Column="4"><TextBlock Text="{loc:LocalizedText MainWindow.OriginalAmount}" Style="{StaticResource MutedText}" Margin="0,0,0,3" /><TextBox Style="{StaticResource EntryField}" TextAlignment="Right" AutomationProperties.Name="{loc:LocalizedText MainWindow.OriginalAmount}">
-                                <TextBox.Text><MultiBinding StringFormat="{}{0}{1}" Mode="OneWay"><Binding Path="SelectedRow.DebitText" /><Binding Path="SelectedRow.CreditText" /></MultiBinding></TextBox.Text>
-                            </TextBox></StackPanel>
-                        </Grid>
-                        </ScrollViewer>
+                        <local:QuickEntry x:Name="QuickTransaction" IsEnabled="False" />
                     </StackPanel>
                 </Border>
             </Grid>

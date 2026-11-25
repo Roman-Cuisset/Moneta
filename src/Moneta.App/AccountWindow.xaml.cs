@@ -34,7 +34,7 @@ public partial class AccountWindow : Window
             AccountType.Text = editing.Type ?? string.Empty;
             NativeCurrency.SelectedItem = editing.Currency;
             NativeCurrency.IsEnabled = false;
-            OpeningBalance.Text = editing.OpeningBalance.ToString($"F{editing.Currency.DecimalPlaces}", L.Culture);
+            OpeningBalance.Text = MoneyInput.FormatForEdit(editing.OpeningBalance, editing.Currency.DecimalPlaces);
             OpeningBalance.IsReadOnly = true;
             BankName.Text = editing.BankName ?? string.Empty;
             BankReference.Text = editing.BankReference ?? string.Empty;

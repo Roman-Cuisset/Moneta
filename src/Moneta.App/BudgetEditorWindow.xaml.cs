@@ -24,7 +24,7 @@ public partial class BudgetEditorWindow : Window
         CurrencyInput.ItemsSource = document.Currencies;
         var currency = document.Currencies.FirstOrDefault(item => item.Code == (original?.CurrencyCode ?? "EUR")) ?? document.Currencies[0];
         CurrencyInput.SelectedItem = currency;
-        AmountInput.Text = original is null ? "" : ExactMoney.FromMinorUnits(original.PlannedMinor, currency).ToString(DisplayCulture);
+        AmountInput.Text = original is null ? "" : MoneyInput.FormatForEdit(ExactMoney.FromMinorUnits(original.PlannedMinor, currency));
         AccountsInput.ItemsSource = AccountChoices(document);
         CategoriesInput.ItemsSource = CategoryChoices(document);
         if (original is not null)

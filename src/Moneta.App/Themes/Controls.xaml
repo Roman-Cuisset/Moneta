@@ -220,10 +220,16 @@
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Foreground" Value="{DynamicResource NegativeBrush}" /><Setter Property="Background" Value="{DynamicResource DangerSurfaceBrush}" />
     </Style>
+    <Style x:Key="MutedText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
     <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="{DynamicResource TransparentBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource TransparentBrush}" />
         <Setter Property="Padding" Value="9,5" />
+        <Setter Property="Margin" Value="2,0" />
         <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style x:Key="UnavailableButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">

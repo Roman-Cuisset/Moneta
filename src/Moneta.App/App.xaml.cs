@@ -11,12 +11,14 @@ namespace Moneta.App;
 public partial class App : Application
 {
     private Mutex? _running;
+    private FileActivation? _fileActivation;
     public static ThemeController ThemeController { get; } = new();
     public static SettingsStore Settings { get; } = new();
     private static readonly OfficialRateClient[] RateClients =
         [new(RateProvider.Nbrb), new(RateProvider.Cbr)];
     private static readonly SqliteRateCache RateCache = new();
-    public static ExchangeRateSession Rates { get; } = new(RateCache, RateClients);
+    public static ExchangeRateSession Rates { get; } = CreateRateSession();
+    internal static ExchangeRateSession CreateRateSession() => new(RateCache, RateClients);
     public static HistoricalValuation HistoricalFx { get; } = new(new HistoricalRateResolver(RateCache, RateClients));
     public static RateProvider SelectedRateProvider => Settings.Current.RateSource == "CBR" ? RateProvider.Cbr : RateProvider.Nbrb;
 
@@ -39,7 +41,7 @@ public partial class App : Application
         ThemeController.Apply(settings.Theme);
         ApplyLanguage(settings.Language);
         if (previousSource != settings.RateSource)
-            _ = Rates.SelectAsync(SelectedRateProvider, Rates.State.Date);
+            _ = Rates.SelectAsync(SelectedRateProvider, Rates.Today);
         return true;
     }
 
@@ -64,9 +66,8 @@ public partial class App : Application
         L.SetLanguage(culture.Name);
     }
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
-        _running = new Mutex(false, UpdateChannel.RunningMutex);
         string? settingsError = null;
         try
         {
@@ -78,12 +79,27 @@ public partial class App : Application
         }
 
         ApplyLanguage(Settings.Current.Language);
-        ThemeController.Apply(Settings.Current.Theme);
         base.OnStartup(e);
 
-        MainWindow = new MainWindow();
-        MainWindow.Show();
-        ((MainWindow)MainWindow).InitializeUpdates(e.Args);
+        var activation = _fileActivation = new FileActivation();
+        var path = e.Args.Length == 1 && !e.Args[0].StartsWith("--", StringComparison.Ordinal) ? e.Args[0] : string.Empty;
+        if (!activation.IsPrimary)
+        {
+            if (!await activation.ForwardAsync(path))
+                MessageBox.Show(L.Get("FileActivation.HandoffFailed"), L.Get("FileActivation.Title"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            Shutdown();
+            return;
+        }
+
+        _running = new Mutex(false, UpdateChannel.RunningMutex);
+        ThemeController.Apply(Settings.Current.Theme);
+        var window = new MainWindow();
+        MainWindow = window;
+        window.Show();
+        activation.Listen(request => Dispatcher.InvokeAsync(() => window.QueueActivation(request)).Task);
+        if (path.Length > 0) window.QueueActivation(path);
+        window.InitializeUpdates(e.Args);
         _ = Rates.InitializeAsync(SelectedRateProvider, Settings.Current.RefreshRatesAtStartup);
         if (settingsError is not null)
         {
@@ -96,6 +112,7 @@ public partial class App : Application
         Rates.Dispose();
         foreach (var client in RateClients) client.Dispose();
         ThemeController.Dispose();
+        _fileActivation?.Dispose();
         _running?.Dispose();
         base.OnExit(e);
     }

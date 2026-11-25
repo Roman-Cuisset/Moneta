@@ -106,6 +106,22 @@ public sealed class ExchangeRateSessionTests
     }
 
     [TestMethod]
+    public async Task BacktrackingRefreshCannotReplaceANewerApplicableCachedPublication()
+    {
+        var newer = Sample(requested: Day.AddDays(-1), retrieved: Now.AddDays(-1));
+        var older = Sample(requested: Day.AddDays(-2));
+        var source = new Source(RateProvider.Nbrb) { MissingBefore = 3, Reply = older };
+        var cache = new Cache(newer.Rates);
+        using var session = new ExchangeRateSession(cache, [source], new Clock());
+        await session.InitializeAsync(RateProvider.Nbrb, true);
+        Assert.AreEqual(3, source.Dates.Count);
+        Assert.AreEqual(older, cache.Stored.Single());
+        Assert.AreEqual(newer.Rates, session.State.Rates);
+        Assert.IsTrue(session.State.FromCache);
+        Assert.IsTrue(session.State.IsPersistent);
+    }
+
+    [TestMethod]
     public async Task ProviderChangeCancelsOldRequestAndLateCompletionCannotReplaceNewSelection()
     {
         var delayed = new DelayedSource();

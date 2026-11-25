@@ -22,8 +22,16 @@ public partial class MainWindow
         model.UpdateRateDisplay(state.Rates, state.Provider, state.Date, state.FromCache, state.Message);
     }
 
-    private void ShowRates_Executed(object sender, ExecutedRoutedEventArgs e) =>
-        new RatesWindow(App.Rates, _workspace.Model?.DisplayCurrencies) { Owner = this }.ShowDialog();
+    private async void ShowRates_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        using var session = App.CreateRateSession();
+        var window = new RatesWindow(session, _workspace.Model?.DisplayCurrencies) { Owner = this };
+        _ = session.SelectAsync(App.SelectedRateProvider, App.Rates.Today);
+        window.ShowDialog();
+        // A historical date belongs to the tool. The register continues to show today's estimate.
+        if (!App.Rates.State.IsRefreshing)
+            await App.Rates.SelectAsync(App.SelectedRateProvider, App.Rates.Today);
+    }
 
     private void RefreshRates_CanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
@@ -31,5 +39,6 @@ public partial class MainWindow
         e.Handled = true;
     }
 
-    private async void RefreshRates_Executed(object sender, ExecutedRoutedEventArgs e) => await App.Rates.RefreshAsync();
+    private async void RefreshRates_Executed(object sender, ExecutedRoutedEventArgs e) =>
+        await App.Rates.RefreshAsync(App.SelectedRateProvider, App.Rates.Today);
 }

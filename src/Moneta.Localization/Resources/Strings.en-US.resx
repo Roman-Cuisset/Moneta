@@ -3235,7 +3235,7 @@ Exchange rate of {1:MM/dd/yyyy}</value>
     <value>WAL mode is mandatory.</value>
   </data>
   <data name="Money.InvalidInput" xml:space="preserve">
-    <value>Enter an amount with a decimal point and no grouping separators, for example 1234.56.</value>
+    <value>Enter a valid amount using a decimal point or comma, for example 1234.56 or 1,234.56.</value>
   </data>
   <data name="MoneyInput.OffLimitAmountFor0TheNumberOf" xml:space="preserve">
     <value>Off-limit amount for {0}: the number of minor units must be between {1} and {2} .</value>
@@ -5580,5 +5580,80 @@ Cost: - {0} on {1}</value>
   </data>
   <data name="WindowCommands.ValueOfTheRecordedTransaction" xml:space="preserve">
     <value>Value of the recorded transaction</value>
+  </data>
+  <data name="FileActivation.InvalidPath" xml:space="preserve">
+    <value>Choose a Moneta accounts file (.moneta) with a valid path.</value>
+  </data>
+  <data name="FileActivation.Title" xml:space="preserve">
+    <value>Open a Moneta document</value>
+  </data>
+  <data name="FileActivation.HandoffFailed" xml:space="preserve">
+    <value>The open Moneta window did not confirm the request. You can open the file from its File menu.</value>
+  </data>
+  <data name="Money.AmbiguousInput" xml:space="preserve">
+    <value>This amount is ambiguous. Use a space for thousands or enter an ungrouped amount (examples 1 234 and 1.2340).</value>
+  </data>
+  <data name="Money.FilterPrecision" xml:space="preserve">
+    <value>This amount exceeds the filter precision (28 significant digits and 28 decimal places).</value>
+  </data>
+  <data name="QuickEntry.Name" xml:space="preserve">
+    <value>Quick entry</value>
+  </data>
+  <data name="QuickEntry.Label" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="QuickEntry.Subcategory" xml:space="preserve">
+    <value>Subcategory</value>
+  </data>
+  <data name="QuickEntry.Direction" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="QuickEntry.Amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="QuickEntry.NativeAmount" xml:space="preserve">
+    <value>Amount ({0})</value>
+  </data>
+  <data name="QuickEntry.OtherAccounts" xml:space="preserve">
+    <value>Unstaged entries in {0} other account(s). Return to those accounts to continue.</value>
+  </data>
+  <data name="QuickEntry.AddDraft" xml:space="preserve">
+    <value>Stage entry</value>
+  </data>
+  <data name="QuickEntry.DiscardEntry" xml:space="preserve">
+    <value>Discard the fields in this quick entry?</value>
+  </data>
+  <data name="QuickEntry.DiscardBeforeClosing" xml:space="preserve">
+    <value>Some quick entry fields have yet to be staged. Continue and discard those fields? Choose No to return to the entry.</value>
+  </data>
+  <data name="RegisterDensity.Menu" xml:space="preserve">
+    <value>Register density</value>
+  </data>
+  <data name="RegisterDensity.Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="RegisterDensity.Compact" xml:space="preserve">
+    <value>Compact</value>
+  </data>
+  <data name="RegisterDensity.Filters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="RateDisplay.KeptNewerCache" xml:space="preserve">
+    <value>The provider returned the publication for {0:d}. The newer applicable publication for {1:d} was kept. </value>
+  </data>
+  <data name="RateDisplay.HttpError" xml:space="preserve">
+    <value>The provider responded, but the request failed. </value>
+  </data>
+  <data name="RateDisplay.InvalidResponse" xml:space="preserve">
+    <value>The provider response is invalid. </value>
+  </data>
+  <data name="RateDisplay.DiskCache" xml:space="preserve">
+    <value>disk cache</value>
+  </data>
+  <data name="RateDisplay.LocalCache" xml:space="preserve">
+    <value>Local cache. </value>
+  </data>
+  <data name="RateDisplay.AppliedQuotes" xml:space="preserve">
+    <value>Quotes used ({0}). </value>
   </data>
 </root>

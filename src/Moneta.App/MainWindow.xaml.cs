@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         _backupLibrary = backupLibrary;
         _readBackupPolicy = backupPolicy;
         InitializeComponent();
+        ApplyRegisterDensity();
         InitializeBackups();
         _workspace.Changed += (_, _) =>
         {
@@ -35,7 +36,7 @@ public partial class MainWindow : Window
             else Dispatcher.BeginInvoke(UpdateDocumentState);
         };
         App.Rates.Changed += Rates_Changed;
-        Closed += (_, _) => App.Rates.Changed -= Rates_Changed;
+        Closed += (_, _) => { _windowClosed = true; App.Rates.Changed -= Rates_Changed; };
         PropertyChangedEventManager.AddHandler(L.Current, LanguageChanged, nameof(L.CultureName));
         UpdateDocumentState();
     }
@@ -44,6 +45,7 @@ public partial class MainWindow : Window
     {
         ApplyRateState();
         _workspace.Model?.RefreshDisplayLanguage();
+        QuickTransaction.RefreshLanguage();
         RefreshDocumentLabels();
         RefreshBackupUi();
         RefreshScheduleReminder();
@@ -52,7 +54,11 @@ public partial class MainWindow : Window
     private void UpdateDocumentState()
     {
         UpdateRegisterSearch();
-        if (!ReferenceEquals(DataContext, _workspace.Model)) DataContext = _workspace.Model;
+        if (!ReferenceEquals(DataContext, _workspace.Model))
+        {
+            DataContext = _workspace.Model;
+            QuickTransaction.SetDocument(_workspace.Model);
+        }
         RefreshDocumentLabels();
         ApplyRateState();
         IsEnabled = !_busy && !_stopBackupRequests;
@@ -161,6 +167,9 @@ public partial class MainWindow : Window
 
     private async Task<bool> ConfirmReplacement()
     {
+        if (QuickTransaction.HasUnvalidatedInput && MessageBox.Show(this, L.Get("QuickEntry.DiscardBeforeClosing"),
+            L.Get("QuickEntry.Name"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+            return false;
         if (!_workspace.HasUnsavedChanges) return true;
         var answer = MessageBox.Show(this, L.Get("MainWindow.ThisDocumentContainsUnrecordedChangesDoYouWant"), L.Get("MainWindow.MonetaPendingChanges"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question, MessageBoxResult.Cancel);
         return answer == MessageBoxResult.No || (answer == MessageBoxResult.Yes && await SaveAsync());
@@ -183,19 +192,24 @@ public partial class MainWindow : Window
             await ShowBankPerfectImportAsync(dialog.FileName);
             return;
         }
-        if (string.Equals(dialog.FileName, _workspace.FilePath, StringComparison.OrdinalIgnoreCase) || !await ConfirmReplacement()) return;
+        await OpenMonetaAsync(dialog.FileName);
+    }
+
+    private async Task OpenMonetaAsync(string path)
+    {
+        if (string.Equals(path, _workspace.FilePath, StringComparison.OrdinalIgnoreCase) || !await ConfirmReplacement()) return;
         // Inspect the candidate without closing or merging the current folder.
         var migration = false;
         await RunIo(() =>
         {
-            try { _workspace.Open(dialog.FileName); }
+            try { _workspace.Open(path); }
             catch (DocumentException error) when (error.Error == DocumentError.MigrationRequired) { migration = true; }
         }, L.Get("MainWindow.CheckingAndOpening"));
         if (!migration) return;
         if (MessageBox.Show(this, L.Get("MainWindow.MonetaCanOpenAMigratedAndVerifiedCopy"), L.Get("MainWindow.MonetaMigrationByCopy"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         var target = Destination(L.Get("MainWindow.MigratedCopy"), L.Get("MainWindow.FileMigratedMoneta"));
         if (target.ShowDialog(this) == true)
-            await RunIo(() => _workspace.OpenMigratedCopy(dialog.FileName, target.FileName), L.Get("MainWindow.MigrationOnANewCopy"));
+            await RunIo(() => _workspace.OpenMigratedCopy(path, target.FileName), L.Get("MainWindow.MigrationOnANewCopy"));
     }
 
     private async void ImportBankPerfect_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -288,6 +302,7 @@ public partial class MainWindow : Window
     {
         if (CanEditLedger && _workspace.Model is { } model)
             new TransactionWindow(model) { Owner = this }.ShowDialog();
+        QuickTransaction.RefreshSuggestions();
         CommandManager.InvalidateRequerySuggested();
     }
     private void EditTransaction_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -297,6 +312,7 @@ public partial class MainWindow : Window
         {
             if (row.TransferId is { } id) OpenTransfer(id);
             else new TransactionWindow(model, row.Transaction) { Owner = this }.ShowDialog();
+            QuickTransaction.RefreshSuggestions();
         }
         CommandManager.InvalidateRequerySuggested();
     }

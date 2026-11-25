@@ -72,7 +72,7 @@ public partial class RatesWindow : Window
                     L.Get("RatesWindow.MathematicalIdentityNotAPublishedRate")));
                 QuotesGrid.ItemsSource = rows.OrderBy(row => row.Code, StringComparer.Ordinal).ToArray();
                 RateDates.Text = L.Format("RatesWindow.Requested0MmDdYyyyActualEffect1", (state.Date), (rates.EffectiveDate), (rates.RequestedDate), (rates.RetrievedUtc.ToLocalTime())) +
-                    (state.FromCache ? state.IsPersistent ? "cache disque" : L.Get("RatesWindow.MemoryOnlyPersistenceNotConfirmed") : state.IsPersistent ? L.Get("RatesWindow.HttpsResponseStored") : L.Get("RatesWindow.HttpsResponseCacheNotSaved")) +
+                    (state.FromCache ? state.IsPersistent ? L.Get("RateDisplay.DiskCache") : L.Get("RatesWindow.MemoryOnlyPersistenceNotConfirmed") : state.IsPersistent ? L.Get("RatesWindow.HttpsResponseStored") : L.Get("RatesWindow.HttpsResponseCacheNotSaved")) +
                     L.Get("RatesWindow.ReferenceValueQuotedAmountOfficialNominalValue");
                 TraceInformation.Text = rates.Endpoint;
                 TraceInformation.ToolTip = L.Get("RatesWindow.Sha256OfTheOriginalContent") + rates.PayloadSha256;
@@ -103,8 +103,13 @@ public partial class RatesWindow : Window
     private void Provider_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (_updating || ProviderChoice.SelectedItem is not ComboBoxItem { Tag: string source }) return;
-        if (source == App.Settings.Current.RateSource) return;
-        if (!App.SaveSettings(App.Settings.Current with { RateSource = source }, this)) RefreshView();
+        if (source != App.Settings.Current.RateSource && !App.SaveSettings(App.Settings.Current with { RateSource = source }, this))
+        {
+            RefreshView();
+            return;
+        }
+        if (_session.State.Provider != App.SelectedRateProvider)
+            _ = _session.SelectAsync(App.SelectedRateProvider, _session.State.Date, _lifetime.Token);
     }
 
     private bool TryDate(out DateOnly date)

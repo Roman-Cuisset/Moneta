@@ -74,6 +74,7 @@ public sealed class LocalizationTests
         Assert.AreEqual(date, frenchDate);
         Assert.IsFalse(L.TryReadDate("02/13/2026", out _));
         Assert.AreEqual(-1234.56m, MoneyInput.ParseLocalized("-1\u202f234,560", euro, allowNegative: true));
+        Assert.AreEqual(1.10m, MoneyInput.ParseLocalized("1.10", euro));
         Assert.AreEqual(-1234.56m, LedgerSearchCriteria.ParseAmount("-1234,56"));
         StringAssert.Contains(MoneyFormatter.Format(1234.56m, euro), ",56");
 
@@ -82,10 +83,11 @@ public sealed class LocalizationTests
         Assert.AreEqual(date, englishDate);
         Assert.IsFalse(L.TryReadDate("13/02/2026", out _));
         Assert.AreEqual(-1234.56m, MoneyInput.ParseLocalized("-1234.560", euro, allowNegative: true));
+        Assert.AreEqual(1.10m, MoneyInput.ParseLocalized("1,10", euro));
         Assert.AreEqual(-1234.56m, LedgerSearchCriteria.ParseAmount("-1234.56"));
         Assert.ThrowsException<ArgumentException>(() => MoneyInput.ParseLocalized("1,234", euro));
         Assert.ThrowsException<ArgumentException>(() => MoneyInput.ParseLocalized("1234.567", euro));
-        Assert.ThrowsException<ArgumentException>(() => LedgerSearchCriteria.ParseAmount("1,234.56"));
+        Assert.AreEqual(1234.56m, LedgerSearchCriteria.ParseAmount("1,234.56"));
         StringAssert.Contains(MoneyFormatter.Format(1234.56m, euro), "1,234.56");
     }
 

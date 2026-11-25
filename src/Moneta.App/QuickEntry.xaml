@@ -1,0 +1,63 @@
+<UserControl x:Class="Moneta.App.QuickEntry"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="clr-namespace:Moneta.App"
+    PreviewKeyDown="Entry_PreviewKeyDown" AutomationProperties.AutomationId="QuickEntry"
+    AutomationProperties.Name="{loc:LocalizedText QuickEntry.Name}">
+    <StackPanel>
+        <WrapPanel KeyboardNavigation.TabNavigation="Continue">
+            <WrapPanel.Resources>
+                <Style TargetType="StackPanel"><Setter Property="Margin" Value="0,0,7,5" /></Style>
+            </WrapPanel.Resources>
+            <StackPanel Width="98">
+                <TextBlock Text="{loc:LocalizedText Common.Date}" Style="{StaticResource MutedText}" />
+                <TextBox x:Name="EntryDate" MaxLength="10" AutomationProperties.AutomationId="QuickDate"
+                         AutomationProperties.Name="{loc:LocalizedText TransactionWindow.DateOfTransactionInFormatDayMonthYear}" />
+            </StackPanel>
+            <StackPanel Width="112">
+                <TextBlock Text="{loc:LocalizedText MainWindow.Mode}" Style="{StaticResource MutedText}" />
+                <ComboBox x:Name="EntryMode" IsEditable="True" IsTextSearchEnabled="False" AutomationProperties.AutomationId="QuickMode"
+                          AutomationProperties.Name="{loc:LocalizedText Common.PaymentMethod}" />
+            </StackPanel>
+            <StackPanel Width="113">
+                <TextBlock Text="{loc:LocalizedText Common.Payee}" Style="{StaticResource MutedText}" />
+                <ComboBox x:Name="EntryPayee" IsEditable="True" IsTextSearchEnabled="False" AutomationProperties.AutomationId="QuickPayee"
+                          AutomationProperties.Name="{loc:LocalizedText Common.Payee}" />
+            </StackPanel>
+            <StackPanel Width="148">
+                <TextBlock Text="{loc:LocalizedText QuickEntry.Label}" Style="{StaticResource MutedText}" />
+                <TextBox x:Name="EntryLabel" MaxLength="240" AutomationProperties.AutomationId="QuickLabel"
+                         AutomationProperties.Name="{loc:LocalizedText QuickEntry.Label}" />
+            </StackPanel>
+            <StackPanel Width="112">
+                <TextBlock Text="{loc:LocalizedText Common.Category}" Style="{StaticResource MutedText}" />
+                <ComboBox x:Name="EntryCategory" IsEditable="True" IsTextSearchEnabled="False" AutomationProperties.AutomationId="QuickCategory"
+                          AutomationProperties.Name="{loc:LocalizedText Common.Category}" />
+            </StackPanel>
+            <StackPanel Width="112">
+                <TextBlock Text="{loc:LocalizedText QuickEntry.Subcategory}" Style="{StaticResource MutedText}" />
+                <ComboBox x:Name="EntrySubcategory" IsEditable="True" IsTextSearchEnabled="False" AutomationProperties.AutomationId="QuickSubcategory"
+                          AutomationProperties.Name="{loc:LocalizedText QuickEntry.Subcategory}" />
+            </StackPanel>
+            <StackPanel Width="102">
+                <TextBlock Text="{loc:LocalizedText QuickEntry.Direction}" Style="{StaticResource MutedText}" />
+                <ComboBox x:Name="EntryDirection" SelectedIndex="0" AutomationProperties.AutomationId="QuickDirection"
+                          AutomationProperties.Name="{loc:LocalizedText QuickEntry.Direction}">
+                    <ComboBoxItem Content="{loc:LocalizedText Common.Expense}" />
+                    <ComboBoxItem Content="{loc:LocalizedText Common.Income2}" />
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Width="105">
+                <TextBlock x:Name="AmountCaption" Style="{StaticResource MutedText}" />
+                <TextBox x:Name="EntryAmount" MaxLength="128" TextAlignment="Right" AutomationProperties.AutomationId="QuickAmount"
+                         AutomationProperties.Name="{Binding Text, ElementName=AmountCaption}" />
+            </StackPanel>
+            <Button Click="Stage_Click" Content="{loc:LocalizedText QuickEntry.AddDraft}" VerticalAlignment="Bottom" Margin="0,0,0,5"
+                    AutomationProperties.AutomationId="QuickStage" />
+        </WrapPanel>
+        <TextBlock x:Name="Notice" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Visibility="Collapsed"
+                   AutomationProperties.LiveSetting="Polite" />
+        <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource NegativeBrush}"
+                   AutomationProperties.AutomationId="QuickError" AutomationProperties.LiveSetting="Assertive" />
+    </StackPanel>
+</UserControl>

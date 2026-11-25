@@ -49,17 +49,7 @@ public sealed record LedgerSearchCriteria
 
     public static decimal? ParseAmount(string text, CultureInfo culture)
     {
-        text = text.Trim();
-        if (text.Length == 0) return null;
-        var parts = text.TrimStart('+', '-').Split(culture.NumberFormat.NumberDecimalSeparator);
-        var digits = string.Concat(parts).TrimStart('0').TrimEnd('0').Length;
-        var scale = parts.Length == 2 ? parts[1].TrimEnd('0').Length : 0;
-        // Decimal.TryParse can round very long inputs. Check their precision before parsing.
-        if (digits > 28 || scale > 28 ||
-            !decimal.TryParse(text, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
-                culture, out var amount))
-            throw new ArgumentException(L.Get("LedgerSearch.EnterAnAmountSignedWithACommaAnd"));
-        return amount;
+        return string.IsNullOrWhiteSpace(text) ? null : MoneyInput.ParseFilter(text, culture);
     }
 }
 

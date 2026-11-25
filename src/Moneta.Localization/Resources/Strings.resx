@@ -3235,7 +3235,7 @@ Cours du {1:dd/MM/yyyy}</value>
     <value>Le mode WAL est obligatoire.</value>
   </data>
   <data name="Money.InvalidInput" xml:space="preserve">
-    <value>Montant invalide : saisissez un nombre avec une virgule décimale (exemple : 1 234,56).</value>
+    <value>Saisissez un montant valide avec un point ou une virgule décimale, par exemple 1234.56 ou 1 234,56.</value>
   </data>
   <data name="MoneyInput.OffLimitAmountFor0TheNumberOf" xml:space="preserve">
     <value>Montant hors limites pour {0} : le nombre d’unités mineures doit être compris entre {1} et {2}.</value>
@@ -5580,5 +5580,80 @@ Les deux mouvements et les frais liés seront retirés ensemble. Les traces déj
   </data>
   <data name="WindowCommands.ValueOfTheRecordedTransaction" xml:space="preserve">
     <value>Valorisation de l’opération enregistrée</value>
+  </data>
+  <data name="FileActivation.InvalidPath" xml:space="preserve">
+    <value>Choisissez un fichier de comptes Moneta (.moneta) avec un chemin valide.</value>
+  </data>
+  <data name="FileActivation.Title" xml:space="preserve">
+    <value>Ouverture d’un dossier Moneta</value>
+  </data>
+  <data name="FileActivation.HandoffFailed" xml:space="preserve">
+    <value>La fenêtre Moneta déjà ouverte n’a pas confirmé la demande. Vous pouvez ouvrir le fichier depuis son menu Fichier.</value>
+  </data>
+  <data name="Money.AmbiguousInput" xml:space="preserve">
+    <value>Ce montant est ambigu. Utilisez un espace pour les milliers ou écrivez le montant sans groupement (exemples 1 234 et 1,2340).</value>
+  </data>
+  <data name="Money.FilterPrecision" xml:space="preserve">
+    <value>Ce montant dépasse la précision disponible pour le filtre (28 chiffres significatifs et 28 décimales).</value>
+  </data>
+  <data name="QuickEntry.Name" xml:space="preserve">
+    <value>Saisie rapide</value>
+  </data>
+  <data name="QuickEntry.Label" xml:space="preserve">
+    <value>Libellé</value>
+  </data>
+  <data name="QuickEntry.Subcategory" xml:space="preserve">
+    <value>Sous-catégorie</value>
+  </data>
+  <data name="QuickEntry.Direction" xml:space="preserve">
+    <value>Sens</value>
+  </data>
+  <data name="QuickEntry.Amount" xml:space="preserve">
+    <value>Montant</value>
+  </data>
+  <data name="QuickEntry.NativeAmount" xml:space="preserve">
+    <value>Montant ({0})</value>
+  </data>
+  <data name="QuickEntry.OtherAccounts" xml:space="preserve">
+    <value>Saisie non validée dans {0} autre(s) compte(s). Revenez au compte pour la reprendre.</value>
+  </data>
+  <data name="QuickEntry.AddDraft" xml:space="preserve">
+    <value>Ajouter au brouillon</value>
+  </data>
+  <data name="QuickEntry.DiscardEntry" xml:space="preserve">
+    <value>Abandonner les champs de cette saisie rapide ?</value>
+  </data>
+  <data name="QuickEntry.DiscardBeforeClosing" xml:space="preserve">
+    <value>Des champs de saisie rapide attendent une validation. Voulez-vous poursuivre en abandonnant ces champs ? Choisissez Non pour revenir à la saisie.</value>
+  </data>
+  <data name="RegisterDensity.Menu" xml:space="preserve">
+    <value>Densité du registre</value>
+  </data>
+  <data name="RegisterDensity.Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="RegisterDensity.Compact" xml:space="preserve">
+    <value>Compact</value>
+  </data>
+  <data name="RegisterDensity.Filters" xml:space="preserve">
+    <value>Filtres</value>
+  </data>
+  <data name="RateDisplay.KeptNewerCache" xml:space="preserve">
+    <value>Le fournisseur a renvoyé la publication du {0:d}. La publication applicable plus récente du {1:d} a été conservée. </value>
+  </data>
+  <data name="RateDisplay.HttpError" xml:space="preserve">
+    <value>Le fournisseur a répondu, mais la requête a échoué. </value>
+  </data>
+  <data name="RateDisplay.InvalidResponse" xml:space="preserve">
+    <value>La réponse du fournisseur est invalide. </value>
+  </data>
+  <data name="RateDisplay.DiskCache" xml:space="preserve">
+    <value>cache disque</value>
+  </data>
+  <data name="RateDisplay.LocalCache" xml:space="preserve">
+    <value>Cache local. </value>
+  </data>
+  <data name="RateDisplay.AppliedQuotes" xml:space="preserve">
+    <value>Cotations utilisées ({0}). </value>
   </data>
 </root>

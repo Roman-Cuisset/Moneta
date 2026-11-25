@@ -16,6 +16,7 @@ public sealed class SettingsStoreTests
     {
         var store = new SettingsStore(FilePath); store.Load();
         Assert.AreEqual("Light", store.Current.Theme);
+        Assert.IsFalse(store.Current.CompactRegister);
         Assert.IsTrue(store.Current.CheckUpdatesAtStartup); Assert.IsFalse(store.Current.RefreshRatesAtStartup);
         Assert.IsFalse(File.Exists(FilePath));
     }
@@ -24,9 +25,10 @@ public sealed class SettingsStoreTests
     {
         var store = new SettingsStore(FilePath); store.Load();
         store.Save(new LocalSettings { Theme = "Dark", CheckUpdatesAtStartup = true });
-        store.Save(store.Current with { RefreshRatesAtStartup = true });
+        store.Save(store.Current with { RefreshRatesAtStartup = true, CompactRegister = true });
         var reopened = new SettingsStore(FilePath); reopened.Load();
         Assert.AreEqual("Dark", reopened.Current.Theme);
+        Assert.IsTrue(reopened.Current.CompactRegister);
         Assert.IsTrue(reopened.Current.CheckUpdatesAtStartup); Assert.IsTrue(reopened.Current.RefreshRatesAtStartup);
         CollectionAssert.AreEquivalent(new[] { FilePath }, Directory.GetFiles(_directory));
     }
@@ -67,6 +69,7 @@ public sealed class SettingsStoreTests
         File.WriteAllText(FilePath, """{"SchemaVersion":1,"Theme":"Dark","CheckUpdatesAtStartup":true,"RefreshRatesAtStartup":true}""");
         var store = new SettingsStore(FilePath); store.Load();
         Assert.AreEqual("NBRB", store.Current.RateSource);
+        Assert.IsFalse(store.Current.CompactRegister);
         store.Save(store.Current with { RateSource = "CBR" });
         var reopened = new SettingsStore(FilePath); reopened.Load();
         Assert.AreEqual("CBR", reopened.Current.RateSource);

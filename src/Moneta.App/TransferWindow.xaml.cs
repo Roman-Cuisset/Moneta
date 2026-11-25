@@ -96,7 +96,7 @@ public partial class TransferWindow : Window
     private static string ReconciledMessage => L.Get("TransferWindow.ReconciledTransfer");
 
     private static string FormatDate(DateOnly date) => date.ToString(L.DatePattern, DisplayCulture);
-    private static string FormatAmount(Transaction value) => value.Amount.ToString($"F{value.Currency.DecimalPlaces}", DisplayCulture);
+    private static string FormatAmount(Transaction value) => MoneyInput.FormatForEdit(value.Amount, value.Currency.DecimalPlaces);
     private static bool TryDate(string text, out DateOnly date) => DateOnly.TryParseExact(text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out date) && date != default;
 
     private void Account_SelectionChanged(object sender, SelectionChangedEventArgs e)

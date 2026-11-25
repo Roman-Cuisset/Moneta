@@ -58,6 +58,37 @@ public sealed class DocumentWorkspaceTests
     }
 
     [TestMethod]
+    public void SharedTransactionEntryStagesExactOperationsAndCustomValuesUntilExplicitSave()
+    {
+        using var workspace = new DocumentWorkspace();
+        workspace.New("Saisie rapide fictive");
+        var model = workspace.Model!;
+        var euro = model.CurrencyRegistry.Get("EUR");
+        var account = model.AddAccount("Courant fictif", euro, null, 5m, null).Account;
+        var path = FileName("Saisie fictive é Ω");
+        workspace.Save(path);
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(L.French);
+        var input = new TransactionEntry("12/04/2026", 0, "1.10", "Premier", "Mode libre", "Tiers libre", "Catégorie libre", "Enfant");
+        var debit = model.AddTransaction(input.CreateDraft(euro, culture));
+        var credit = model.AddTransaction((input with { Direction = 1, Amount = "2,20", Label = "Deuxième" }).CreateDraft(euro, culture));
+        Assert.AreEqual(debit.SubcategoryId, credit.SubcategoryId);
+        Assert.AreEqual(debit.PayeeId, credit.PayeeId);
+        Assert.AreEqual(debit.PaymentMethodId, credit.PaymentMethodId);
+        Assert.AreEqual(6.10m, model.SelectedAccount!.Balance);
+        Assert.ThrowsException<ArgumentException>(() => (input with { Amount = "1,234" }).CreateDraft(euro, culture));
+        Assert.AreEqual(0, MonetaFile.Inspect(path).OperationCount);
+        Assert.IsTrue(workspace.HasUnsavedChanges);
+
+        workspace.Save();
+        Assert.IsFalse(workspace.HasUnsavedChanges);
+        workspace.New("Autre dossier fictif");
+        workspace.Open(path);
+        Assert.AreEqual(account.Id, workspace.Model!.SelectedAccountId);
+        Assert.AreEqual(2, workspace.Model.Rows.Count);
+        Assert.AreEqual(6.10m, workspace.Model.SelectedAccount!.Balance);
+    }
+
+    [TestMethod]
     public void SaveAsPreservesTheSourceAndDemoCannotBeSaved()
     {
         using var workspace = new DocumentWorkspace();

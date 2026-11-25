@@ -16,5 +16,6 @@
     <Compile Include="../../src/Moneta.App/SettingsStore.cs" Link="SettingsStore.cs" />
     <Compile Include="../../src/Moneta.App/DocumentWorkspace.cs" Link="DocumentWorkspace.cs" />
     <Compile Include="../../src/Moneta.App/ExchangeRateSession.cs" Link="ExchangeRateSession.cs" />
+    <Compile Include="../../src/Moneta.App/TransactionEntry.cs" Link="TransactionEntry.cs" />
   </ItemGroup>
 </Project>

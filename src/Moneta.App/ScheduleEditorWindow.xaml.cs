@@ -147,7 +147,7 @@ public partial class ScheduleEditorWindow : Window
 
     private static Account? Selected(ComboBox control) => (control.SelectedItem as AccountChoice)?.Account;
     private static long Parse(string value, Account account) => ExactMoney.ToMinorUnits(MoneyInput.ParseLocalized(value, account.Currency), account.Currency);
-    private static string Format(long value, Currency currency) => ExactMoney.FromMinorUnits(value, currency).ToString($"F{currency.DecimalPlaces}", DisplayCulture);
+    private static string Format(long value, Currency currency) => MoneyInput.FormatForEdit(ExactMoney.FromMinorUnits(value, currency), currency.DecimalPlaces);
     private static string? Optional(TextBox control) => string.IsNullOrWhiteSpace(control.Text) ? null : control.Text.Trim();
     internal static DateOnly ReadDate(string value) => DateOnly.TryParseExact(value.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date) && date != default
         ? date : throw new ArgumentException(L.Get("ScheduleEditorWindow.EnterADateInMmDdYyyyFormat"));

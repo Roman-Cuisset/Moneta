@@ -148,6 +148,13 @@ public sealed class ExchangeRateSession : IDisposable
                         + CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });
                 return;
             }
+            if (cached is not null && rates.EffectiveDate < cached.EffectiveDate)
+            {
+                Publish(generation, new(provider, date, cached, false, true,
+                    () => L.Format("RateDisplay.KeptNewerCache", rates.EffectiveDate, cached.EffectiveDate)
+                        + CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });
+                return;
+            }
             Publish(generation, new(provider, date, rates, false, false,
                 () => L.Get("ExchangeRateSession.OfficialResponseReceivedAndValidated") + CacheWarning()) { IsPersistent = downloadedPersistent });
         }
@@ -158,8 +165,13 @@ public sealed class ExchangeRateSession : IDisposable
         }
         catch (RateException error)
         {
-            var key = error.Failure is RateFailure.Network or RateFailure.Timeout
-                ? "ExchangeRateSession.OfflineOrInaccessibleSupplier" : "ExchangeRateSession.RefreshFailed";
+            var key = error.Failure switch
+            {
+                RateFailure.Network or RateFailure.Timeout => "ExchangeRateSession.OfflineOrInaccessibleSupplier",
+                RateFailure.Http => "RateDisplay.HttpError",
+                RateFailure.InvalidResponse => "RateDisplay.InvalidResponse",
+                _ => "ExchangeRateSession.RefreshFailed"
+            };
             var message = error.Message;
             Publish(generation, new(provider, date, cached, false, true,
                 () => L.Get(key) + L.Diagnostic(message) + " " + CacheMessage(cached, CacheWarning(), cachedOnDisk)) { IsPersistent = cachedOnDisk });

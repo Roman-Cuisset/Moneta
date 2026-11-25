@@ -120,10 +120,13 @@ public sealed partial class MainViewModel
             var estimate = RateConverter.ConvertAmount(_selectedAccount.Balance, _selectedAccount.CurrencyCode, _displayCurrency, _displayRates);
             _projectedBalance = MoneyFormatter.Format(estimate, _displayCurrency);
             var age = _valuationDate.DayNumber - _displayRates.EffectiveDate.DayNumber;
+            var quotes = _displayRates.Quotes.Where(quote => quote.CurrencyCode == _selectedAccount.CurrencyCode || quote.CurrencyCode == _displayCurrency.Code)
+                .Select(quote => $"{quote.Nominal} {quote.CurrencyCode} = {quote.OfficialValue.ToString("G29", L.Culture)} {_displayRates.ReferenceCurrency}");
             _projectedRateDescription = L.Format("MainViewModel.EstimatedEquivalent0ExchangeRateOf1Mm", (RateRules.ProviderName(_rateProvider)), (_displayRates.EffectiveDate)) +
                 (age == 0 ? string.Empty : L.Format("MainViewModel.FormerOf0DayS", (age))) +
                 L.Format("MainViewModel.DateRequested0MmDdYyyyRecoveredOn", (_valuationDate), (_displayRates.RetrievedUtc.ToLocalTime())) +
-                (_rateFromCache ? "Cache local. " : L.Get("MainViewModel.NetworkResponseValidated")) + _rateMessage;
+                L.Format("RateDisplay.AppliedQuotes", string.Join(" · ", quotes)) +
+                (_rateFromCache ? L.Get("RateDisplay.LocalCache") : L.Get("MainViewModel.NetworkResponseValidated")) + _rateMessage;
         }
         catch (Exception error) when (error is RateException or OverflowException or ArgumentException)
         {

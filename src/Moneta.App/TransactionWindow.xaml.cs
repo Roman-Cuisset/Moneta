@@ -48,7 +48,7 @@ public partial class TransactionWindow : Window
         AmountHint.Text = L.Format("TransactionWindow.AmountIn0WithoutSignTheMeaningIndicates", (_currency.Code))
             + L.Format("TransactionWindow.Accuracy0DecimalsWithoutRoundingZeroIsAllowed", (_currency.DecimalPlaces));
         EntryDate.Text = (editing?.Date ?? DateOnly.FromDateTime(DateTime.Today)).ToString(L.DatePattern, DisplayCulture);
-        EntryAmount.Text = (editing?.Amount ?? 0m).ToString($"F{_currency.DecimalPlaces}", DisplayCulture);
+        EntryAmount.Text = MoneyInput.FormatForEdit(editing?.Amount ?? 0m, _currency.DecimalPlaces);
         EntryDirection.SelectedIndex = editing?.Direction switch
         {
             null or TransactionDirection.Debit => 0,
@@ -57,9 +57,9 @@ public partial class TransactionWindow : Window
         };
         EntryLabel.Text = editing?.Label ?? string.Empty;
         EntryNotes.Text = editing?.Details ?? string.Empty;
-        EntryPaymentMode.ItemsSource = document.PaymentMethods.Select(item => item.Name).OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToArray();
-        EntryPayee.ItemsSource = document.Payees.Select(item => item.Name).OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToArray();
-        EntryCategory.ItemsSource = _categories.Where(item => item.ParentId is null).Select(item => item.Name).OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        EntryPaymentMode.ItemsSource = TransactionEntry.Names(document.PaymentMethods.Select(item => item.Name));
+        EntryPayee.ItemsSource = TransactionEntry.Names(document.Payees.Select(item => item.Name));
+        EntryCategory.ItemsSource = TransactionEntry.Names(_categories.Where(item => item.ParentId is null).Select(item => item.Name));
         EntryPaymentMode.Text = editing?.PaymentMode ?? string.Empty;
         EntryPayee.Text = editing?.Payee.Name ?? string.Empty;
         EntryCategory.Text = editing?.Category.Name ?? string.Empty;
@@ -80,22 +80,8 @@ public partial class TransactionWindow : Window
 
     private void RefreshSubcategories(string categoryName)
     {
-        string? key = null;
-        try
-        {
-            key = FinancialRules.NameKey(categoryName);
-        }
-        catch (ArgumentException)
-        {
-            // Incomplete text (including a partial Unicode pair) is validated on submission.
-        }
-        var root = key is null ? null
-            : _categories.FirstOrDefault(category => category.ParentId is null && FinancialRules.NameKey(category.Name) == key);
-        // Keep typed input when the root changes; never silently discard a subcategory.
         var typedName = EntrySubcategory.Text;
-        EntrySubcategory.ItemsSource = root is null
-            ? Array.Empty<string>()
-            : _categories.Where(category => category.ParentId == root.Id).Select(category => category.Name).OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        EntrySubcategory.ItemsSource = TransactionEntry.Subcategories(_categories, categoryName);
         EntrySubcategory.Text = typedName;
     }
 
@@ -109,8 +95,9 @@ public partial class TransactionWindow : Window
         var staged = false;
         try
         {
-            if (!TryBuildDraft(out var draft))
-                return;
+            var draft = new TransactionEntry(EntryDate.Text, EntryDirection.SelectedIndex, EntryAmount.Text,
+                EntryLabel.Text, EntryPaymentMode.Text, EntryPayee.Text, EntryCategory.Text, EntrySubcategory.Text,
+                EntryNotes.Text).CreateDraft(_currency, DisplayCulture);
             if (_model.SelectedAccountId != _accountId)
                 throw new InvalidOperationException(L.Get("ReconciliationWindow.TheSelectedAccountHasChangedCloseThisWindow"));
             if (_editingId is { } id)
@@ -129,7 +116,7 @@ public partial class TransactionWindow : Window
             staged = true;
             DialogResult = true;
         }
-        catch (Exception error)
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or DocumentException or OverflowException)
         {
             ErrorText.Text = L.Get("Common.TheDraftCouldNotBeValidatedYourFields") + error.Message;
             ErrorText.BringIntoView();
@@ -143,60 +130,5 @@ public partial class TransactionWindow : Window
             }
         }
     }
-
-    private bool TryBuildDraft(out TransactionDraft draft)
-    {
-        draft = null!;
-        if (!DateOnly.TryParseExact(EntryDate.Text.Trim(), L.DatePattern, DisplayCulture, DateTimeStyles.None, out var date)
-            || date == default)
-            return ShowError(L.Get("TransactionWindow.InvalidDateEnterADateInMmDd"), EntryDate);
-        if (EntryDirection.SelectedIndex is not (0 or 1))
-            return ShowError(L.Get("TransactionWindow.ChooseExpenditureOrRecipeToIndicateTheMeaning"), EntryDirection);
-
-        decimal amount;
-        try
-        {
-            amount = MoneyInput.ParseLocalized(EntryAmount.Text, _currency);
-        }
-        catch (ArgumentException error)
-        {
-            return ShowError(error.Message, EntryAmount);
-        }
-
-        var label = EntryLabel.Text.Trim();
-        if (string.IsNullOrWhiteSpace(label) || label.Length > 240)
-            return ShowError(L.Get("TransactionWindow.TheWordingIsMandatoryAndMustContainNo"), EntryLabel);
-        var mode = OptionalName(EntryPaymentMode.Text);
-        var payee = OptionalName(EntryPayee.Text);
-        var category = OptionalName(EntryCategory.Text);
-        var subcategory = OptionalName(EntrySubcategory.Text);
-        if (mode?.Length > 80)
-            return ShowError(L.Get("TransactionWindow.TheMethodOfPaymentMustContainNoMore"), EntryPaymentMode);
-        if (payee?.Length > 120)
-            return ShowError(L.Get("TransactionWindow.ThePayeeMustContainNoMoreThan120"), EntryPayee);
-        if (category?.Length > 120)
-            return ShowError(L.Get("TransactionWindow.TheCategoryMustContainNoMoreThan120"), EntryCategory);
-        if (subcategory?.Length > 120)
-            return ShowError(L.Get("TransactionWindow.TheSubcategoryMustContainNoMoreThan120"), EntrySubcategory);
-        if (subcategory is not null && category is null)
-            return ShowError(L.Get("TransactionWindow.EnterARootCategoryForThisSubcategoryOr"), EntryCategory);
-        if (EntryNotes.Text.Length > 2000)
-            return ShowError(L.Get("TransactionWindow.NotesMustContainAMaximumOf2000"), EntryNotes);
-
-        draft = new TransactionDraft(date, amount,
-            EntryDirection.SelectedIndex == 0 ? TransactionDirection.Debit : TransactionDirection.Credit,
-            label, payee, category, subcategory, mode, EntryNotes.Text);
-        return true;
-    }
-
-    private bool ShowError(string message, Control field)
-    {
-        ErrorText.Text = message;
-        field.BringIntoView();
-        field.Focus();
-        return false;
-    }
-
-    private static string? OptionalName(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
 }
