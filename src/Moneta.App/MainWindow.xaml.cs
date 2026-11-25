@@ -28,6 +28,8 @@ public partial class MainWindow : Window
         _backupLibrary = backupLibrary;
         _readBackupPolicy = backupPolicy;
         InitializeComponent();
+        RestoreWindowGeometry();
+        WindowWorkArea.Attach(this);
         ApplyRegisterDensity();
         InitializeBackups();
         _workspace.Changed += (_, _) =>
@@ -36,9 +38,40 @@ public partial class MainWindow : Window
             else Dispatcher.BeginInvoke(UpdateDocumentState);
         };
         App.Rates.Changed += Rates_Changed;
-        Closed += (_, _) => { _windowClosed = true; App.Rates.Changed -= Rates_Changed; };
+        Closed += (_, _) =>
+        {
+            _windowClosed = true;
+            App.Rates.Changed -= Rates_Changed;
+            SaveWindowGeometry();
+        };
         PropertyChangedEventManager.AddHandler(L.Current, LanguageChanged, nameof(L.CultureName));
         UpdateDocumentState();
+    }
+
+    private bool RestoreWindowGeometry()
+    {
+        var settings = App.Settings.Current;
+        if (settings.WindowWidth is not { } width || settings.WindowHeight is not { } height ||
+            settings.WindowLeft is not { } left || settings.WindowTop is not { } top ||
+            !WindowPlacement.IsUsable(left, top, width, height)) return false;
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = left;
+        Top = top;
+        Width = width;
+        Height = height;
+        if (settings.WindowMaximized)
+            Loaded += (_, _) => WindowState = WindowState.Maximized;
+        return true;
+    }
+
+    private void SaveWindowGeometry()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        var bounds = maximized || WindowState == WindowState.Minimized
+            ? RestoreBounds
+            : new Rect(Left, Top, ActualWidth, ActualHeight);
+        if (!WindowPlacement.IsUsable(bounds.Left, bounds.Top, bounds.Width, bounds.Height)) return;
+        App.SaveWindowGeometry(bounds.Left, bounds.Top, bounds.Width, bounds.Height, maximized);
     }
 
     private void LanguageChanged(object? sender, PropertyChangedEventArgs args)

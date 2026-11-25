@@ -90,6 +90,35 @@ public sealed class SettingsStoreTests
     }
 
     [TestMethod]
+    public void WindowGeometryRoundTripsAndInvalidValuesAreIgnored()
+    {
+        var store = new SettingsStore(FilePath); store.Load();
+        store.Save(store.Current with
+        {
+            WindowLeft = -120,
+            WindowTop = -80,
+            WindowWidth = 1280,
+            WindowHeight = 800,
+            WindowMaximized = true
+        });
+        var reopened = new SettingsStore(FilePath); reopened.Load();
+        Assert.AreEqual(-120, reopened.Current.WindowLeft);
+        Assert.AreEqual(-80, reopened.Current.WindowTop);
+        Assert.AreEqual(1280, reopened.Current.WindowWidth);
+        Assert.AreEqual(800, reopened.Current.WindowHeight);
+        Assert.IsTrue(reopened.Current.WindowMaximized);
+
+        var invalidJson = File.ReadAllText(FilePath).Replace("\"WindowWidth\": 1280", "\"WindowWidth\": 0");
+        File.WriteAllText(FilePath, invalidJson);
+        var invalid = new SettingsStore(FilePath); invalid.Load();
+        Assert.IsNull(invalid.Current.WindowLeft);
+        Assert.IsNull(invalid.Current.WindowTop);
+        Assert.IsNull(invalid.Current.WindowWidth);
+        Assert.IsNull(invalid.Current.WindowHeight);
+        Assert.IsFalse(invalid.Current.WindowMaximized);
+    }
+
+    [TestMethod]
     public void InvalidProviderCannotReplaceCommittedSettings()
     {
         var store = new SettingsStore(FilePath); store.Load();

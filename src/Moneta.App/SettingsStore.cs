@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using Moneta.Core.Presentation;
 using Moneta.Infrastructure.Storage;
 using Moneta.Localization;
 
@@ -15,6 +16,11 @@ public sealed record LocalSettings
     public bool RefreshRatesAtStartup { get; init; }
     public string RateSource { get; init; } = "NBRB";
     public BackupPolicy Backups { get; init; } = new();
+    public double? WindowLeft { get; init; }
+    public double? WindowTop { get; init; }
+    public double? WindowWidth { get; init; }
+    public double? WindowHeight { get; init; }
+    public bool WindowMaximized { get; init; }
 }
 
 public sealed class SettingsException : Exception
@@ -105,7 +111,12 @@ public sealed class SettingsStore
                     CheckUpdatesAtStartup = settings.CheckUpdatesAtStartup,
                     RefreshRatesAtStartup = settings.RefreshRatesAtStartup,
                     RateSource = settings.RateSource,
-                    Backups = settings.Backups
+                    Backups = settings.Backups,
+                    WindowLeft = settings.WindowLeft,
+                    WindowTop = settings.WindowTop,
+                    WindowWidth = settings.WindowWidth,
+                    WindowHeight = settings.WindowHeight,
+                    WindowMaximized = settings.WindowMaximized
                 }, JsonOptions);
                 stream.Flush(flushToDisk: true);
             }
@@ -158,6 +169,7 @@ public sealed class SettingsStore
                 L.Format("SettingsStore.The0VersionOfThePreferencesFileIs", (document.SchemaVersion)));
         }
 
+        var hasWindow = TryReadWindow(document, out var left, out var top, out var width, out var height);
         var settings = new LocalSettings
         {
             Theme = document.Theme,
@@ -168,10 +180,30 @@ public sealed class SettingsStore
             RateSource = document.SchemaVersion == 1 ? "NBRB" : document.RateSource
                 ?? throw new SettingsException(L.Get("SettingsStore.TheRateProviderIsAbsentFromPreferences")),
             Backups = document.SchemaVersion < 3 ? new() : document.Backups
-                ?? throw new SettingsException(L.Get("SettingsStore.TheSafeguardPolicyIsAbsentFromThePreferences"))
+                ?? throw new SettingsException(L.Get("SettingsStore.TheSafeguardPolicyIsAbsentFromThePreferences")),
+            WindowLeft = hasWindow ? left : null,
+            WindowTop = hasWindow ? top : null,
+            WindowWidth = hasWindow ? width : null,
+            WindowHeight = hasWindow ? height : null,
+            WindowMaximized = hasWindow && document.WindowMaximized
         };
         Validate(settings);
         return settings;
+    }
+
+    private static bool TryReadWindow(SettingsDocument document, out double left, out double top, out double width, out double height)
+    {
+        left = top = width = height = 0;
+        if (document.WindowLeft is not { } candidateLeft || document.WindowTop is not { } candidateTop
+            || document.WindowWidth is not { } candidateWidth || document.WindowHeight is not { } candidateHeight)
+            return false;
+        if (!WindowPlacement.IsUsable(candidateLeft, candidateTop, candidateWidth, candidateHeight))
+            return false;
+        left = candidateLeft;
+        top = candidateTop;
+        width = candidateWidth;
+        height = candidateHeight;
+        return true;
     }
 
     private static void Validate(LocalSettings settings)
@@ -202,5 +234,10 @@ public sealed class SettingsStore
         public required bool RefreshRatesAtStartup { get; init; }
         public string? RateSource { get; init; }
         public BackupPolicy? Backups { get; init; }
+        public double? WindowLeft { get; init; }
+        public double? WindowTop { get; init; }
+        public double? WindowWidth { get; init; }
+        public double? WindowHeight { get; init; }
+        public bool WindowMaximized { get; init; }
     }
 }

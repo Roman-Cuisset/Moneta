@@ -45,6 +45,25 @@ public partial class App : Application
         return true;
     }
 
+    internal static void SaveWindowGeometry(double left, double top, double width, double height, bool maximized)
+    {
+        try
+        {
+            Settings.Save(Settings.Current with
+            {
+                WindowLeft = left,
+                WindowTop = top,
+                WindowWidth = width,
+                WindowHeight = height,
+                WindowMaximized = maximized
+            });
+        }
+        catch (SettingsException)
+        {
+            // Window placement must never prevent closing a document or the application.
+        }
+    }
+
     private static void ShowSettingsError(string message, Window? owner = null)
     {
         owner ??= Current?.MainWindow;
