@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe"><strong>Download Moneta Alpha 0.1.0 for Windows</strong></a><br>
+  <a href="https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.0/Moneta-0.2.0-win-x64.exe"><strong>Download Moneta Alpha 0.2.0 for Windows</strong></a><br>
   <sub>Windows 11 x64 · standalone installer · .NET runtime included · no SDK required</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0"><img alt="Status: Alpha" src="https://img.shields.io/badge/status-alpha-b45309?style=flat-square"></a>
-  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0"><img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-0e7490?style=flat-square"></a>
+  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.2.0"><img alt="Status: Alpha" src="https://img.shields.io/badge/status-alpha-b45309?style=flat-square"></a>
+  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.2.0"><img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-0e7490?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square"></a>
   <img alt="Platform: Windows 11 x64" src="https://img.shields.io/badge/platform-Windows%2011%20x64-0b1f3a?style=flat-square">
 </p>
@@ -26,7 +26,7 @@
 <p align="center">
   <a href="https://moneta-site.pages.dev">Official website</a> ·
   <a href="https://github.com/Roman-Cuisset/Moneta/releases">All releases</a> ·
-  <a href="docs/releases/0.1.0.md">What’s new</a> ·
+  <a href="docs/releases/0.2.0.md">What’s new</a> ·
   <a href="docs/ALPHA_GUIDE.md">Alpha guide</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
@@ -86,7 +86,7 @@ Moneta does not require an online account and does not send your financial docum
 
 ## Install and first steps
 
-1. Download **[Moneta-0.1.0-win-x64.exe](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe)** and run it. It installs for your Windows user account and includes the .NET runtime; no Visual Studio or .NET SDK is required.
+1. Download **[Moneta-0.2.0-win-x64.exe](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.0/Moneta-0.2.0-win-x64.exe)** and run it. It installs for your Windows user account and includes the .NET runtime; no Visual Studio or .NET SDK is required.
 2. Open **Moneta** from the Start menu.
 3. To explore without creating a document, choose **Fichier → Mode démonstration**. The demo uses fictional data and cannot save financial changes.
 4. To start your own document, choose **Fichier → Nouveau dossier**, then **Comptes → Ajouter un compte**.
@@ -94,25 +94,27 @@ Moneta does not require an online account and does not send your financial docum
 
 To import a compatible BankPerfect document, use **Fichier → Importer → BankPerfect (.bp)…**.
 
-The interface is currently in French, so the menu names above are shown as they appear in the application.
+The application is available in French and US English; the menu names above are shown in French.
 
-Moneta 0.1.0 is not yet Authenticode-signed, and Windows may show a SmartScreen warning about an unknown publisher. You can check the installer against the published [SHA-256 checksum](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/SHA256SUMS.txt). If you are unsure, do not run the file. Do not disable Windows protections to install Moneta.
+If you use Alpha 0.1.0, download and install Alpha 0.2.0 manually. The earlier 0.1.0 release remains available on the releases page.
 
-## Alpha 0.1.0
+Moneta 0.2.0 is not yet Authenticode-signed, and Windows may show a SmartScreen warning about an unknown publisher. You can check the installer against the published [SHA-256 checksum](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.0/SHA256SUMS.txt). If you are unsure, do not run the file. Do not disable Windows protections to install Moneta.
 
-Moneta is usable, but still early. **Windows 11 x64** is the only qualified target, and its interface is in **French**. Some features may change. BankPerfect import covers only the supported V5 scope and refuses unsupported files. Conversions need an official rate or a valid local cache, and a few historical amounts below the smallest currency unit are rejected rather than rounded. Documents and backups are stored unencrypted, and the installer is not yet Authenticode-signed.
+## Alpha 0.2.0
+
+Moneta is usable, but still early. **Windows 11 x64** is the only qualified target, and its interface is available in **French and US English**. Some features may change. BankPerfect import covers only the supported V5 scope and refuses unsupported files. Conversions need an official rate or a valid local cache, and a few historical amounts below the smallest currency unit are rejected rather than rounded. Documents and backups are stored unencrypted, and the installer is not yet Authenticode-signed.
 
 Try Moneta with a fictional document first, keep independent backups, and verify a restore before using it with important data.
 
-## French and English in development builds
+## French and English
 
-The code under development for 0.2.0 supports French and US English. Choose **Tools → Options → Language** in English or **Outils → Options → Langue** in French. The interface previews your choice immediately. Save to use it on your next launch. [Language and regional formats](docs/LOCALIZATION.md)
+Version 0.2.0 supports French and US English. Choose **Tools → Options → Language** in English or **Outils → Options → Langue** in French. The interface previews your choice immediately. Save to use it on your next launch. [Language and regional formats](docs/LOCALIZATION.md)
 
 ## Documentation and feedback
 
 - [Alpha guide](docs/ALPHA_GUIDE.md) — installation, first steps, and recovery (French).
 - [Technical documentation](docs/) — architecture, file formats, BankPerfect import, and reports (French).
-- [Changelog](CHANGELOG.md) and [release notes](docs/releases/0.1.0.md).
+- [Changelog](CHANGELOG.md) and [release notes](docs/releases/0.2.0.md).
 - [Report an issue](https://github.com/Roman-Cuisset/Moneta/issues).
 - [Earlier technical README](README_ARCHIVE.md) — detailed mission-by-mission verification record (French).
 

@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe"><strong>Télécharger Moneta Alpha 0.1.0 pour Windows</strong></a><br>
+  <a href="https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.0/Moneta-0.2.0-win-x64.exe"><strong>Télécharger Moneta Alpha 0.2.0 pour Windows</strong></a><br>
   <sub>Windows 11 x64 · installateur autonome · runtime .NET inclus · aucun SDK requis</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0"><img alt="Statut : Alpha" src="https://img.shields.io/badge/statut-alpha-b45309?style=flat-square"></a>
-  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.1.0"><img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-0e7490?style=flat-square"></a>
+  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.2.0"><img alt="Statut : Alpha" src="https://img.shields.io/badge/statut-alpha-b45309?style=flat-square"></a>
+  <a href="https://github.com/Roman-Cuisset/Moneta/releases/tag/v0.2.0"><img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-0e7490?style=flat-square"></a>
   <a href="LICENSE"><img alt="Licence : MIT" src="https://img.shields.io/badge/licence-MIT-2ea44f?style=flat-square"></a>
   <img alt="Plateforme : Windows 11 x64" src="https://img.shields.io/badge/plateforme-Windows%2011%20x64-0b1f3a?style=flat-square">
 </p>
@@ -26,7 +26,7 @@
 <p align="center">
   <a href="https://moneta-site.pages.dev">Site officiel</a> ·
   <a href="https://github.com/Roman-Cuisset/Moneta/releases">Toutes les versions</a> ·
-  <a href="docs/releases/0.1.0.md">Nouveautés</a> ·
+  <a href="docs/releases/0.2.0.md">Nouveautés</a> ·
   <a href="docs/ALPHA_GUIDE.md">Guide Alpha</a> ·
   <a href="CHANGELOG.md">Journal des versions</a>
 </p>
@@ -86,7 +86,7 @@ Moneta ne nécessite aucun compte en ligne et n’envoie pas vos dossiers financ
 
 ## Installation et premiers pas
 
-1. Téléchargez **[Moneta-0.1.0-win-x64.exe](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/Moneta-0.1.0-win-x64.exe)** et lancez-le. L’installation se fait pour votre compte Windows et inclut le runtime .NET ; Visual Studio et le SDK .NET ne sont pas nécessaires.
+1. Téléchargez **[Moneta-0.2.0-win-x64.exe](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.0/Moneta-0.2.0-win-x64.exe)** et lancez-le. L’installation se fait pour votre compte Windows et inclut le runtime .NET ; Visual Studio et le SDK .NET ne sont pas nécessaires.
 2. Ouvrez **Moneta** depuis le menu Démarrer.
 3. Pour découvrir l’application sans créer de dossier, choisissez **Fichier → Mode démonstration**. La démonstration utilise des données fictives et ne peut pas enregistrer de modifications financières.
 4. Pour commencer votre propre dossier, choisissez **Fichier → Nouveau dossier**, puis **Comptes → Ajouter un compte**.
@@ -94,25 +94,27 @@ Moneta ne nécessite aucun compte en ligne et n’envoie pas vos dossiers financ
 
 Pour importer un dossier BankPerfect compatible, utilisez **Fichier → Importer → BankPerfect (.bp)…**.
 
-L’interface est actuellement en français ; les noms de menus ci-dessus sont ceux affichés dans l’application.
+L’application est disponible en français et en anglais américain ; les noms de menus ci-dessus sont ceux affichés en français.
 
-Moneta 0.1.0 n’est pas encore signé Authenticode et Windows peut afficher un avertissement SmartScreen concernant un éditeur inconnu. Vous pouvez vérifier l’installateur avec la [somme SHA-256 publiée](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.1.0/SHA256SUMS.txt). En cas de doute, ne lancez pas le fichier. Ne désactivez pas les protections Windows pour installer Moneta.
+Si vous utilisez l’Alpha 0.1.0, téléchargez et installez manuellement l’Alpha 0.2.0. La version 0.1.0 reste disponible dans la liste des versions.
 
-## Alpha 0.1.0
+Moneta 0.2.0 n’est pas encore signé Authenticode et Windows peut afficher un avertissement SmartScreen concernant un éditeur inconnu. Vous pouvez vérifier l’installateur avec la [somme SHA-256 publiée](https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.0/SHA256SUMS.txt). En cas de doute, ne lancez pas le fichier. Ne désactivez pas les protections Windows pour installer Moneta.
 
-Moneta est utilisable, mais encore jeune. **Windows 11 x64** est la seule cible qualifiée et l’interface est en **français**. Certaines fonctions peuvent évoluer. L’import BankPerfect se limite au périmètre V5 pris en charge et refuse les fichiers non pris en charge. Les conversions nécessitent un cours officiel ou un cache valide, et certains montants historiques inférieurs à l’unité minimale sont refusés plutôt qu’arrondis. Les dossiers et les sauvegardes ne sont pas chiffrés, et l’installateur ne porte pas encore de signature Authenticode.
+## Alpha 0.2.0
+
+Moneta est utilisable, mais encore jeune. **Windows 11 x64** est la seule cible qualifiée et l’interface est disponible en **français et en anglais américain**. Certaines fonctions peuvent évoluer. L’import BankPerfect se limite au périmètre V5 pris en charge et refuse les fichiers non pris en charge. Les conversions nécessitent un cours officiel ou un cache valide, et certains montants historiques inférieurs à l’unité minimale sont refusés plutôt qu’arrondis. Les dossiers et les sauvegardes ne sont pas chiffrés, et l’installateur ne porte pas encore de signature Authenticode.
 
 Essayez d’abord Moneta avec un dossier fictif, conservez des sauvegardes indépendantes et vérifiez une restauration avant de l’utiliser avec des données importantes.
 
-## Français et anglais dans les versions de développement
+## Français et anglais
 
-Le code en préparation pour la 0.2.0 prend en charge le français et l’anglais américain. Ouvrez **Outils → Options → Langue** ou **Tools → Options → Language**. Le changement s’affiche immédiatement. Enregistrez les options pour retrouver votre choix au prochain démarrage. [Langues et formats régionaux](docs/LOCALIZATION.md)
+La version 0.2.0 prend en charge le français et l’anglais américain. Ouvrez **Outils → Options → Langue** ou **Tools → Options → Language**. Le changement s’affiche immédiatement. Enregistrez les options pour retrouver votre choix au prochain démarrage. [Langues et formats régionaux](docs/LOCALIZATION.md)
 
 ## Documentation et retours
 
 - [Guide Alpha](docs/ALPHA_GUIDE.md) — installation, premiers pas et récupération.
 - [Documentation technique](docs/) — architecture, formats de fichiers, import BankPerfect et rapports.
-- [Journal des versions](CHANGELOG.md) et [notes de version](docs/releases/0.1.0.md).
+- [Journal des versions](CHANGELOG.md) et [notes de version](docs/releases/0.2.0.md).
 - [Signaler un problème](https://github.com/Roman-Cuisset/Moneta/issues).
 - [Archive du README technique](README_ARCHIVE.md) — historique détaillé des missions et des vérifications.
 
