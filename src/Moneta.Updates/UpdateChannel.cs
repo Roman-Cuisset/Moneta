@@ -6,6 +6,7 @@ public sealed class UpdateChannel
 {
     private const string Repository = "https://github.com/Roman-Cuisset/Moneta/releases/";
     private const string Loopback = "http://127.0.0.1:18761/";
+    internal static readonly Uri AlphaReleaseIndex = new("https://api.github.com/repos/Roman-Cuisset/Moneta/releases?per_page=30");
     public const string HelperLanguageVariable = "MONETA_UPDATE_LANGUAGE";
 #if MONETA_LAB
     public const string InstallName = "Moneta Lab";
@@ -25,7 +26,7 @@ public sealed class UpdateChannel
 
     public bool Lab { get; }
     internal byte[] PublicKey { get; }
-    public Uri Feed => new((Lab ? Loopback : Repository + "latest/download/") + UpdateManifest.EnvelopeName);
+    internal Uri Catalog(Version version) => new((Lab ? Loopback : Repository + $"download/v{version.ToString(3)}/") + UpdateManifest.EnvelopeName);
     public Uri Installer(UpdateManifest manifest) => new((Lab ? Loopback : Repository + $"download/v{manifest.Version}/") + manifest.Installer);
     public static string InstallDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", InstallName);
     public static string InstalledExecutable => Path.Combine(InstallDirectory, "Moneta.App.exe");

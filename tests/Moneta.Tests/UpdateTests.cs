@@ -51,11 +51,104 @@ public sealed class UpdateTests
         using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
         var envelope = Pack(Manifest(), signer);
-        using var client = new UpdateClient(channel, new Handler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(envelope) }));
+        using var client = new UpdateClient(channel, new Handler(request => IsIndex(request)
+            ? Index(Release("v0.1.1"))
+            : Reply(envelope)));
 
         Assert.IsNotNull(await client.CheckAsync(new Version(0, 1, 0, 0), default));
         Assert.IsNull(await client.CheckAsync(new Version(0, 1, 1, 0), default));
         Assert.IsNull(await client.CheckAsync(new Version(0, 2, 0, 0), default));
+    }
+
+    [TestMethod]
+    public async Task EmptyAlphaIndexDoesNotRequestACatalog()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
+        var handler = new Handler(request =>
+        {
+            Assert.IsTrue(IsIndex(request));
+            return Reply("[]"u8.ToArray());
+        });
+        using var client = new UpdateClient(channel, handler);
+
+        Assert.IsNull(await client.CheckAsync(new Version(0, 2, 0), default));
+        Assert.AreEqual(1, handler.Calls);
+    }
+
+    [TestMethod]
+    public async Task MissingCatalogIsNoOfferAndApiFailuresSurfaceAsNetworkErrors()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
+        using var missing = new UpdateClient(channel, new Handler(request => IsIndex(request)
+            ? Index(Release("v0.2.1"))
+            : new HttpResponseMessage(HttpStatusCode.NotFound)));
+        Assert.IsNull(await missing.CheckAsync(new Version(0, 2, 0), default));
+
+        foreach (var status in new[] { HttpStatusCode.NotFound, HttpStatusCode.Forbidden,
+                     HttpStatusCode.TooManyRequests, HttpStatusCode.InternalServerError })
+        {
+            using var failed = new UpdateClient(channel, new Handler(_ => new HttpResponseMessage(status)));
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => failed.CheckAsync(new Version(0, 2, 0), default));
+        }
+
+        using var offline = new UpdateClient(channel, new Handler(_ => throw new HttpRequestException("Hors ligne")));
+        await Assert.ThrowsExceptionAsync<HttpRequestException>(() => offline.CheckAsync(new Version(0, 2, 0), default));
+    }
+
+    [TestMethod]
+    public async Task AlphaDiscoverySelectsHighestEligibleVersionAndUsesOnlyOfficialAssetUrls()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
+        var manifest = Manifest() with { Version = "0.2.10", Installer = "Moneta-0.2.10-win-x64.exe" };
+        var handler = new Handler(request =>
+        {
+            if (IsIndex(request))
+                return Index(Release("v0.2.9"), Release("v0.2.10"), Release("v1.0.0", prerelease: false),
+                    Release("v0.3.0", draft: true), Release("v0.4.0", withCatalog: false),
+                    Release("v0.02.11"), Release("v0.2.11-beta"), Release("v0.2.11", state: "new"));
+            Assert.AreEqual("https://github.com/Roman-Cuisset/Moneta/releases/download/v0.2.10/moneta-update.json",
+                request.RequestUri!.AbsoluteUri);
+            return Reply(Pack(manifest, signer));
+        });
+        using var client = new UpdateClient(channel, handler);
+
+        var offer = await client.CheckAsync(new Version(0, 2, 0), default);
+
+        Assert.AreEqual(manifest, offer?.Manifest);
+        Assert.AreEqual(2, handler.Calls);
+    }
+
+    [TestMethod]
+    public async Task AlphaIndexCannotAuthorizeAnInvalidSignatureOrDifferentSignedVersion()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        using var stranger = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
+        var future = Manifest() with { Version = "0.2.1", Installer = "Moneta-0.2.1-win-x64.exe" };
+        foreach (var envelope in new[] { Pack(future, stranger), Pack(Manifest(), signer) })
+        {
+            using var client = new UpdateClient(channel, new Handler(request => IsIndex(request)
+                ? Index(Release("v0.2.1"))
+                : Reply(envelope)));
+            await Assert.ThrowsExceptionAsync<InvalidDataException>(() => client.CheckAsync(new Version(0, 2, 0), default));
+        }
+    }
+
+    [TestMethod]
+    public async Task AlphaDiscoveryRejectsInvalidIndexAndDoesNotFollowIndexRedirects()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
+        using var invalid = new UpdateClient(channel, new Handler(_ => Reply("{}"u8.ToArray())));
+        await Assert.ThrowsExceptionAsync<InvalidDataException>(() => invalid.CheckAsync(new Version(0, 2, 0), default));
+        var handler = new Handler(_ => new HttpResponseMessage(HttpStatusCode.Redirect)
+            { Headers = { Location = new Uri("https://github.com/Roman-Cuisset/Moneta") } });
+        using var redirected = new UpdateClient(channel, handler);
+        await Assert.ThrowsExceptionAsync<HttpRequestException>(() => redirected.CheckAsync(new Version(0, 2, 0), default));
+        Assert.AreEqual(1, handler.Calls);
     }
 
     [TestMethod]
@@ -65,15 +158,16 @@ public sealed class UpdateTests
         var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
         foreach (var redirect in new[] { "http://github.com/installer", "https://example.org/installer", "https://github.com:444/installer" })
         {
-            var handler = new Handler(_ =>
+            var handler = new Handler(request =>
             {
+                if (IsIndex(request)) return Index(Release("v0.1.1"));
                 var reply = new HttpResponseMessage(HttpStatusCode.Redirect);
                 reply.Headers.Location = new Uri(redirect);
                 return reply;
             });
             using var client = new UpdateClient(channel, handler);
             await Assert.ThrowsExceptionAsync<InvalidDataException>(() => client.CheckAsync(new Version(0, 1, 0), default));
-            Assert.AreEqual(1, handler.Calls);
+            Assert.AreEqual(2, handler.Calls);
         }
     }
 
@@ -82,8 +176,9 @@ public sealed class UpdateTests
     {
         using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var channel = new UpdateChannel(false, signer.ExportSubjectPublicKeyInfo());
-        using var client = new UpdateClient(channel, new Handler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new ByteArrayContent(new byte[UpdateManifest.MaximumEnvelopeBytes + 1]) }));
+        using var client = new UpdateClient(channel, new Handler(request => IsIndex(request)
+            ? Index(Release("v0.1.1"))
+            : Reply(new byte[UpdateManifest.MaximumEnvelopeBytes + 1])));
         await Assert.ThrowsExceptionAsync<InvalidDataException>(() => client.CheckAsync(new Version(0, 1, 0), default));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -134,6 +229,24 @@ public sealed class UpdateTests
 
     private static UpdateManifest Manifest() =>
         new(1, "0.1.1", "win-x64", "Moneta-0.1.1-win-x64.exe", 40, new string('a', 64), "Notes fictives");
+
+    private static bool IsIndex(HttpRequestMessage request) => request.RequestUri ==
+        new Uri("https://api.github.com/repos/Roman-Cuisset/Moneta/releases?per_page=30");
+
+    private static object Release(string tag, bool prerelease = true, bool draft = false, bool withCatalog = true,
+        string state = "uploaded") => new
+    {
+        tag_name = tag,
+        prerelease,
+        draft,
+        assets = withCatalog
+            ? new[] { new { name = "moneta-update.json", state, browser_download_url = "https://example.invalid/catalog" } }
+            : []
+    };
+
+    private static HttpResponseMessage Index(params object[] releases) => Reply(JsonSerializer.SerializeToUtf8Bytes(releases));
+
+    private static HttpResponseMessage Reply(byte[] bytes) => new(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
 
     private static byte[] Pack(UpdateManifest manifest, ECDsa signer)
     {

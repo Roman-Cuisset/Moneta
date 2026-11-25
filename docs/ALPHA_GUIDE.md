@@ -1,8 +1,8 @@
-# Premiers pas avec Moneta Alpha 0.1.0
+# Premiers pas avec Moneta Alpha 0.2.0
 
 Moneta s’installe sur Windows 11 x64. Téléchargez le candidat depuis la release officielle et comparez son SHA-256 avec celui communiqué avant de l’ouvrir. L’installateur Alpha ne porte pas de signature Authenticode. Selon les paramètres de Windows, SmartScreen peut signaler un éditeur inconnu ou une réputation insuffisante. En cas de blocage, arrêtez l’installation et communiquez le message affiché. Votre profil Windows accueille l’application et ses raccourcis. Vous choisissez où stocker chaque dossier financier.
 
-1. Lancez **Moneta-0.1.0-win-x64.exe**, puis ouvrez **Moneta** depuis le menu Démarrer.
+1. Lancez **Moneta-0.2.0-win-x64.exe**, puis ouvrez **Moneta** depuis le menu Démarrer.
 2. **Fichier → Nouveau dossier**, puis **Comptes → Ajouter un compte**. Choisissez la devise native du compte. **Ctrl+S** choisit l’emplacement au premier enregistrement.
 3. **Nouvelle** sous le registre ouvre une recette ou une dépense. **Virement** relie les écritures et conserve les montants natifs de chaque compte. **Ctrl+S** enregistre les brouillons.
 4. **Comptes → Échéancier** programme les opérations. Confirmez une occurrence avant de l’enregistrer. **Rapports → Budgets** compare le prévu et le réalisé et indique les conversions indisponibles.
@@ -10,7 +10,7 @@ Moneta s’installe sur Windows 11 x64. Téléchargez le candidat depuis la rele
 6. **Fichier → Restaurer une sauvegarde** vérifie l’archive et crée une copie contrôlée à un nouvel emplacement. Ouvrez ensuite cette copie pour consulter les comptes et le registre.
 7. **Aide → Rechercher les mises à jour** peut être utilisé hors de la recherche automatique du démarrage. Les notes signées s’affichent dans Moneta. **Télécharger et installer** vérifie le fichier et vous laisse enregistrer ou annuler la fermeture avant l’installation.
 
-## Parcours en préparation pour la 0.2.0
+## Parcours de la 0.2.0
 
 - Au premier accès à un fichier `.moneta` dans l’Explorateur, choisissez **Ouvrir avec → Moneta**. Si vous en faites l’application par défaut dans Windows, les prochains doubles-clics ouvriront le dossier. Si Moneta est déjà lancé, la demande rejoint sa fenêtre et reprend la confirmation de changement de dossier.
 - Sous le registre, saisissez la date, le libellé, le sens et le montant. Les autres champs sont facultatifs. Les suggestions viennent de vos comptes et de vos opérations. Validez avec **Entrée** ou **Ajouter au brouillon**, puis enregistrez avec **Ctrl+S**. Une liste ouverte conserve son comportement de sélection. Une saisie non validée reste associée à son compte pendant la session. Avant de quitter le dossier, Moneta en demande la confirmation séparément des brouillons validés.
@@ -18,7 +18,7 @@ Moneta s’installe sur Windows 11 x64. Téléchargez le candidat depuis la rele
 - **Affichage → Densité du registre** mémorise **Standard** ou **Compact**. Sélectionnez une écriture pour consulter ses détails, y compris le tiers et la sous-catégorie.
 - L’actualisation au démarrage dépend du réglage **Outils → Options**. L’actualisation manuelle demande le cours du jour pour le registre. La fenêtre des cours permet de choisir une autre date. En cas d’échec réseau, le registre indique la date effective et le cache utilisé, ou l’indisponibilité du cours. Les montants natifs restent consultables et les valorisations historiques gardent leurs dates.
 
-[Notes de préparation de la 0.2.0](releases/0.2.0.md)
+[Notes de version de la 0.2.0](releases/0.2.0.md)
 
 ## Si Moneta ne démarre plus
 
@@ -28,7 +28,7 @@ Gardez les originaux, les sauvegardes et leurs manifestes. Réinstallez un insta
 
 L’Alpha couvre Windows 11 x64 et le périmètre qualifié des fichiers BankPerfect V5. Certains montants historiques inférieurs à l’unité minimale de leur devise sont refusés. Une conversion requiert un cours officiel applicable ou une copie valable en cache. Les sauvegardes contiennent des données financières en clair. Les mises à jour nécessitent un catalogue signé disponible, et Windows conserve ses protections d’exécution. [Import BankPerfect](BANKPERFECT_QUALIFICATION_10E.md)
 
-GitHub fournit les préversions sur leur page de release. Le canal intégré `Latest` attend une release stable avec un catalogue signé. Pour connaître les préversions disponibles, consultez la [liste des releases](https://github.com/Roman-Cuisset/Moneta/releases).
+Les utilisateurs de l’Alpha 0.1.0 doivent télécharger et installer manuellement la version 0.2.0. À partir de la 0.2.0, le canal intégré consulte les préversions Alpha publiées sur GitHub et vérifie leur catalogue signé avant de proposer une installation. La [liste des releases](https://github.com/Roman-Cuisset/Moneta/releases) reste disponible pour consulter l’historique.
 
 Effectuez des sauvegardes régulières et vérifiez une restauration avant d’utiliser l’Alpha avec des données importantes.
 

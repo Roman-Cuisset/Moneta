@@ -1,4 +1,6 @@
-# Préparer Moneta Alpha 0.1.0
+# Préparer une release Moneta Alpha
+
+> Ce guide conserve les commandes historiques de l’Alpha 0.1.0. Pour une nouvelle version, remplacez le numéro, les chemins, les empreintes et les notes par les artefacts qualifiés du candidat.
 
 ## Construction du candidat Windows
 
@@ -16,7 +18,9 @@ Les trois scripts vérifient l’éditeur du compilateur, le runtime et la versi
 
 ## Mises à jour et contrôle de sécurité
 
-La production utilise le point d’accès GitHub `releases/latest/download/moneta-update.json` en HTTPS. Le client valide le catalogue avec une clé publique ECDSA P‑256 intégrée, limite les redirections aux hôtes GitHub nécessaires et refuse les versions égales ou antérieures. Le catalogue authentifie la taille, le SHA‑256 de l’installateur, le produit, l’architecture, la version et le texte de publication. Le lanceur répète les contrôles avant de lancer le fichier via Windows. Il garde le fichier ouvert en lecture pour empêcher son remplacement entre le contrôle et le lancement. Les téléchargements de production conservent la marque Internet pour les vérifications de Windows.
+Depuis la 0.2.0, le canal Alpha consulte les 30 publications récentes du dépôt via l’API publique GitHub en HTTPS. Il cherche la version numérique la plus élevée parmi les préversions publiées portant un tag canonique `vX.Y.Z` et un catalogue chargé. La politique de sélection est propre au canal Alpha. Le client construit l’URL officielle à partir du tag et vérifie que le catalogue signé désigne exactement cette version. [API GitHub Releases](https://docs.github.com/en/rest/releases/releases#list-releases)
+
+Le client valide le catalogue avec une clé publique ECDSA P‑256 intégrée, limite les redirections aux hôtes GitHub nécessaires et refuse les versions égales ou antérieures. Le catalogue authentifie la taille, le SHA‑256 de l’installateur, le produit, l’architecture, la version et le texte de publication. Le lanceur répète les contrôles avant de lancer le fichier via Windows. Il garde le fichier ouvert en lecture pour empêcher son remplacement entre le contrôle et le lancement. Les téléchargements de production conservent la marque Internet pour les vérifications de Windows.
 
 Moneta propose d’enregistrer les brouillons, attend la fin des sauvegardes et ferme le dossier. Le lanceur n’agit qu’après la décision de fermer et la fin du processus. L’installation attend sa propre fin avant de vérifier la version et relancer Moneta. En cas d’annulation ou d’échec, le résultat est affiché au redémarrage si l’application demeure disponible. L’installateur impose le dossier de programme, refuse la rétrogradation et demande la fermeture des autres instances.
 
@@ -28,7 +32,7 @@ Le laboratoire compile une autre clé, un autre identifiant d’installation et 
 
 Le workflow manuel **Préparer un candidat Moneta** produit des artefacts de contrôle sans clé privée. La première livraison utilise les fichiers scellés dans `private/mission18b/candidate/artifacts` sur le poste de qualification. Une reconstruction change potentiellement le SHA-256. Le propriétaire doit autoriser explicitement la visibilité publique du dépôt, la distribution et la publication de la release avant les commandes correspondantes. Un push sur `main` ne déclenche aucune publication.
 
-Publier `v0.1.0` comme **préversion**. GitHub réserve `releases/latest` aux releases stables. Tant que seules des préversions existent, Moneta 0.1.0 traite la réponse HTTP 404 de ce canal comme une absence de mise à jour. Le catalogue signé est disponible sous l’URL du tag. La détection automatique des futures préversions demanderait un canal dédié. [Comportement de Latest](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) · [Qualification et audit](ALPHA_QUALIFICATION.md)
+La release historique `v0.1.0` reste une préversion. Ce client utilise `releases/latest`, qui exclut les préversions. Le passage de 0.1.0 à 0.2.0 se fait en téléchargeant et en exécutant une fois l’installateur officiel. À partir de 0.2.0, le catalogue signé est publié avec l’installateur à l’URL de chaque nouveau tag Alpha. [Comportement de Latest](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) · [Qualification et audit](ALPHA_QUALIFICATION.md)
 
 ### Vérification en PowerShell 7 depuis la racine du dépôt
 

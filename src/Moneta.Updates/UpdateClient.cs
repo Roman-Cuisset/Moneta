@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace Moneta.Updates;
 
@@ -8,6 +9,7 @@ public sealed record UpdateOffer(UpdateManifest Manifest, byte[] SignedEnvelope)
 
 public sealed class UpdateClient : IDisposable
 {
+    private const int MaximumReleaseIndexBytes = 4 * 1024 * 1024;
     private readonly UpdateChannel _channel;
     private readonly HttpClient _http;
 
@@ -29,17 +31,58 @@ public sealed class UpdateClient : IDisposable
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
-        using var response = await GetAsync(_channel.Feed, timeout.Token).ConfigureAwait(false);
+        var token = timeout.Token;
+        var version = _channel.Lab ? installed : await FindAlphaVersionAsync(installed, token).ConfigureAwait(false);
+        if (version is null) return null;
+        using var response = await GetAsync(_channel.Catalog(version), token).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound) return null;
         response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength > UpdateManifest.MaximumEnvelopeBytes)
+        var envelope = await ReadMetadataAsync(response, UpdateManifest.MaximumEnvelopeBytes, token).ConfigureAwait(false);
+        var manifest = _channel.Verify(envelope);
+        if (!_channel.Lab && manifest.Version != version.ToString(3))
+            throw new InvalidDataException(L.Get("UpdateManifest.TheSignedCatalogueDoesNotDescribeACompatible"));
+        return manifest.IsNewerThan(installed) ? new UpdateOffer(manifest, envelope) : null;
+    }
+
+    private async Task<Version?> FindAlphaVersionAsync(Version installed, CancellationToken token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, UpdateChannel.AlphaReleaseIndex);
+        request.Headers.Accept.ParseAdd("application/vnd.github+json");
+        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        var bytes = await ReadMetadataAsync(response, MaximumReleaseIndexBytes, token).ConfigureAwait(false);
+        try
+        {
+            var releases = JsonSerializer.Deserialize(bytes, GitHubReleaseJson.Default.GitHubReleaseArray);
+            if (releases is null) throw new InvalidDataException(L.Get("UpdateManifest.InvalidUpdateMetadata"));
+            var current = new Version(installed.Major, installed.Minor, Math.Max(0, installed.Build));
+            Version? newest = null;
+            foreach (var release in releases)
+            {
+                // The public index is only a hint. It cannot supply a download URL or authorize installation.
+                if (release is not { Draft: false, Prerelease: true, TagName: { Length: > 1 } tag, Assets: { } assets } ||
+                    tag[0] != 'v' || !UpdateManifest.TryVersion(tag[1..], out var version) || version <= current ||
+                    (newest is not null && version <= newest) ||
+                    !assets.Any(asset => asset is { Name: UpdateManifest.EnvelopeName, State: "uploaded" }))
+                    continue;
+                newest = version;
+            }
+            return newest;
+        }
+        catch (JsonException error)
+        {
+            throw new InvalidDataException(L.Get("UpdateManifest.InvalidUpdateMetadata"), error);
+        }
+    }
+
+    private static async Task<byte[]> ReadMetadataAsync(HttpResponseMessage response, int limit, CancellationToken token)
+    {
+        if (response.Content.Headers.ContentLength > limit)
             throw new InvalidDataException(L.Get("UpdateClient.TooLargeAnUpdateCatalog"));
         using var buffer = new MemoryStream();
-        await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-        await CopyBoundedAsync(body, buffer, UpdateManifest.MaximumEnvelopeBytes, null, timeout.Token).ConfigureAwait(false);
-        var envelope = buffer.ToArray();
-        var manifest = _channel.Verify(envelope);
-        return manifest.IsNewerThan(installed) ? new UpdateOffer(manifest, envelope) : null;
+        await using var body = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+        await CopyBoundedAsync(body, buffer, limit, null, token).ConfigureAwait(false);
+        return buffer.ToArray();
     }
 
     public async Task<UpdateStage> DownloadAsync(UpdateOffer offer, Version installed, IProgress<int>? progress, CancellationToken cancellationToken)
