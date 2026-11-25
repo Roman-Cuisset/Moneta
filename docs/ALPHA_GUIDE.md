@@ -10,6 +10,16 @@ Moneta s’installe sur Windows 11 x64. Téléchargez le candidat depuis la rele
 6. **Fichier → Restaurer une sauvegarde** vérifie l’archive et crée une copie contrôlée à un nouvel emplacement. Ouvrez ensuite cette copie pour consulter les comptes et le registre.
 7. **Aide → Rechercher les mises à jour** peut être utilisé hors de la recherche automatique du démarrage. Les notes signées s’affichent dans Moneta. **Télécharger et installer** vérifie le fichier et vous laisse enregistrer ou annuler la fermeture avant l’installation.
 
+## Parcours en préparation pour la 0.2.0
+
+- Au premier accès à un fichier `.moneta` dans l’Explorateur, choisissez **Ouvrir avec → Moneta**. Si vous en faites l’application par défaut dans Windows, les prochains doubles-clics ouvriront le dossier. Si Moneta est déjà lancé, la demande rejoint sa fenêtre et reprend la confirmation de changement de dossier.
+- Sous le registre, saisissez la date, le libellé, le sens et le montant. Les autres champs sont facultatifs. Les suggestions viennent de vos comptes et de vos opérations. Validez avec **Entrée** ou **Ajouter au brouillon**, puis enregistrez avec **Ctrl+S**. Une liste ouverte conserve son comportement de sélection. Une saisie non validée reste associée à son compte pendant la session. Avant de quitter le dossier, Moneta en demande la confirmation séparément des brouillons validés.
+- Les champs acceptent `1234,56`, `1234.56`, `1 234,56` et `1,234.56`. Les espaces ordinaires et insécables peuvent grouper les milliers. Une écriture ambiguë telle que `1,234` est refusée. Pour une valeur à trois décimales, ajoutez un zéro final (`1,2340`) si la précision de la devise le permet. Pour les soldes signés et les filtres, placez le signe avant les chiffres. Les recettes et dépenses utilisent le champ **Sens**.
+- **Affichage → Densité du registre** mémorise **Standard** ou **Compact**. Sélectionnez une écriture pour consulter ses détails, y compris le tiers et la sous-catégorie.
+- L’actualisation au démarrage dépend du réglage **Outils → Options**. L’actualisation manuelle demande le cours du jour pour le registre. La fenêtre des cours permet de choisir une autre date. En cas d’échec réseau, le registre indique la date effective et le cache utilisé, ou l’indisponibilité du cours. Les montants natifs restent consultables et les valorisations historiques gardent leurs dates.
+
+[Notes de préparation de la 0.2.0](releases/0.2.0.md)
+
 ## Si Moneta ne démarre plus
 
 Gardez les originaux, les sauvegardes et leurs manifestes. Réinstallez un installateur Moneta vérifié. Ouvrez votre dossier en place ou restaurez une sauvegarde vers un nouveau dossier. Si le fichier actif est encore ouvert dans Moneta, utilisez **Sauvegarder le dossier** pour en faire une copie cohérente.

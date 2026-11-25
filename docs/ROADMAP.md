@@ -10,6 +10,10 @@ Les choix et invariants sont décrits dans [ARCHITECTURE.md](ARCHITECTURE.md). L
 
 La [stratégie d'importation](BANKPERFECT_IMPORT_STRATEGY.md) et le [format `.moneta`](FILE_FORMATS.md) définissent le périmètre de la conversion native. [UI_MENU_MAP.md](UI_MENU_MAP.md), [UI_SCREEN_INVENTORY.md](UI_SCREEN_INVENTORY.md) et [VISUAL_IDENTITY.md](VISUAL_IDENTITY.md) complètent les critères de parité et de conception.
 
+### Ergonomie quotidienne — mission 22, préparation de la 0.2.0
+
+Association Windows des dossiers `.moneta`, saisie rapide sous le registre, séparateurs décimaux indépendants de la langue, espacement des commandes et densité mémorisée. La consultation d’un cours historique dans la fenêtre des cours conserve son propre contexte. Une estimation courante privilégie la publication officielle applicable la plus récente disponible. Les rapports et virements historiques conservent leurs règles de valorisation. [Notes de préparation](releases/0.2.0.md)
+
 ### Français et anglais — mission 20
 
 Le code de développement destiné à la 0.2.0 comprend les ressources d’interface françaises et anglaises, le choix persistant de la langue et l’actualisation à chaud. La qualification de l’installateur et les vérifications de publication appartiennent à la préparation de cette version. [Internationalisation et qualification](LOCALIZATION.md)
