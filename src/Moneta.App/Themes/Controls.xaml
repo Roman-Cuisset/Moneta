@@ -4,6 +4,7 @@
                     xmlns:local="clr-namespace:Moneta.App">
     <FontFamily x:Key="AppFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <BitmapImage x:Key="BrandSymbol" UriSource="pack://application:,,,/Moneta.App;component/Branding/moneta-256.png" />
+    <BitmapImage x:Key="BrandSymbolSmall" UriSource="pack://application:,,,/Moneta.App;component/Branding/moneta-24.png" />
     <Style x:Key="KeyboardFocus" TargetType="Control">
         <Setter Property="Template">
             <Setter.Value>

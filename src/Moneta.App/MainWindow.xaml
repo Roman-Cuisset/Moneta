@@ -121,7 +121,7 @@
         <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
             <DockPanel Margin="10,4">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,16,0">
-                    <Image Source="{StaticResource BrandSymbol}" Width="24" Height="24" />
+                    <Image Source="{StaticResource BrandSymbolSmall}" Width="24" Height="24" />
                     <TextBlock Text="Moneta" FontWeight="SemiBold" VerticalAlignment="Center" Margin="7,0,0,0" />
                 </StackPanel>
                 <Menu KeyboardNavigation.TabNavigation="Once" VerticalAlignment="Center" AutomationProperties.AutomationId="MainMenu">
